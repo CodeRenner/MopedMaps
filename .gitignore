@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+node_modules/
+dist/
+# Large data: OSM extracts and generated graph chunks
+data/
+*.osm.pbf

@@ -6,9 +6,11 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 (pipeline) — in progress
-- Next task: run CLI on a real small region (Geofabrik Bremen, ~20 MB) and measure size/time -> extrapolate to Germany
+- Next task: start roadmap step 2 (router) once Node.js is available; meanwhile possible: memory-efficient band-wise build for Germany
 - Branch: `pipeline/graph-chunks` (PR #1 open against main); loop commits go here
-- Blockers / questions for the user: permission to download Geofabrik Bremen extract (asked 2026-10-06)
+- Blockers / questions for the user:
+  - Hosting choice (options in docs/size-measurement.md) — asked 2026-10-06
+  - Node.js: `brew install node` failed (Homebrew dirs owned by another macOS user, no write permission for `ai`)
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
   not installed globally (use a venv for Python tooling)
 
@@ -18,8 +20,9 @@ updates "Current state". Newest entries at the bottom.
 - [x] Graph builder from small test extract (.osm.pbf fixture or synthetic XML)
 - [x] Tiling: fixed grid, compact binary chunk format + format spec in docs
 - [x] CLI: extract -> tiles
-- [ ] Run on a real small region (e.g. Bremen) and measure size
-- [ ] Size extrapolation to Germany -> hosting options for user
+- [x] Run on a real small region (Bremen) (e.g. Bremen) and measure size
+- [x] Size extrapolation to Germany -> hosting options for user
+- [ ] Memory-efficient Germany build (band-wise), needed before step 8
 
 ## Log
 ### 2026-10-06 — Iteration 0 (setup)
@@ -95,3 +98,15 @@ updates "Current state". Newest entries at the bottom.
 - Tests: ruff clean; pytest 51 passed (pyosmium reader == XML reader on fixture).
 - Commit: 1b8dc72
 - Next: real-region measurement (waiting for download permission).
+
+### 2026-10-06 — Iteration 6 (real-region measurement)
+- User approved downloading Geofabrik Bremen (20 MB) and installing Node.js.
+- What: built Bremen: 5 tiles, 59.5k edges, 2.9 MB raw / 1.35 MB gzip,
+  5.7 s, 245 MB RAM. Write-up + Germany extrapolation in
+  `docs/size-measurement.md` (~640 MB raw / ~300 MB gzip, ~800 tiles,
+  largest tile a few MB; single-process RAM ~50 GB -> needs band-wise build).
+- Node.js install via Homebrew failed: /opt/homebrew not writable by user
+  `ai` (owned by another account). Not fixing permissions myself.
+- Tests: unchanged (51 passed); doc-only commit.
+- Commit: 49a5b2d
+- Next: hosting decision from user; Node.js for step 2.

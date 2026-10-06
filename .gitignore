@@ -8,3 +8,4 @@ dist/
 # Large data: OSM extracts and generated graph chunks
 data/
 *.osm.pbf
+.DS_Store

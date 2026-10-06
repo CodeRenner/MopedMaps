@@ -5,14 +5,13 @@ first, does ONE small runnable increment, then appends an entry below and
 updates "Current state". Newest entries at the bottom.
 
 ## Current state
-- Roadmap step: 1 (pipeline) — in progress
-- Next task: start roadmap step 2 (router) once Node.js is available; meanwhile possible: memory-efficient band-wise build for Germany
+- Roadmap step: 1 (pipeline) — done except band-wise Germany build; step 2 (router) — starting
+- Next task: scaffold `web/` TypeScript package (vitest) + chunk decoder in TS mirroring chunks.py, tested against a Python-generated fixture
 - Branch: `pipeline/graph-chunks` (PR #1 open against main); loop commits go here
-- Blockers / questions for the user:
-  - Hosting choice (options in docs/size-measurement.md) — asked 2026-10-06
-  - Node.js: `brew install node` failed (Homebrew dirs owned by another macOS user, no write permission for `ai`)
+- Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
-  not installed globally (use a venv for Python tooling)
+  not installed globally (use a venv for Python tooling).
+  Node 22 in ~/.local/node — prefix commands with `export PATH="$HOME/.local/node/bin:$PATH"`
 
 ## Task backlog (step 1)
 - [x] Scaffold pipeline package (pyproject, config.py with documented constants)
@@ -23,6 +22,15 @@ updates "Current state". Newest entries at the bottom.
 - [x] Run on a real small region (Bremen) (e.g. Bremen) and measure size
 - [x] Size extrapolation to Germany -> hosting options for user
 - [ ] Memory-efficient Germany build (band-wise), needed before step 8
+
+## Task backlog (step 2)
+- [ ] Scaffold `web/` (TypeScript, vitest, no framework), shared config constants
+- [ ] TS chunk decoder mirroring chunks.py; cross-language fixture test
+- [ ] Graph assembly from multiple chunks (global node ids = tile+index)
+- [ ] Vehicle profile + access rules (vmax<60 motorway/motorroad rule as documented config)
+- [ ] Edge cost: time = f(length, min(speed, vmax), curvature/junction/signal penalties)
+- [ ] A* (binary heap, haversine/vmax heuristic) + fixed start/destination tests
+- [ ] Worker wrapper (no DOM in router core)
 
 ## Log
 ### 2026-10-06 — Iteration 0 (setup)
@@ -110,3 +118,9 @@ updates "Current state". Newest entries at the bottom.
 - Tests: unchanged (51 passed); doc-only commit.
 - Commit: 49a5b2d
 - Next: hosting decision from user; Node.js for step 2.
+
+### 2026-10-06 — Iteration 6b (decisions)
+- User decided: hosting = Cloudflare Pages; Node via tarball in ~/.local/node.
+- Installed Node v22.23.3 (darwin-arm64, SHA-256 verified against nodejs.org
+  SHASUMS256.txt). Recorded both in DECISIONS.md. Added step-2 backlog.
+- Next: web/ scaffold + TS chunk decoder.

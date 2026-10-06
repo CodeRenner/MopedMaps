@@ -6,7 +6,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 (pipeline) — done except band-wise Germany build; step 2 (router) — starting
-- Next task: A* search (binary heap, admissible heuristic) + fixed start/destination tests
+- Next task: Web Worker wrapper around the router (message protocol, no DOM in core) — last item of step 2; then open PR for step 2
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1, pushed). `router/astar` (local, based on it) = step 2 work
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
@@ -29,7 +29,7 @@ updates "Current state". Newest entries at the bottom.
 - [x] Graph assembly from multiple chunks (global node ids = tile+index)
 - [x] Vehicle profile + access rules (vmax<60 motorway/motorroad rule as documented config)
 - [x] Edge cost: time = f(length, min(speed, vmax), curvature/junction/signal penalties)
-- [ ] A* (binary heap, haversine/vmax heuristic) + fixed start/destination tests
+- [x] A* (binary heap, haversine/vmax heuristic) + fixed start/destination tests
 - [ ] Worker wrapper (no DOM in router core)
 
 ## Log
@@ -162,3 +162,21 @@ updates "Current state". Newest entries at the bottom.
 - Tests: tsc clean; vitest 19 passed.
 - Commit: 794fffc
 - Next: A*.
+
+### 2026-10-06 — Iteration 10 (A* router)
+- What: `web/src/router/astar.ts` (`findRoute`: A* with lazy-deletion binary
+  heap `heap.ts`, heuristic = haversine / vmax × time weight, admissible;
+  returns nodes, arcs, cost, time, distance, full polyline incl. reversed
+  shapes, settled count; `heuristic: false` = Dijkstra reference), `geo.ts`.
+- Tests: synthetic square (signals avoided, motorway only for vmax>=60),
+  pipeline fixture (Mofa-frei cycleway only for vmax 25; reversed geometry),
+  Bremen fixed pairs (skipped automatically when `data/tiles-bremen` is
+  absent, e.g. in CI): Hbf->Vegesack 19.9 km / 44.4 min (17 ms),
+  Hbf->Uni 5.5 km / 14.7 min, Neustadt->Hemelingen 7.4 km / 17.9 min; no
+  motorway/motorroad edges for the 45 km/h moped; A* cost == Dijkstra cost
+  with fewer settled nodes.
+- Fix during iteration: avoided `Array.prototype.at` (ES2022) to keep the
+  ES2020 target for older iPhones.
+- Tests: tsc clean; vitest 30 passed.
+- Commit: 992b828
+- Next: worker wrapper.

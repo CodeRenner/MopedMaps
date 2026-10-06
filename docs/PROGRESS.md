@@ -6,7 +6,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 (pipeline) — done except band-wise Germany build; step 2 (router) — starting
-- Next task: graph assembly from multiple chunks (global node ids, adjacency in typed arrays)
+- Next task: vehicle profile + access rules + edge cost (time with penalties) in web/src/router, constants in a config module
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1, pushed). `router/astar` (local, based on it) = step 2 work
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
@@ -26,7 +26,7 @@ updates "Current state". Newest entries at the bottom.
 ## Task backlog (step 2)
 - [x] Scaffold `web/` (TypeScript, vitest, no framework), shared config constants
 - [x] TS chunk decoder mirroring chunks.py; cross-language fixture test
-- [ ] Graph assembly from multiple chunks (global node ids = tile+index)
+- [x] Graph assembly from multiple chunks (global node ids = tile+index)
 - [ ] Vehicle profile + access rules (vmax<60 motorway/motorroad rule as documented config)
 - [ ] Edge cost: time = f(length, min(speed, vmax), curvature/junction/signal penalties)
 - [ ] A* (binary heap, haversine/vmax heuristic) + fixed start/destination tests
@@ -137,3 +137,16 @@ updates "Current state". Newest entries at the bottom.
 - Tests: tsc clean; vitest 6 passed; ruff clean; pytest 51 passed.
 - Commit: 7722ba0
 - Next: multi-chunk graph assembly.
+
+### 2026-10-06 — Iteration 8 (graph assembly)
+- What: `web/src/router/graph.ts` — `assembleGraph(chunks)`: dense global
+  node ids (per-tile offsets), keeps edges whose to-tile is loaded, builds
+  directed arcs in CSR typed arrays (target, edge index, forward bit);
+  ONEWAY / ONEWAY_REVERSE decide arc existence. `nearestNode` (linear scan
+  over connected nodes; spatial index later if needed).
+- Note: access per vehicle (moped/mofa, motorway rule) is NOT applied at
+  assembly; it is applied per query in the cost function so profile changes
+  need no rebuild.
+- Tests: tsc clean; vitest 11 passed.
+- Commit: c865c41
+- Next: profile + cost model.

@@ -71,3 +71,7 @@ export const JUNCTION_PENALTY_S = 2;
 export const CURVATURE_PENALTY_S_PER_DEG = 0.02;
 /** Extra cost for access=destination roads to discourage through traffic. */
 export const DESTINATION_PENALTY_S = 120;
+
+// --- Snapping ----------------------------------------------------------------
+/** Max distance from a tapped point to the nearest usable road node (m). */
+export const MAX_SNAP_DISTANCE_M = 1000;

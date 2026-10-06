@@ -6,7 +6,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 (pipeline) — done except band-wise Germany build; step 2 (router) — starting
-- Next task: vehicle profile + access rules + edge cost (time with penalties) in web/src/router, constants in a config module
+- Next task: A* search (binary heap, admissible heuristic) + fixed start/destination tests
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1, pushed). `router/astar` (local, based on it) = step 2 work
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
@@ -27,8 +27,8 @@ updates "Current state". Newest entries at the bottom.
 - [x] Scaffold `web/` (TypeScript, vitest, no framework), shared config constants
 - [x] TS chunk decoder mirroring chunks.py; cross-language fixture test
 - [x] Graph assembly from multiple chunks (global node ids = tile+index)
-- [ ] Vehicle profile + access rules (vmax<60 motorway/motorroad rule as documented config)
-- [ ] Edge cost: time = f(length, min(speed, vmax), curvature/junction/signal penalties)
+- [x] Vehicle profile + access rules (vmax<60 motorway/motorroad rule as documented config)
+- [x] Edge cost: time = f(length, min(speed, vmax), curvature/junction/signal penalties)
 - [ ] A* (binary heap, haversine/vmax heuristic) + fixed start/destination tests
 - [ ] Worker wrapper (no DOM in router core)
 
@@ -150,3 +150,15 @@ updates "Current state". Newest entries at the bottom.
 - Tests: tsc clean; vitest 11 passed.
 - Commit: c865c41
 - Next: profile + cost model.
+
+### 2026-10-06 — Iteration 9 (profile, access, cost)
+- What: `web/src/config/index.ts` (vmax presets 25/45, radius 25–100 default
+  75, MOFA_MAX_VMAX 25, MOTORWAY_MIN_VMAX 60, default speeds by class,
+  surface factors, penalties) and `web/src/router/profile.ts` (`canUse`,
+  `speedKmh`, `travelTimeS`, `edgeCost`). Model documented in
+  `docs/routing-model.md`.
+- Design notes: urban/rural unknown in graph -> per-class defaults; listed as
+  known gap. Cost = a*time for now; b*risk / c*energy hooks for steps 5/6.
+- Tests: tsc clean; vitest 19 passed.
+- Commit: 794fffc
+- Next: A*.

@@ -6,8 +6,8 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 (pipeline) — done except band-wise Germany build; step 2 (router) — starting
-- Next task: scaffold `web/` TypeScript package (vitest) + chunk decoder in TS mirroring chunks.py, tested against a Python-generated fixture
-- Branch: `pipeline/graph-chunks` (PR #1 open against main); loop commits go here
+- Next task: graph assembly from multiple chunks (global node ids, adjacency in typed arrays)
+- Branches: `pipeline/graph-chunks` = PR #1 (step 1, pushed). `router/astar` (local, based on it) = step 2 work
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
   not installed globally (use a venv for Python tooling).
@@ -24,8 +24,8 @@ updates "Current state". Newest entries at the bottom.
 - [ ] Memory-efficient Germany build (band-wise), needed before step 8
 
 ## Task backlog (step 2)
-- [ ] Scaffold `web/` (TypeScript, vitest, no framework), shared config constants
-- [ ] TS chunk decoder mirroring chunks.py; cross-language fixture test
+- [x] Scaffold `web/` (TypeScript, vitest, no framework), shared config constants
+- [x] TS chunk decoder mirroring chunks.py; cross-language fixture test
 - [ ] Graph assembly from multiple chunks (global node ids = tile+index)
 - [ ] Vehicle profile + access rules (vmax<60 motorway/motorroad rule as documented config)
 - [ ] Edge cost: time = f(length, min(speed, vmax), curvature/junction/signal penalties)
@@ -124,3 +124,16 @@ updates "Current state". Newest entries at the bottom.
 - Installed Node v22.23.3 (darwin-arm64, SHA-256 verified against nodejs.org
   SHASUMS256.txt). Recorded both in DECISIONS.md. Added step-2 backlog.
 - Next: web/ scaffold + TS chunk decoder.
+
+### 2026-10-06 — Iteration 7 (web scaffold + TS chunk decoder)
+- Branch: new local branch `router/astar` (on top of PR #1 branch) so step 2
+  becomes its own PR.
+- What: `web/` package (TypeScript strict, vitest; deps typescript Apache-2.0,
+  vitest MIT, @types/node MIT — dev only). `src/router/chunk.ts` decoder +
+  enums mirroring the Python side. `pipeline/scripts/make_web_fixtures.py`
+  writes `.mmg` + expected JSON (from the Python decoder) into
+  `web/test/fixtures/`; TS test compares field by field. New fixture
+  `cross_tile.osm`.
+- Tests: tsc clean; vitest 6 passed; ruff clean; pytest 51 passed.
+- Commit: 7722ba0
+- Next: multi-chunk graph assembly.

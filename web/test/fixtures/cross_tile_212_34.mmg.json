@@ -1,0 +1,42 @@
+{
+ "key": [
+  34,
+  212
+ ],
+ "tileSize": 0.25,
+ "nodes": [
+  [
+   53.2,
+   8.7
+  ]
+ ],
+ "edges": [
+  {
+   "from_idx": 0,
+   "to_tile": [
+    35,
+    213
+   ],
+   "to_idx": 0,
+   "road_class": 3,
+   "flags": 19,
+   "maxspeed_fwd": null,
+   "maxspeed_bwd": null,
+   "surface": 2,
+   "lit": null,
+   "cycleway": false,
+   "signals": 0,
+   "length_m": 17120.2,
+   "curvature_deg": 87,
+   "ascent_m": 0.0,
+   "descent_m": 0.0,
+   "risk": 0,
+   "shape": [
+    [
+     53.3,
+     8.71
+    ]
+   ]
+  }
+ ]
+}

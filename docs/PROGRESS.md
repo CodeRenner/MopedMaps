@@ -5,8 +5,8 @@ first, does ONE small runnable increment, then appends an entry below and
 updates "Current state". Newest entries at the bottom.
 
 ## Current state
-- Roadmap step: 1 (pipeline) — done except band-wise Germany build; step 2 (router) — starting
-- Next task: Web Worker wrapper around the router (message protocol, no DOM in core) — last item of step 2; then open PR for step 2
+- Roadmap step: 1 done (except band-wise Germany build); 2 done (local branch `router/astar`, PR pending user OK); 3 (PLZ + chunk loading + IndexedDB) — starting
+- Next task: PLZ lookup data: pipeline script that builds a compact PLZ -> centroid table from GeoNames DE postal codes (CC BY 4.0)
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1, pushed). `router/astar` (local, based on it) = step 2 work
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
@@ -30,7 +30,14 @@ updates "Current state". Newest entries at the bottom.
 - [x] Vehicle profile + access rules (vmax<60 motorway/motorroad rule as documented config)
 - [x] Edge cost: time = f(length, min(speed, vmax), curvature/junction/signal penalties)
 - [x] A* (binary heap, haversine/vmax heuristic) + fixed start/destination tests
-- [ ] Worker wrapper (no DOM in router core)
+- [x] Worker wrapper (no DOM in router core)
+
+## Task backlog (step 3)
+- [ ] PLZ table: pipeline script GeoNames DE.zip -> compact `plz.json`/binary (needs download OK — GeoNames, CC BY 4.0, attribution)
+- [ ] PLZ lookup module in web (exact + prefix search), tests
+- [ ] Tiles-in-radius computation (circle vs tile rectangles), uses manifest
+- [ ] Chunk loader: fetch with retry, IndexedDB cache keyed by build version, re-fetch when evicted (iOS)
+- [ ] Wire loader -> worker `load`
 
 ## Log
 ### 2026-10-06 — Iteration 0 (setup)
@@ -180,3 +187,14 @@ updates "Current state". Newest entries at the bottom.
 - Tests: tsc clean; vitest 30 passed.
 - Commit: 992b828
 - Next: worker wrapper.
+
+### 2026-10-06 — Iteration 11 (worker wrapper) — step 2 complete
+- What: `protocol.ts` (typed request/response union: load, route, no-route
+  with reason, error), `service.ts` (`RouterService`: assembles graph from
+  ArrayBuffers, snaps start/target within `MAX_SNAP_DISTANCE_M` = 1000 m,
+  validates profile, returns geometry + timings; never throws across the
+  boundary), `worker.ts` (thin `onmessage` adapter). Config constant added.
+- Tests: tsc clean; vitest 34 passed.
+- Commit: ae75e69
+- Next: roadmap step 3 (PLZ + chunk loading). Step 2 PR: asking user
+  whether to push `router/astar` and open PR #2 (base: PR #1 branch).

@@ -6,8 +6,9 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 (pipeline) — in progress
-- Next task: CLI (pyosmium PBF adapter + write tiles + manifest.json); run on a small real region and measure size
-- Blockers / questions for the user: none
+- Next task: run CLI on a real small region (Geofabrik Bremen, ~20 MB) and measure size/time -> extrapolate to Germany
+- Branch: `pipeline/graph-chunks` (PR #1 open against main); loop commits go here
+- Blockers / questions for the user: permission to download Geofabrik Bremen extract (asked 2026-10-06)
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
   not installed globally (use a venv for Python tooling)
 
@@ -16,7 +17,8 @@ updates "Current state". Newest entries at the bottom.
 - [x] OSM tag parsing: access rules, maxspeed parsing, road class, surface, lit
 - [x] Graph builder from small test extract (.osm.pbf fixture or synthetic XML)
 - [x] Tiling: fixed grid, compact binary chunk format + format spec in docs
-- [ ] CLI: extract -> tiles; run on a real small region (e.g. Bremen) and measure size
+- [x] CLI: extract -> tiles
+- [ ] Run on a real small region (e.g. Bremen) and measure size
 - [ ] Size extrapolation to Germany -> hosting options for user
 
 ## Log
@@ -76,3 +78,20 @@ updates "Current state". Newest entries at the bottom.
 - Tests: ruff clean; pytest 49 passed (round-trip, cross-tile edge, varints).
 - Commit: 2932aff
 - Next: CLI + real-region size measurement (needs pyosmium + Geofabrik download).
+
+### 2026-10-06 — Iteration 5 (CLI + PBF reader)
+- Context: user requested a PR mid-iteration -> created branch
+  `pipeline/graph-chunks`, added .DS_Store to .gitignore, opened
+  https://github.com/CodeRenner/MopedMaps/pull/1 (iterations 2–4). The loop
+  continues on that branch.
+- What: `osm_pbf.py` (pyosmium 4.3, BSD-2; keeps only routable ways and the
+  tag keys we read; coords via osmium location index `flex_mem`), `cli.py`
+  (`python -m mopedmaps_pipeline build IN OUT [--tile-size] [--verify]`)
+  writing `.mmg` tiles + `manifest.json` (per-tile bytes/gzip/nodes/edges,
+  totals, timings, ODbL attribution).
+- Scaling note: whole-Germany in one Python process may exceed GitHub runner
+  RAM (7 GB). Decide after measuring Bremen (per-state processing with
+  border overlap is the fallback).
+- Tests: ruff clean; pytest 51 passed (pyosmium reader == XML reader on fixture).
+- Commit: 1b8dc72
+- Next: real-region measurement (waiting for download permission).

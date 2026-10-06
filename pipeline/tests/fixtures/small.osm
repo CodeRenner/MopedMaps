@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Synthetic test network near Bremen. Layout (node ids):
+     1 - 2 - 3          way 100 residential 1-2-3 (2 is shape point only,
+         |                       but way 101 crosses at 2 -> junction)
+         4 - 5          way 101 primary 2-4 maxspeed 70, signals at 4
+                        way 102 cycleway 4-5 (closed for mopeds)
+                        way 103 cycleway 3-5 mofa=yes
+                        way 104 footway 1-6 (not routable)
+                        way 105 building (not a road) -->
+<osm version="0.6">
+  <node id="1" lat="53.0750" lon="8.8000"/>
+  <node id="2" lat="53.0750" lon="8.8100"/>
+  <node id="3" lat="53.0750" lon="8.8200"/>
+  <node id="4" lat="53.0700" lon="8.8100"><tag k="highway" v="traffic_signals"/></node>
+  <node id="5" lat="53.0700" lon="8.8200"/>
+  <node id="6" lat="53.0800" lon="8.8000"/>
+  <node id="7" lat="53.0710" lon="8.8150"/>
+  <way id="100"><nd ref="1"/><nd ref="2"/><nd ref="3"/>
+    <tag k="highway" v="residential"/><tag k="maxspeed" v="30"/><tag k="lit" v="yes"/>
+    <tag k="surface" v="asphalt"/></way>
+  <way id="101"><nd ref="2"/><nd ref="4"/>
+    <tag k="highway" v="primary"/><tag k="maxspeed" v="70"/><tag k="cycleway:right" v="lane"/></way>
+  <way id="102"><nd ref="4"/><nd ref="5"/><tag k="highway" v="cycleway"/></way>
+  <way id="103"><nd ref="3"/><nd ref="7"/><nd ref="5"/>
+    <tag k="highway" v="cycleway"/><tag k="mofa" v="yes"/></way>
+  <way id="104"><nd ref="1"/><nd ref="6"/><tag k="highway" v="footway"/></way>
+  <way id="105"><nd ref="1"/><nd ref="2"/><nd ref="4"/><nd ref="1"/><tag k="building" v="yes"/></way>
+</osm>

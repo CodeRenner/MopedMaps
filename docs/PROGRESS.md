@@ -6,7 +6,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 (pipeline) — in progress
-- Next task: tiling + compact binary chunk format (with written format spec in docs/)
+- Next task: CLI (pyosmium PBF adapter + write tiles + manifest.json); run on a small real region and measure size
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
   not installed globally (use a venv for Python tooling)
@@ -15,7 +15,7 @@ updates "Current state". Newest entries at the bottom.
 - [x] Scaffold pipeline package (pyproject, config.py with documented constants)
 - [x] OSM tag parsing: access rules, maxspeed parsing, road class, surface, lit
 - [x] Graph builder from small test extract (.osm.pbf fixture or synthetic XML)
-- [ ] Tiling: fixed grid, compact binary chunk format + format spec in docs
+- [x] Tiling: fixed grid, compact binary chunk format + format spec in docs
 - [ ] CLI: extract -> tiles; run on a real small region (e.g. Bremen) and measure size
 - [ ] Size extrapolation to Germany -> hosting options for user
 
@@ -64,3 +64,15 @@ updates "Current state". Newest entries at the bottom.
 - Tests: ruff clean; pytest 35 passed.
 - Commit: 725159a
 - Next: tiling + binary chunk format.
+
+### 2026-10-06 — Iteration 4 (tiling + chunk format)
+- What: `chunks.py` — grid tiling (`tile_of`, file `{iy}_{ix}.mmg`),
+  binary encoder `split_into_chunks` and reference decoder `decode_chunk`.
+  Spec in `docs/chunk-format.md` (32-byte header, 8-byte nodes, 36-byte edges,
+  zigzag-varint delta geometry).
+- Design notes: tile-local node indices + relative to-tile offset (int8) keep
+  records small; edges live in the tile of their from-node. Reserved fields for
+  ascent/descent (step 6) and risk (step 5) so the format stays v1.
+- Tests: ruff clean; pytest 49 passed (round-trip, cross-tile edge, varints).
+- Commit: 2932aff
+- Next: CLI + real-region size measurement (needs pyosmium + Geofabrik download).

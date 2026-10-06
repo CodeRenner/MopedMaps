@@ -6,7 +6,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 (pipeline) — in progress
-- Next task: graph builder from a small synthetic OSM fixture (nodes/ways -> edges with raw attributes)
+- Next task: tiling + compact binary chunk format (with written format spec in docs/)
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
   not installed globally (use a venv for Python tooling)
@@ -14,7 +14,7 @@ updates "Current state". Newest entries at the bottom.
 ## Task backlog (step 1)
 - [x] Scaffold pipeline package (pyproject, config.py with documented constants)
 - [x] OSM tag parsing: access rules, maxspeed parsing, road class, surface, lit
-- [ ] Graph builder from small test extract (.osm.pbf fixture or synthetic XML)
+- [x] Graph builder from small test extract (.osm.pbf fixture or synthetic XML)
 - [ ] Tiling: fixed grid, compact binary chunk format + format spec in docs
 - [ ] CLI: extract -> tiles; run on a real small region (e.g. Bremen) and measure size
 - [ ] Size extrapolation to Germany -> hosting options for user
@@ -47,3 +47,20 @@ updates "Current state". Newest entries at the bottom.
 - Tests: ruff clean; pytest 27 passed.
 - Commit: 4f5a930
 - Next: graph builder.
+
+### 2026-10-06 — Iteration 3 (graph builder)
+- What: `osm_xml.py` (stdlib OSM XML reader -> `OsmData`), `geo.py`
+  (haversine, bearing, turn angle), `graph.py` (`build_graph`: filters
+  routable ways, splits at shared nodes/endpoints, one undirected `Edge` per
+  segment with geometry, length, road class, maxspeed fwd/bwd, access flags,
+  surface, lit, cycleway, curvature sum, traffic-signal count).
+  Fixture `tests/fixtures/small.osm` (synthetic, near Bremen).
+- Design notes: edges are stored once; direction handled via ONEWAY flags and
+  per-direction maxspeed. Curvature and signals are raw inputs for the
+  router's penalties. Gradient + risk score come in later roadmap steps
+  (5/6); the binary format will reserve fields for them.
+- PBF reading: plan to use pyosmium (BSD-2) as an adapter producing `OsmData`
+  (memory: will need a node-location store for Germany; handle in CLI step).
+- Tests: ruff clean; pytest 35 passed.
+- Commit: 725159a
+- Next: tiling + binary chunk format.

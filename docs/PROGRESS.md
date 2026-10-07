@@ -6,7 +6,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 (frontend) — next
-- Next task: PLZ panel (input + radius slider 25–100, loadArea with progress, area circle on map)
+- Next task: tap to set start/destination, route via worker, draw route + summary
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` (local, stacked on #3) = step 4
 - Blockers / questions for the user:
   - In-app browser preview: tab stays in "Policy check in progress" and navigation to http://localhost:5173 is denied — needs the user to allow it in the Browser pane (visual checks skipped until then)
@@ -43,7 +43,7 @@ updates "Current state". Newest entries at the bottom.
 ## Task backlog (step 4)
 - [x] Vite app shell, MapLibre map (OpenFreeMap style from config), attribution (OSM, GeoNames, basemap)
 - [x] i18n module (de first, en), all UI strings via i18n files
-- [ ] PLZ input + radius slider -> loadArea with progress; area circle on map
+- [x] PLZ input + radius slider -> loadArea with progress; area circle on map
 - [ ] Tap to set start/destination, route request via WorkerRouterPort, draw route + summary
 - [ ] Profile settings (vmax presets 25/45 + free input, drive type), persisted locally
 - [ ] Size budget check (bundle size) and older-iPhone sanity (ES2020, no heavy deps)
@@ -322,3 +322,19 @@ updates "Current state". Newest entries at the bottom.
 - Tests: tsc clean; vitest 68 passed (key + placeholder parity de/en).
 - Commit: ad03947
 - Next: PLZ panel.
+
+### 2026-10-07 — Iteration 19 (PLZ panel + app wiring)
+- What: `location/circle.ts` (geodesic circle polygon + bounds),
+  `ui/messages.ts` (pure error->i18n key, MB/summary formatting),
+  `ui/areaPanel.ts` (PLZ input with datalist suggestions — accepts PLZ,
+  "PLZ Ort" or a place name —, radius slider 25–100 step 5, status line),
+  `app.ts` (loads plz.json, IndexedDB store with in-memory fallback,
+  router in a module Worker via `WorkerRouterPort`, manifest on demand,
+  `loadArea` with progress, dashed area circle + fitBounds), main.ts boots
+  the app after map load. CSS: 16px inputs (no iOS zoom), safe-area inset.
+- Dev data: `web/public/graph` symlink -> `data/tiles-bremen` (gitignored).
+- Build: worker chunk 6.9 KB; main 1.05 MB / 286 KB gzip.
+- Tests: tsc clean; vitest 72 passed. Visual check still blocked (preview
+  navigation denied).
+- Commit: 22fbbaa
+- Next: route interaction.

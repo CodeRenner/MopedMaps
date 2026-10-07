@@ -18,11 +18,13 @@ from mopedmaps_pipeline.graph import Edge, Graph
 from mopedmaps_pipeline.risk import risk_score
 
 MAGIC = b"MMG1"
-VERSION = 1
+VERSION = 2  # v2: node height (int16 dm) after lat/lon; v1 still decodable
 COORD_SCALE = 10_000_000  # degrees -> int32 (1e-7 deg, ~1 cm)
 
 HEADER = struct.Struct("<4sHHiiiIII")  # 32 bytes
-NODE = struct.Struct("<ii")  # lat_e7, lon_e7
+NODE_V1 = struct.Struct("<ii")  # lat_e7, lon_e7
+NODE = struct.Struct("<iih")  # lat_e7, lon_e7, height_dm (HEIGHT_UNKNOWN = no data)
+HEIGHT_UNKNOWN = -32768
 EDGE = struct.Struct("<IIbbBBBBBBIHHHBBIHH")  # 36 bytes
 
 TileKey = tuple[int, int]  # (ix, iy) = (lon index, lat index)
@@ -62,6 +64,7 @@ class Chunk:
     key: TileKey
     tile_size: float
     nodes: list[tuple[float, float]] = field(default_factory=list)
+    heights: list[float | None] = field(default_factory=list)  # metres, None = unknown
     edges: list[DecodedEdge] = field(default_factory=list)
 
 
@@ -105,6 +108,12 @@ def _lit_code(v: bool | None) -> int:
     return 0 if v is None else (2 if v else 1)
 
 
+def _height_dm(h: float | None) -> int:
+    if h is None or math.isnan(h):
+        return HEIGHT_UNKNOWN
+    return max(-32767, min(32767, round(h * 10)))
+
+
 def _speed(v: int | None) -> int:
     return 0 if v is None else min(v, 254)
 
@@ -115,6 +124,7 @@ def encode_tile(
     nodes: Sequence[tuple[float, float]],
     edges: Iterable[Edge],
     locate: Callable[[int], tuple[TileKey, int]],
+    heights: Sequence[float | None] | None = None,
 ) -> bytes:
     """Encode one tile. `nodes` are the tile's junctions in local-index order
     (sorted by OSM id); `locate(node_id)` returns (tile, local index) of any
@@ -163,7 +173,11 @@ def encode_tile(
     header = HEADER.pack(
         MAGIC, VERSION, 0, key[0], key[1], _e7(size), len(nodes), n_edges, len(geom)
     )
-    node_bytes = b"".join(NODE.pack(_e7(lat), _e7(lon)) for lat, lon in nodes)
+    hs = heights if heights is not None else [None] * len(nodes)
+    node_bytes = b"".join(
+        NODE.pack(_e7(lat), _e7(lon), _height_dm(h))
+        for (lat, lon), h in zip(nodes, hs, strict=True)
+    )
     return header + node_bytes + bytes(edge_bytes) + bytes(geom)
 
 
@@ -185,7 +199,14 @@ def split_into_chunks(graph: Graph, size: float = config.TILE_SIZE_DEG) -> dict[
         return node_tile[nid], local_idx[nid]
 
     return {
-        key: encode_tile(key, size, [graph.nodes[n] for n in nids], tile_edges[key], locate)
+        key: encode_tile(
+            key,
+            size,
+            [graph.nodes[n] for n in nids],
+            tile_edges[key],
+            locate,
+            [graph.heights.get(n) for n in nids],
+        )
         for key, nids in tile_nodes.items()
     }
 
@@ -195,14 +216,18 @@ def split_into_chunks(graph: Graph, size: float = config.TILE_SIZE_DEG) -> dict[
 
 def decode_chunk(buf: bytes) -> Chunk:
     magic, version, _, ix, iy, size_e7, n_nodes, n_edges, n_geom = HEADER.unpack_from(buf, 0)
-    if magic != MAGIC or version != VERSION:
+    if magic != MAGIC or version not in (1, 2):
         raise ValueError(f"unsupported chunk {magic!r} v{version}")
+    node_struct = NODE if version == 2 else NODE_V1
     chunk = Chunk(key=(ix, iy), tile_size=size_e7 / COORD_SCALE)
     pos = HEADER.size
     for _ in range(n_nodes):
-        lat, lon = NODE.unpack_from(buf, pos)
+        row = node_struct.unpack_from(buf, pos)
+        lat, lon = row[0], row[1]
+        h = row[2] if version == 2 else HEIGHT_UNKNOWN
+        chunk.heights.append(None if h == HEIGHT_UNKNOWN else h / 10)
         chunk.nodes.append((lat / COORD_SCALE, lon / COORD_SCALE))
-        pos += NODE.size
+        pos += node_struct.size
     geom_start = pos + n_edges * EDGE.size
     for _ in range(n_edges):
         r = EDGE.unpack_from(buf, pos)

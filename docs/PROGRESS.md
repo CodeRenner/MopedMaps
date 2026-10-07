@@ -6,10 +6,12 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 done (PR #5, branch `safety/risk-score`); 6 done (PR #6, branch `energy/elevation`); 7 done (PR #7, branch `pwa/offline`); 8 done (PR #8, branch `docs/release`) — all roadmap steps implemented
-- Next task: none in the roadmap. Waiting on the user:
-  1. Review + merge PRs #1–#8 (stacked, bottom-up) into main
-  2. First workflow runs: Actions → "Graph build" with region `europe/germany/bremen` (smoke test), then `europe/germany`
-  - Optional improvements: see "Later / improvements" below
+- Roadmap 1–8 merged into main (2026-10-07). Now: user-requested features (step 9), one branch + PR each:
+  - `feature/elevation-profile`: node heights in chunks (format v2) + route climb from profile with hysteresis
+  - `feature/route-chart`: line chart speed + elevation over distance
+  - `feature/range`: battery/tank capacity + real consumption calibration, range/reserve display
+- Next task: `feature/route-chart` (SVG line chart speed + elevation over distance), branched from `feature/elevation-profile`
+- Germany graph (v1) live on mopedmaps.pages.dev since 2026-10-07 (run 37621466950)
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5). `pwa/offline` = PR #7 (step 7, stacked on #6). `docs/release` = PR #8 (step 8, stacked on #7)
 - Blockers / questions for the user (asked 2026-10-07, not blocking current work):
   - ~~Cloudflare secrets~~ done 2026-10-07 (both present in repo secrets)
@@ -90,10 +92,18 @@ updates "Current state". Newest entries at the bottom.
 - [x] DEM fetch tool for the Action (`dem-fetch`)
 - [x] Monthly graph-build Action + Cloudflare Pages deploy workflow (secrets present)
 
+## Task backlog (step 9 — user requests 2026-10-07)
+- [x] Format v2: per-node height (int16, decimetres, INT16_MIN = unknown) written by both builds; TS + Python decoders read v1 and v2; spec updated
+- [x] Router returns route profile (cumulative distance, node heights, per-edge speed); climb in summary from profile with hysteresis (config)
+- [x] Rebuild Bremen tiles + fixtures; check of climb on flat routes -> PR
+- [ ] Route chart: SVG line chart, x = distance, y = speed (km/h) + elevation (m), collapsible panel, touch/hover readout, de/en -> PR
+- [ ] Profile: battery capacity (Wh) / tank size (l), optional real consumption (Wh/km or l/100 km) -> model calibration factor
+- [ ] Route summary: share of battery/tank used, remaining range estimate, warning below reserve (config) -> PR
+
 ## Later / improvements (found during checks)
 - [ ] Snap start/target only to the largest connected component (taps near the data border hit isolated fragments -> "unreachable")
-- [ ] Range hint: battery capacity / tank size in the profile, show remaining range
-- [ ] Route climb still noisy on flat routes (Bremen centre -> Osterholz: 53 m over 13 km); tune smoothing or add per-route hysteresis
+- [ ] (moved to step 9) Range hint
+- [ ] (moved to step 9) Route climb noise
 - [ ] Risk tuning: junction density dominates on short urban edges
 - [ ] Memory-efficient band-wise build for all of Germany (needed before step 8)
 
@@ -856,3 +866,58 @@ updates "Current state". Newest entries at the bottom.
 - Autonomous loop stopped here: the remaining work needs the user (merging
   the stacked PRs; the graph-build/deploy workflows can only be dispatched
   from the default branch). Improvement backlog kept for a later loop.
+
+### 2026-10-07 — Iteration 50 (merge + step 9 planning)
+- User asked to merge everything. Merged #1 with `--delete-branch`, which made
+  GitHub *close* #2 (its base branch vanished) instead of retargeting.
+  Recovered: restored `pipeline/graph-chunks` at its old sha via the API,
+  reopened #2, retargeted to main; then retargeted and merged #2–#8 one by
+  one without deleting branches; finally deleted all 8 merged branches
+  (each verified as ancestor of main). Lesson: with stacked PRs, retarget
+  the next PR to main *before* deleting the previous base branch.
+- main CI after the merge: success. Deploy workflow started automatically
+  (push to main touching web/).
+- New user requests planned as step 9 (backlog above); branch
+  `feature/elevation-profile`.
+
+### 2026-10-07 — Iteration 51 (chunk format v2)
+- What: node record 8 -> 10 bytes (`<iih`, height in dm, −32768 unknown),
+  `VERSION = 2`; `Graph.heights` filled by `apply_elevation`, streaming
+  `assemble` passes heights per tile; Python + TS decoders accept v1 and v2
+  (`Chunk.heights`, graph `height: Float64Array` with NaN); manifest v1|v2
+  accepted by the web app (tiles from the currently running v1 graph build
+  keep working). Frozen `v1_small_*` fixture + new `small_dem_*` fixture
+  (synthetic ramp DEM). Spec updated with version history.
+- Tests: pytest 93 passed (height round-trip, unknown without DEM, v1
+  decode); vitest 116 passed (v1/v2 decode, heights vs Python decoder).
+  Streaming == in-memory still byte-identical (incl. heights).
+- Local Bremen tiles rebuilt as v2 with DEM.
+- Commit: cfce526
+- Next: route profile + climb hysteresis.
+
+### Note — Germany graph live (2026-10-07)
+GitHub graph-build run 37621466950 (`europe/germany`, deploy=true) succeeded: build + deploy jobs green.
+https://mopedmaps.pages.dev now serves 844 tiles (14.2 M nodes, 16.8 M edges, 511 MB gzip, format v1);
+spot checks: Bremen `212_35` and Munich `192_45` return 200. v2 tiles (node heights) follow with the
+next monthly/manual build after `feature/elevation-profile` is merged; the client reads both.
+
+### Iteration 52 — route profile + climb with hysteresis (2026-10-07)
+- What: new `web/src/router/routeProfile.ts` (`RouteProfile` = cumulative distance, node height, per-edge
+  speed; `climbWithHysteresis`). `findRoute` returns `profile`; worker passes it through `RouteResult`.
+  Summary climb = hysteresis climb over node heights (`CLIMB_HYSTERESIS_M = 3`) when all route nodes have
+  heights (v2 tiles), else the old per-edge sum (v1 tiles). Documented in docs/elevation.md.
+- Why: per-edge climbs over-count DEM noise; profile is also the data for the upcoming route chart.
+- Tests: tsc clean; vitest 124 passed (new test/routeProfile.test.ts: hysteresis cases, profile arrays,
+  reverse direction, v1 fallback).
+- Commit: 8317a01
+- Next: browser check of climb on flat Bremen routes with v2 tiles, then push + PR for `feature/elevation-profile`.
+
+### Iteration 53 — climb calibration on Bremen v2 tiles, PR (2026-10-07)
+- What: real route Bremen Hbf -> Vegesack (19.9 km, local v2 tiles via worker service): climb at hysteresis
+  0/3/5/10 m = 88/72/63/43 m. Set `CLIMB_HYSTERESIS_M = 5` (GLO-30 is a DSM with metres of noise).
+  Local-data e2e test now asserts full node heights, profile distance = route distance, climb < 4 m/km.
+- Why: user reported wrong climb values; this is the end-to-end check on real data.
+- Not done: no click-through in the browser UI (the summary only formats `ascentM`, which the e2e test covers).
+- Tests: tsc clean; vitest 124 passed.
+- Commit: 00075f4; branch pushed, PR opened for `feature/elevation-profile`.
+- Next: `feature/route-chart`.

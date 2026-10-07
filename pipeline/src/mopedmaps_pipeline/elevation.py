@@ -78,4 +78,5 @@ def apply_elevation(graph: Graph, dem: ElevationSource) -> tuple[Graph, int]:
             edges.append(e)
         else:
             edges.append(replace(e, ascent_m=float(a), descent_m=float(d)))
-    return Graph(nodes=graph.nodes, edges=edges), missing
+    heights = {int(n): float(h) for n, h in zip(ids, z, strict=True) if not np.isnan(h)}
+    return Graph(nodes=graph.nodes, edges=edges, heights=heights), missing

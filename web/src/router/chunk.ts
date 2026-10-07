@@ -5,10 +5,13 @@
  */
 
 export const MAGIC = 'MMG1';
-export const VERSION = 1;
+/** Latest format; v1 (no node heights) is still decoded. */
+export const VERSION = 2;
+export const HEIGHT_UNKNOWN = -32768;
 const COORD_SCALE = 1e7;
 const HEADER_SIZE = 32;
-const NODE_SIZE = 8;
+const NODE_SIZE_V1 = 8;
+const NODE_SIZE_V2 = 10;
 const EDGE_SIZE = 36;
 
 /** Tile key [ix, iy] = [lon index, lat index]. */
@@ -67,6 +70,8 @@ export interface Chunk {
   tileSize: number;
   /** Junction nodes as [lat, lon], indexed tile-locally. */
   nodes: [number, number][];
+  /** Smoothed node heights in metres (v2), null = unknown. */
+  heights: (number | null)[];
   edges: ChunkEdge[];
 }
 
@@ -100,7 +105,7 @@ export function decodeChunk(data: ArrayBuffer | Uint8Array): Chunk {
   const v = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const magic = String.fromCharCode(...bytes.subarray(0, 4));
   const version = v.getUint16(4, true);
-  if (magic !== MAGIC || version !== VERSION) {
+  if (magic !== MAGIC || (version !== 1 && version !== 2)) {
     throw new Error(`unsupported chunk ${magic} v${version}`);
   }
   const ix = v.getInt32(8, true);
@@ -111,13 +116,17 @@ export function decodeChunk(data: ArrayBuffer | Uint8Array): Chunk {
   const nGeom = v.getUint32(28, true);
 
   let pos = HEADER_SIZE;
+  const nodeSize = version === 2 ? NODE_SIZE_V2 : NODE_SIZE_V1;
   const nodes: [number, number][] = new Array(nNodes);
+  const heights: (number | null)[] = new Array(nNodes);
   const nodesE7: [number, number][] = new Array(nNodes);
-  for (let i = 0; i < nNodes; i++, pos += NODE_SIZE) {
+  for (let i = 0; i < nNodes; i++, pos += nodeSize) {
     const lat = v.getInt32(pos, true);
     const lon = v.getInt32(pos + 4, true);
     nodesE7[i] = [lat, lon];
     nodes[i] = [lat / COORD_SCALE, lon / COORD_SCALE];
+    const h = version === 2 ? v.getInt16(pos + 8, true) : HEIGHT_UNKNOWN;
+    heights[i] = h === HEIGHT_UNKNOWN ? null : h / 10;
   }
 
   const geomStart = pos + nEdges * EDGE_SIZE;
@@ -164,5 +173,5 @@ export function decodeChunk(data: ArrayBuffer | Uint8Array): Chunk {
       shape,
     };
   }
-  return { key: [ix, iy], tileSize, nodes, edges };
+  return { key: [ix, iy], tileSize, nodes, heights, edges };
 }

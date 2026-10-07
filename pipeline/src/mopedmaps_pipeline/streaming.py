@@ -313,7 +313,13 @@ def assemble(
             k = tiles[nid]
             return k, index.local_index(k, nid)
 
-        data = encode_tile(key, tile_size, [coords[int(n)] for n in ids], edges, locate)
+        node_heights = None
+        if heights is not None:
+            hz = heights[1][np.searchsorted(heights[0], ids)]
+            node_heights = [None if np.isnan(h) else float(h) for h in hz]
+        data = encode_tile(
+            key, tile_size, [coords[int(n)] for n in ids], edges, locate, node_heights
+        )
         yield TileInfo(key, tile_name(key), data, len(ids), len(edges))
 
 

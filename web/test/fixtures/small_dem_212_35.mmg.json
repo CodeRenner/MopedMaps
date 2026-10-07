@@ -27,11 +27,11 @@
   ]
  ],
  "heights": [
-  null,
-  null,
-  null,
-  null,
-  null
+  11.9,
+  12.2,
+  13.1,
+  12.0,
+  13.5
  ],
  "edges": [
   {
@@ -51,7 +51,7 @@
    "signals": 0,
    "length_m": 668.0,
    "curvature_deg": 0,
-   "ascent_m": 0.0,
+   "ascent_m": 0.2,
    "descent_m": 0.0,
    "risk": 29,
    "shape": []
@@ -73,7 +73,7 @@
    "signals": 0,
    "length_m": 668.0,
    "curvature_deg": 0,
-   "ascent_m": 0.0,
+   "ascent_m": 0.9,
    "descent_m": 0.0,
    "risk": 29,
    "shape": []
@@ -96,7 +96,7 @@
    "length_m": 556.0,
    "curvature_deg": 0,
    "ascent_m": 0.0,
-   "descent_m": 0.0,
+   "descent_m": 0.2,
    "risk": 124,
    "shape": []
   },
@@ -117,7 +117,7 @@
    "signals": 0,
    "length_m": 908.3,
    "curvature_deg": 108,
-   "ascent_m": 0.0,
+   "ascent_m": 0.4,
    "descent_m": 0.0,
    "risk": 28,
    "shape": [

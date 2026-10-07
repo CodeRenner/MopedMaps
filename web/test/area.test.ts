@@ -85,5 +85,11 @@ describe.skipIf(!existsSync(BREMEN))('Bremen end-to-end (local data)', () => {
       type: 'route', from: [53.0833, 8.8131], to: [53.1717, 8.6206], profile: { vmaxKmh: 45, drive: 'combustion' },
     });
     expect(r.type).toBe('route');
+    if (r.type !== 'route') return;
+    const { profile, distanceM, ascentM } = r.route;
+    // v2 tiles: every node has a height; flat Bremen must not over-count climb (~1-3 m/km).
+    expect(profile.heightM.every((h) => h !== null)).toBe(true);
+    expect(profile.distM[profile.distM.length - 1]).toBeCloseTo(distanceM);
+    expect(ascentM / (distanceM / 1000)).toBeLessThan(4);
   });
 });

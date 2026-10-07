@@ -1,6 +1,7 @@
 /** Message protocol between the UI thread and the router worker. */
 
 import type { CostWeights, VehicleProfile } from './profile';
+import type { RouteProfile } from './routeProfile';
 
 export type LatLon = [number, number];
 
@@ -25,6 +26,7 @@ export interface RouteResult {
   energyWh: number;
   fuelL: number;
   ascentM: number;
+  profile: RouteProfile;
   geometry: LatLon[];
   settled: number;
   computeMs: number;

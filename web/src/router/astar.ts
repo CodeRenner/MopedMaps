@@ -16,9 +16,11 @@ import {
   DEFAULT_WEIGHTS,
   edgeCost,
   edgeRisk,
+  speedKmh,
   travelTimeS,
   type VehicleProfile,
 } from './profile';
+import { climbWithHysteresis, hasFullHeights, type RouteProfile } from './routeProfile';
 
 export interface Route {
   /** Global node ids from start to target. */
@@ -34,8 +36,10 @@ export interface Route {
   energyWh: number;
   /** Combustion only: petrol in litres. */
   fuelL: number;
-  /** Total climb along the route (m). */
+  /** Total climb along the route (m): from node heights with hysteresis, else edge sums. */
   ascentM: number;
+  /** Distance / elevation / speed along the route (for the route chart). */
+  profile: RouteProfile;
   /** Full polyline [lat, lon] including edge shape points. */
   geometry: [number, number][];
   /** Nodes settled during search (performance metric). */
@@ -115,7 +119,11 @@ function buildRoute(
   let riskSum = 0;
   let energyWh = 0;
   let fuelL = 0;
-  let ascentM = 0;
+  let edgeAscentM = 0;
+  const distM = [0];
+  const heightOf = (v: number) => (Number.isNaN(g.height[v]!) ? null : g.height[v]!);
+  const heightM = [heightOf(start)];
+  const speeds: number[] = [];
   for (const a of arcs) {
     const e = g.edges[g.arcEdge[a]!]!;
     const fwd = g.arcForward[a] === 1;
@@ -128,8 +136,15 @@ function buildRoute(
     const en = edgeEnergy(e, fwd, profile);
     energyWh += en.sourceWh;
     fuelL += en.fuelL;
-    ascentM += fwd ? e.ascentM : e.descentM;
+    edgeAscentM += fwd ? e.ascentM : e.descentM;
+    distM.push(distanceM);
+    heightM.push(heightOf(v));
+    speeds.push(speedKmh(e, fwd, profile));
   }
+  const routeProfile: RouteProfile = { distM, heightM, speedKmh: speeds };
+  // Node heights (format v2) are smoothed and give a far better total than
+  // summing per-edge climbs; fall back to the edges for v1 tiles.
+  const ascentM = hasFullHeights(routeProfile) ? climbWithHysteresis(heightM) : edgeAscentM;
   const riskAvg = distanceM > 0 ? riskSum / (distanceM / 1000) : 0;
-  return { nodes, arcs, cost, timeS, distanceM, riskAvg, energyWh, fuelL, ascentM, geometry, settled };
+  return { nodes, arcs, cost, timeS, distanceM, riskAvg, energyWh, fuelL, ascentM, profile: routeProfile, geometry, settled };
 }

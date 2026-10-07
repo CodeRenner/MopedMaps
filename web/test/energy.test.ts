@@ -73,6 +73,7 @@ describe('routing with energy', () => {
   const chunk: Chunk = {
     key: [0, 0], tileSize: 0.25,
     nodes: [[0, 0], [0, 0.01], [0.002, 0.005]],
+    heights: [null, null, null],
     edges: [
       { ...e({ lengthM: 1112, ascentM: 80, descentM: 80 }), fromIdx: 0, toIdx: 1 },
       { ...e({ lengthM: 700 }), fromIdx: 0, toIdx: 2 },

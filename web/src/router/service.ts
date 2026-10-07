@@ -62,6 +62,7 @@ export class RouterService {
         energyWh: r.energyWh,
         fuelL: r.fuelL,
         ascentM: r.ascentM,
+        profile: r.profile,
         geometry: r.geometry,
         settled: r.settled,
         computeMs: performance.now() - t0,

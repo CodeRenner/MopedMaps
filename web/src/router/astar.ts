@@ -7,6 +7,7 @@
  * not estimated (stays admissible); energy (step 6) must also stay >= 0.
  */
 
+import { edgeEnergy } from './energy';
 import type { Graph } from './graph';
 import { haversineM } from './geo';
 import { MinHeap } from './heap';
@@ -29,6 +30,12 @@ export interface Route {
   distanceM: number;
   /** Length-weighted mean risk score of the route (0 if not computed). */
   riskAvg: number;
+  /** Battery energy (electric) or fuel energy (combustion), Wh. */
+  energyWh: number;
+  /** Combustion only: petrol in litres. */
+  fuelL: number;
+  /** Total climb along the route (m). */
+  ascentM: number;
   /** Full polyline [lat, lon] including edge shape points. */
   geometry: [number, number][];
   /** Nodes settled during search (performance metric). */
@@ -106,6 +113,9 @@ function buildRoute(
   let timeS = 0;
   let distanceM = 0;
   let riskSum = 0;
+  let energyWh = 0;
+  let fuelL = 0;
+  let ascentM = 0;
   for (const a of arcs) {
     const e = g.edges[g.arcEdge[a]!]!;
     const fwd = g.arcForward[a] === 1;
@@ -115,7 +125,11 @@ function buildRoute(
     timeS += travelTimeS(e, fwd, profile);
     distanceM += e.lengthM;
     riskSum += edgeRisk(e);
+    const en = edgeEnergy(e, fwd, profile);
+    energyWh += en.sourceWh;
+    fuelL += en.fuelL;
+    ascentM += fwd ? e.ascentM : e.descentM;
   }
   const riskAvg = distanceM > 0 ? riskSum / (distanceM / 1000) : 0;
-  return { nodes, arcs, cost, timeS, distanceM, riskAvg, geometry, settled };
+  return { nodes, arcs, cost, timeS, distanceM, riskAvg, energyWh, fuelL, ascentM, geometry, settled };
 }

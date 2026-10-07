@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "OSM -> tiled routing graph for the MopedMaps PWA"
 requires-python = ">=3.11"
 license = "MIT"
-dependencies = ["osmium>=4.0"]
+dependencies = ["osmium>=4.0", "numpy>=2.0", "tifffile>=2024.1"]
 
 [project.optional-dependencies]
 dev = ["pytest", "ruff"]

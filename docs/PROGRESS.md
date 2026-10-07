@@ -5,9 +5,9 @@ first, does ONE small runnable increment, then appends an entry below and
 updates "Current state". Newest entries at the bottom.
 
 ## Current state
-- Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 done (PR #5, branch `safety/risk-score`); 6 (elevation + energy) — next
-- Next task: step 6 — elevation source decision/download (Copernicus DEM GLO-30 or SRTM), ascent/descent per edge in pipeline
-- Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4)
+- Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 done (PR #5, branch `safety/risk-score`); 6 done (PR #6, branch `energy/elevation`); 7 (PWA offline + installability) — next
+- Next task: step 7 — PWA: web manifest + icons, service worker caching app shell + plz.json, offline basemap fallback
+- Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5)
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
   not installed globally (use a venv for Python tooling).
@@ -54,6 +54,20 @@ updates "Current state". Newest entries at the bottom.
 - [x] Router: cost = a·time + b·risk·length + c·energy (risk per km), heuristic stays admissible; tests
 - [x] UI: sliders a/b (c later in step 6), instant reroute; route summary shows risk indicator
 - [x] Browser check, then PR #5
+
+## Later / improvements (found during checks)
+- [ ] Snap start/target only to the largest connected component (taps near the data border hit isolated fragments -> "unreachable")
+- [ ] Range hint: battery capacity / tank size in the profile, show remaining range
+- [ ] Route climb still noisy on flat routes (Bremen centre -> Osterholz: 53 m over 13 km); tune smoothing or add per-route hysteresis
+- [ ] Risk tuning: junction density dominates on short urban edges
+- [ ] Memory-efficient band-wise build for all of Germany (needed before step 8)
+
+## Task backlog (step 6)
+- [x] DEM: download GLO-30 tiles (N52/N53 × E008/E009), sampler with bilinear interpolation, tests on synthetic raster
+- [x] Pipeline: ascent/descent per edge (graph-smoothed node heights, see docs/elevation.md) into bytes 22–25; rebuild
+- [x] Router: energy model — electric Wh/km by speed + gradient, combustion l/100km; c·energy in cost; documented constants
+- [x] UI: energy slider c, summary shows Wh or litres + range hint; elevation attribution
+- [x] Browser check, then PR #6
 
 ## Log
 ### 2026-10-06 — Iteration 0 (setup)
@@ -456,3 +470,72 @@ updates "Current state". Newest entries at the bottom.
 - Tests: tsc clean; vitest 93 passed.
 - Commit: 1d12d8d
 - Next: push + PR #5; then step 6.
+
+### 2026-10-07 — Iteration 26b (PR #5 + step 6 decisions)
+- Opened https://github.com/CodeRenner/MopedMaps/pull/5 (base `ui/map-frontend`).
+- User decided: elevation = Copernicus GLO-30 (AWS open data), raster lib =
+  tifffile + numpy. Recorded in DECISIONS.md; branch `energy/elevation`;
+  step 6 backlog added. Download of the 4 Bremen-area tiles approved.
+
+### 2026-10-07 — Iteration 27 (DEM reader)
+- Downloaded 4 GLO-30 tiles (N52/N53 × E008/E009, 25–33 MB each, 120 MB)
+  to `data/dem/` (gitignored). tifffile 2026.9 + numpy 2.5 (BSD) added.
+- What: `dem.py` — `DemTile` reads GeoTIFF tags (pixel scale, tiepoint,
+  pixel-is-point), decodes deflate tiles and undoes TIFF predictor 3 in
+  numpy (`undo_float_predictor`; avoids the heavy `imagecodecs` dep),
+  bilinear `sample` with edge clamping; `Dem` lazily loads 1° tiles by
+  Copernicus file name, NaN outside coverage. Attribution string included.
+- Finding: GLO-30 is a *surface* model — Bremen Marktplatz 11.7 m, but a
+  point near Hbf reads 25.4 m (buildings). Edge gradients need smoothing.
+- Tests: ruff clean; pytest 66 passed (predictor round-trip vs reference
+  encoder, synthetic GeoTIFF bilinear/clamp/NaN, real-tile plausibility).
+- Commit: d844275
+- Next: ascent/descent per edge.
+
+### 2026-10-07 — Iteration 28 (ascent/descent)
+- What: `elevation.py` — DEM sampled at junction nodes, Laplacian smoothing
+  over the graph (10×, α 0.5; constants in config), per-edge ascent/descent
+  from smoothed end heights; `Edge` gained `ascent_m`/`descent_m`; chunks
+  write them to bytes 22–25 (dm); CLI `--dem DIR`, manifest reports
+  `elevation_s` and `edges_without_elevation`.
+- Calibration (Bremen, documented in docs/elevation.md): first tried a 30 m
+  profile + median + hysteresis (9.3 m/km — noise lives *between* edges),
+  pixel-minimum (negative heights at the Weser), then node smoothing:
+  1.94 m/km, heights 0–42 m, grade p99 1.6 %, max 3.3 %. 0.8 s for Bremen.
+- Rebuilt Bremen tiles with `--dem data/dem` (gzip 1.45 MB), regenerated web
+  fixtures (built without DEM -> zeros).
+- Tests: pytest 69 passed (smoothing keeps trend / removes noise, direction,
+  encoding, missing DEM); vitest 93 passed.
+- Commit: 255c6ab
+- Next: energy model.
+
+### 2026-10-07 — Iteration 29 (energy model)
+- What: `router/energy.ts` — per-edge wheel energy = lift + max(0, losses −
+  descent release) + stop-and-go at signals; electric: efficiency 0.8, regen
+  30 % (braking + surplus descent); combustion: 12 % efficiency, petrol
+  8900 Wh/l, idle 0.25 l/h at signals. `edgeCost` adds c·wheelWh (1 s/Wh).
+  Routes report `energyWh`, `fuelL`, `ascentM` through the worker protocol.
+  Constants in config, model in `docs/energy-model.md`.
+- Bug caught by tests: first version let a hump's descent cancel its climb
+  on the same edge; now descent only offsets rolling/aero losses.
+- Sanity: flat 45 km/h -> ~26 Wh/km electric, ~1.9 l/100 km combustion.
+- Tests: tsc clean; vitest 100 passed (incl. A* == Dijkstra with c > 0).
+- Commit: 98f7076
+- Next: energy UI.
+
+### 2026-10-07 — Iteration 30 (energy UI) — step 6 complete
+- What: `WEIGHT_ENERGY_RANGE` (0–3, default 0) + third slider "Gewicht
+  Energie"; `energySummary` (pure, tested) -> summary "↑ 53 m · 0,16 l" or
+  "↑ 50 m · 345 Wh" / kWh ≥ 1000 Wh; elevation attribution (Copernicus
+  GLO-30) in the map footer; i18n de/en.
+- Browser check (Bremen tiles built with --dem):
+  - Centre -> Osterholz, 25 km/h combustion: "13,4 km · 42 min · mittleres
+    Risiko · ↑ 53 m · 0,16 l" (1.2 l/100 km).
+  - Same, 45 km/h electric: "13,0 km · 31 min · … · ↑ 50 m · 345 Wh"
+    (26.5 Wh/km, matches model).
+  - Taps in Lower Saxony (no local graph) gave correct "Ziel liegt zu weit…"
+    / "Keine erlaubte Route…" messages; the latter came from snapping to an
+    isolated border fragment -> improvement noted.
+- Tests: tsc clean; vitest 103 passed.
+- Commit: b7d89b9
+- Next: push + PR #6, then step 7.

@@ -107,3 +107,12 @@ RISK_POINTS_PER_SIGNAL_PER_KM: Final[float] = 5.0
 # Short edges mean dense junctions; points per junction per km, capped.
 RISK_POINTS_PER_JUNCTION_PER_KM: Final[float] = 3.0
 RISK_JUNCTION_POINTS_CAP: Final[int] = 30
+
+# --- Elevation (roadmap step 6) ------------------------------------------------
+# GLO-30 is a surface model (buildings/trees), so raw heights at junctions are
+# noisy (~1-3 m). Summing per-edge differences of raw heights over many short
+# urban edges inflates climbs (Bremen: 8.9 m/km). We therefore smooth node
+# heights over the graph: z <- (1-a)*z + a*mean(neighbours), repeated.
+# Bremen result: 1.95 m/km, heights 0..42 m (plausible for flat Bremen).
+ELEVATION_SMOOTHING_ITERATIONS: Final[int] = 10
+ELEVATION_SMOOTHING_ALPHA: Final[float] = 0.5

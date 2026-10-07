@@ -1,6 +1,6 @@
 /** Sliders for the cost weights a (time) and b (risk). */
 
-import { WEIGHT_RISK_RANGE, WEIGHT_TIME_RANGE } from '../config';
+import { WEIGHT_ENERGY_RANGE, WEIGHT_RISK_RANGE, WEIGHT_TIME_RANGE } from '../config';
 import { formatNumber, getLocale, t } from '../i18n';
 import type { CostWeights } from '../router/profile';
 
@@ -14,7 +14,7 @@ export function createWeightsPanel(initial: CostWeights, onChange: (w: CostWeigh
   summary.textContent = t('weights.title');
   root.append(summary);
 
-  const slider = (key: 'time' | 'risk', range: Range, labelKey: string) => {
+  const slider = (key: keyof CostWeights, range: Range, labelKey: string) => {
     const label = document.createElement('label');
     label.className = 'row';
     const span = document.createElement('span');
@@ -38,6 +38,7 @@ export function createWeightsPanel(initial: CostWeights, onChange: (w: CostWeigh
   };
   slider('time', WEIGHT_TIME_RANGE, 'weights.time');
   slider('risk', WEIGHT_RISK_RANGE, 'weights.risk');
+  slider('energy', WEIGHT_ENERGY_RANGE, 'weights.energy');
   const hint = document.createElement('p');
   hint.className = 'hint-muted';
   hint.textContent = t('weights.hint');

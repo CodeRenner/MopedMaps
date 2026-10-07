@@ -57,8 +57,8 @@ Edges are undirected; direction is governed by the oneway flags.
 | 15  | uint8  | traffic signals on edge (excl. start node), clamped to 255    |
 | 16  | uint32 | length in decimetres                                          |
 | 20  | uint16 | curvature: sum of heading changes in degrees                  |
-| 22  | uint16 | ascent forward in decimetres (0 until roadmap step 6)         |
-| 24  | uint16 | descent forward in decimetres (0 until roadmap step 6)        |
+| 22  | uint16 | ascent from→to in decimetres (`docs/elevation.md`; 0 if built without `--dem`) |
+| 24  | uint16 | descent from→to in decimetres                                  |
 | 26  | uint8  | static risk score 1–255 (`docs/risk-model.md`); 0 = not computed (older builds) |
 | 27  | uint8  | reserved                                                      |
 | 28  | uint32 | byte offset of this edge's shape in the geometry section      |

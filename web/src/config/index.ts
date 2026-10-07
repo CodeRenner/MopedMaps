@@ -93,8 +93,30 @@ export const PLZ_TABLE_URL = './data/plz.json';
 /** Slider ranges for cost = a·time + b·risk·km (+ c·energy in step 6). */
 export const WEIGHT_TIME_RANGE = { min: 0.2, max: 2, step: 0.1, default: 1 } as const;
 export const WEIGHT_RISK_RANGE = { min: 0, max: 3, step: 0.25, default: 0.5 } as const;
+export const WEIGHT_ENERGY_RANGE = { min: 0, max: 3, step: 0.25, default: 0 } as const;
 /** Route risk classification by length-weighted mean risk score. */
 export const RISK_CLASS_LOW_MAX = 60;
 export const RISK_CLASS_MEDIUM_MAX = 90;
 /** Delay before rerouting while a slider is being dragged (ms). */
 export const REROUTE_DEBOUNCE_MS = 150;
+
+// --- Energy model (roadmap step 6), see docs/energy-model.md ---------------
+export const GRAVITY = 9.81;
+export const AIR_DENSITY = 1.2; // kg/m³
+/** Vehicle + rider mass (kg). */
+export const ENERGY_MASS_KG = 150;
+/** Rolling resistance coefficient (scooter tyres on asphalt). */
+export const ENERGY_CRR = 0.012;
+/** Drag area Cd·A (m²) of an upright rider on a scooter. */
+export const ENERGY_CDA_M2 = 0.6;
+/** Electric: battery-to-wheel efficiency and share of descent energy recovered. */
+export const ELECTRIC_EFFICIENCY = 0.8;
+export const ELECTRIC_REGEN_SHARE = 0.3;
+/** Combustion: fuel-to-wheel efficiency of a small engine, petrol energy, idle use. */
+export const COMBUSTION_EFFICIENCY = 0.12;
+export const PETROL_WH_PER_L = 8900;
+export const COMBUSTION_IDLE_L_PER_H = 0.25;
+/** Assumed wait per traffic signal for idle fuel (s); matches SIGNAL_PENALTY_S. */
+export const IDLE_S_PER_SIGNAL = 10;
+/** Routing cost per Wh of wheel energy, in seconds (cost = ... + c·energy). */
+export const ENERGY_COST_S_PER_WH = 1;

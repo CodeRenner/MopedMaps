@@ -14,3 +14,5 @@ Record of resolved project decisions. Open questions live in PROGRESS.md.
 | 2026-10-07 | PLZ data      | GeoNames DE postal codes (CC BY 4.0), attribution in UI | user |
 | 2026-10-07 | Basemap       | Start with OpenFreeMap vector style (no key/account), style URL in config; own PMTiles (Protomaps extract, likely on Cloudflare R2 because of Pages' 25 MiB file limit) later for true offline | user |
 | 2026-10-07 | Bundler       | Vite (MIT, dev-only)                                 | user |
+| 2026-10-07 | Elevation     | Copernicus DEM GLO-30 (AWS open data bucket `copernicus-dem-30m`), attribution in UI and docs | user |
+| 2026-10-07 | Raster lib    | tifffile + numpy (BSD), no GDAL                      | user |

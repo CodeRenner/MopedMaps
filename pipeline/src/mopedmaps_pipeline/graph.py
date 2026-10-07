@@ -29,6 +29,8 @@ class Edge:
     cycleway: bool
     curvature_deg: float  # sum of heading changes along the geometry
     signals: int  # traffic signals on the edge, excluding the start node
+    ascent_m: float = 0.0  # climb along from -> to (filled by elevation.py)
+    descent_m: float = 0.0  # drop along from -> to
 
 
 @dataclass

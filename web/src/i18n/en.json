@@ -36,5 +36,9 @@
   "weights.hint": "More safety avoids fast, unlit roads without cycle lanes – routes often get a bit longer.",
   "route.risk.low": "low risk",
   "route.risk.medium": "medium risk",
-  "route.risk.high": "high risk"
+  "route.risk.high": "high risk",
+  "weights.energy": "Energy weight: {value}",
+  "route.energy.electricWh": "↑ {climb} m · {wh} Wh",
+  "route.energy.electricKwh": "↑ {climb} m · {kwh} kWh",
+  "route.energy.combustion": "↑ {climb} m · {litres} l"
 }

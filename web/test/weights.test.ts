@@ -1,3 +1,5 @@
+import { appAttributions } from '../src/ui/attribution';
+import { energySummary } from '../src/ui/messages';
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_UI_WEIGHTS, loadWeights, normalizeWeights, riskClass, saveWeights, WEIGHTS_STORAGE_KEY } from '../src/ui/weights';
 
@@ -8,7 +10,7 @@ const mem = () => {
 
 describe('weights', () => {
   it('clamps to slider ranges and keeps energy at 0', () => {
-    expect(normalizeWeights({ time: 99, risk: -1, energy: 5 })).toEqual({ time: 2, risk: 0, energy: 0 });
+    expect(normalizeWeights({ time: 99, risk: -1, energy: 5 })).toEqual({ time: 2, risk: 0, energy: 3 });
     expect(normalizeWeights({})).toEqual(DEFAULT_UI_WEIGHTS);
     expect(normalizeWeights({ time: Number.NaN })).toEqual(DEFAULT_UI_WEIGHTS);
   });
@@ -27,5 +29,23 @@ describe('weights', () => {
     expect(riskClass(60)).toBe('low');
     expect(riskClass(75)).toBe('medium');
     expect(riskClass(173)).toBe('high');
+  });
+});
+
+
+describe('energy UI helpers', () => {
+  it('formats electric and combustion summaries', () => {
+    expect(energySummary('de', 'electric', 523.4, 0, 12.4)).toEqual({ key: 'route.energy.electricWh', params: { climb: '12', wh: '523' } });
+    expect(energySummary('de', 'electric', 1520, 0, 3)).toEqual({ key: 'route.energy.electricKwh', params: { climb: '3', kwh: '1,52' } });
+    expect(energySummary('en', 'combustion', 3600, 0.4049, 0)).toEqual({ key: 'route.energy.combustion', params: { climb: '0', litres: '0.40' } });
+  });
+
+  it('energy weight is clamped and persisted', () => {
+    expect(normalizeWeights({ energy: 9 }).energy).toBe(3);
+    expect(DEFAULT_UI_WEIGHTS.energy).toBe(0);
+  });
+
+  it('attributes the elevation source', () => {
+    expect(appAttributions().join(' ')).toMatch(/Copernicus DEM GLO-30/);
   });
 });

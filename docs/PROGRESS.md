@@ -5,9 +5,9 @@ first, does ONE small runnable increment, then appends an entry below and
 updates "Current state". Newest entries at the bottom.
 
 ## Current state
-- Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 done (PR #5, branch `safety/risk-score`); 6 (elevation + energy) — next
-- Next task: UI — energy slider c, summary shows Wh or litres + climb, battery/tank range hint, elevation attribution
-- Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` (local, stacked on #5) = step 6
+- Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 done (PR #5, branch `safety/risk-score`); 6 done (PR #6, branch `energy/elevation`); 7 (PWA offline + installability) — next
+- Next task: step 7 — PWA: web manifest + icons, service worker caching app shell + plz.json, offline basemap fallback
+- Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5)
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
   not installed globally (use a venv for Python tooling).
@@ -55,12 +55,19 @@ updates "Current state". Newest entries at the bottom.
 - [x] UI: sliders a/b (c later in step 6), instant reroute; route summary shows risk indicator
 - [x] Browser check, then PR #5
 
+## Later / improvements (found during checks)
+- [ ] Snap start/target only to the largest connected component (taps near the data border hit isolated fragments -> "unreachable")
+- [ ] Range hint: battery capacity / tank size in the profile, show remaining range
+- [ ] Route climb still noisy on flat routes (Bremen centre -> Osterholz: 53 m over 13 km); tune smoothing or add per-route hysteresis
+- [ ] Risk tuning: junction density dominates on short urban edges
+- [ ] Memory-efficient band-wise build for all of Germany (needed before step 8)
+
 ## Task backlog (step 6)
 - [x] DEM: download GLO-30 tiles (N52/N53 × E008/E009), sampler with bilinear interpolation, tests on synthetic raster
 - [x] Pipeline: ascent/descent per edge (graph-smoothed node heights, see docs/elevation.md) into bytes 22–25; rebuild
 - [x] Router: energy model — electric Wh/km by speed + gradient, combustion l/100km; c·energy in cost; documented constants
-- [ ] UI: energy slider c, summary shows Wh or litres + range hint; elevation attribution
-- [ ] Browser check, then PR #6
+- [x] UI: energy slider c, summary shows Wh or litres + range hint; elevation attribution
+- [x] Browser check, then PR #6
 
 ## Log
 ### 2026-10-06 — Iteration 0 (setup)
@@ -515,3 +522,20 @@ updates "Current state". Newest entries at the bottom.
 - Tests: tsc clean; vitest 100 passed (incl. A* == Dijkstra with c > 0).
 - Commit: 98f7076
 - Next: energy UI.
+
+### 2026-10-07 — Iteration 30 (energy UI) — step 6 complete
+- What: `WEIGHT_ENERGY_RANGE` (0–3, default 0) + third slider "Gewicht
+  Energie"; `energySummary` (pure, tested) -> summary "↑ 53 m · 0,16 l" or
+  "↑ 50 m · 345 Wh" / kWh ≥ 1000 Wh; elevation attribution (Copernicus
+  GLO-30) in the map footer; i18n de/en.
+- Browser check (Bremen tiles built with --dem):
+  - Centre -> Osterholz, 25 km/h combustion: "13,4 km · 42 min · mittleres
+    Risiko · ↑ 53 m · 0,16 l" (1.2 l/100 km).
+  - Same, 45 km/h electric: "13,0 km · 31 min · … · ↑ 50 m · 345 Wh"
+    (26.5 Wh/km, matches model).
+  - Taps in Lower Saxony (no local graph) gave correct "Ziel liegt zu weit…"
+    / "Keine erlaubte Route…" messages; the latter came from snapping to an
+    isolated border fragment -> improvement noted.
+- Tests: tsc clean; vitest 103 passed.
+- Commit: b7d89b9
+- Next: push + PR #6, then step 7.

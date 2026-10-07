@@ -986,3 +986,11 @@ next monthly/manual build after `feature/elevation-profile` is merged; the clien
 PRs #11 (elevation profile), #12 (route chart), #13 (range) merged into main in that order (each retargeted to main
 before its base was merged; branches deleted afterwards). CI green; Deploy run 37655082851 succeeded, live bundle
 contains the chart and range strings. Live tiles are still format v1 until the next "Graph build" run.
+
+### Note — Safari SW fix + Germany v2 tiles live (2026-10-07)
+- iPhone Safari: "Response served by service worker has redirections". Cause: Cloudflare Pages 308 /index.html -> /,
+  `cache.addAll` cached the redirected shell. Fix PR #14 (merged): `withoutRedirect()` on precache and on serving.
+- Graph build run 37658972444 (europe/germany, v2 with node heights) succeeded: 844 tiles, 534 MB gzip.
+- Lesson: the graph build's deploy job builds the app from the commit the build was dispatched on, so it
+  overwrote the fix; re-ran Deploy on main (b63bd68) afterwards. Live now: v2 tiles + SW fix.
+  Improvement idea: let graph-build deploy check out `main` instead of the dispatch commit.

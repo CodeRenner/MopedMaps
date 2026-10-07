@@ -5,9 +5,9 @@ first, does ONE small runnable increment, then appends an entry below and
 updates "Current state". Newest entries at the bottom.
 
 ## Current state
-- Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 (frontend) — next
-- Next task: size budget + older-iPhone sanity check (last item of step 4), then push + PR #4
-- Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` (local, stacked on #3) = step 4
+- Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 (safety score + sliders) — next
+- Next task: step 5 — risk score in the pipeline (fills the reserved edge byte) + sliders a/b/c in the UI
+- Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3)
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
   not installed globally (use a venv for Python tooling).
@@ -45,8 +45,8 @@ updates "Current state". Newest entries at the bottom.
 - [x] PLZ input + radius slider -> loadArea with progress; area circle on map
 - [x] Tap to set start/destination, route request via WorkerRouterPort, draw route + summary
 - [x] Profile settings (vmax presets 25/45 + free input, drive type), persisted locally
-- [ ] Mobile UX: collapse area panel after loading, shorter attribution on phones
-- [ ] Size budget check (bundle size) and older-iPhone sanity (ES2020, no heavy deps)
+- [x] Mobile UX: collapse area panel after loading (attribution kept fully visible for ODbL compliance)
+- [x] Size budget check (bundle size) and older-iPhone sanity (ES2020, no heavy deps)
 
 ## Log
 ### 2026-10-06 — Iteration 0 (setup)
@@ -380,3 +380,17 @@ updates "Current state". Newest entries at the bottom.
   the circle have no graph yet.
 - Tests: vitest 86 passed.
 - Commit: 451e7be
+
+### 2026-10-07 — Iteration 22 (mobile UX, startup, budget) — step 4 complete
+- What: area panel collapses to the status line + "Ändern" button after an
+  area is loaded; compact padding under 480 px; app UI starts on
+  `style.load` (panel visible after ~2 s instead of ~13 s). Attribution
+  left fully expanded on purpose (OSM attribution must stay visible).
+- Verified in browser at 375x812: panel collapse, persisted 25 km/h
+  profile survived reload, area load PLZ 28195 / 75 km ("1,3 MB").
+- `docs/frontend-budget.md`: first load ≈ 606 KB gzip (MapLibre ≈ 95 % of
+  JS; our router worker 3 KB); WebGL2 + module workers -> iOS 15+;
+  offline start not possible yet (basemap style from network) -> step 7.
+- Tests: vitest 86 passed; build OK.
+- Commits: 15b65c3 (+ this log/doc commit)
+- Next: push `ui/map-frontend`, open PR #4; then step 5.

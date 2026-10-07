@@ -103,8 +103,16 @@ def build_streaming(
     tile_size: float = config.TILE_SIZE_DEG,
     dem_dir: Path | None = None,
     workdir: Path | None = None,
+    node_index: str = "mem",
+    delete_source: bool = False,
 ) -> dict:
-    """Streaming build with bounded memory (country-sized extracts)."""
+    """Streaming build with bounded memory (country-sized extracts).
+
+    `node_index="mem"` keeps the node location index in RAM (~1 GB for
+    Germany after the pre-filter; the on-disk index made the edge pass
+    I/O-bound). `delete_source` removes the input PBF after the pre-filter to
+    save disk on CI runners.
+    """
     from mopedmaps_pipeline import streaming as st
 
     clock = _Clock()
@@ -112,13 +120,14 @@ def build_streaming(
         tmp = Path(tmp_name)
         filtered = tmp / "filtered.osm.pbf"
         st.prefilter(src, filtered)
+        if delete_source:
+            src.unlink()
         clock.lap("prefilter")
         junctions = st.junction_ids(filtered)
         clock.lap("junctions")
         spool = st.TileSpool(tmp / "spool")
-        stats = st.stream_edges(
-            filtered, junctions, spool, f"sparse_file_array,{tmp / 'nodes.idx'}", tile_size
-        )
+        store = "flex_mem" if node_index == "mem" else f"sparse_file_array,{tmp / 'nodes.idx'}"
+        stats = st.stream_edges(filtered, junctions, spool, store, tile_size)
         del junctions
         clock.lap("edges")
         heights = None
@@ -179,6 +188,14 @@ def main(argv: list[str] | None = None) -> int:
         "--streaming", action="store_true", help="bounded-memory build for large extracts"
     )
     b.add_argument("--workdir", type=Path, help="where to put temp files (streaming mode)")
+    b.add_argument(
+        "--node-index", choices=["mem", "disk"], default="mem",
+        help="node location index in RAM (default) or on disk (streaming mode)",
+    )  # fmt: skip
+    b.add_argument(
+        "--delete-source", action="store_true",
+        help="delete the input file after the pre-filter (streaming mode, saves disk on CI)",
+    )  # fmt: skip
     z = sub.add_parser("plz", help="GeoNames DE.zip -> bundled PLZ table (JSON)")
     z.add_argument("input", type=Path, help="GeoNames DE.zip")
     z.add_argument("output", type=Path, help="output .json")
@@ -193,7 +210,10 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.streaming:
-        m = build_streaming(args.input, args.output, args.tile_size, args.dem, args.workdir)
+        m = build_streaming(
+            args.input, args.output, args.tile_size, args.dem, args.workdir,
+            args.node_index, args.delete_source,
+        )  # fmt: skip
     else:
         m = build(args.input, args.output, args.tile_size, args.dem)
     if args.verify:

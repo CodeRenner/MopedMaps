@@ -40,3 +40,15 @@ def test_streaming_build_writes_identical_tiles(tmp_path):
     for k in ("prefilter_s", "junctions_s", "edges_s", "elevation_s"):
         assert k in b["totals"]
     assert not list(tmp_path.glob("mmg-build-*"))  # temp dir cleaned up
+
+
+def test_streaming_disk_index_and_delete_source(tmp_path):
+    src = tmp_path / "copy.osm"
+    src.write_bytes(FIXTURE.read_bytes())
+    mem, disk = tmp_path / "mem", tmp_path / "disk"
+    assert main(["build", str(FIXTURE), str(mem), "--streaming", "--workdir", str(tmp_path)]) == 0
+    args = ["build", str(src), str(disk), "--streaming", "--node-index", "disk", "--delete-source"]
+    assert main([*args, "--workdir", str(tmp_path)]) == 0
+    assert not src.exists()
+    for f in mem.glob("*.mmg"):
+        assert (disk / f.name).read_bytes() == f.read_bytes()

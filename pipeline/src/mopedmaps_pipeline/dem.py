@@ -9,7 +9,10 @@ European Union and ESA (attribution required).
 """
 
 import math
+import urllib.error
+import urllib.request
 import zlib
+from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
@@ -115,3 +118,55 @@ class Dem:
             out[group] = tile.sample_array(lats[group], lons[group])
             del tile  # not cached: bounded memory
         return out
+
+
+# --- Fetching tiles (used by the graph-build Action) -------------------------------
+
+DEM_BASE_URL = "https://copernicus-dem-30m.s3.amazonaws.com"
+# Germany incl. border area: 47-55 N, 5-15 E -> 8 x 11 one-degree tiles.
+GERMANY_BBOX = (47, 5, 55, 16)  # south, west, north (excl.), east (excl.)
+
+
+def tiles_for_bbox(south: int, west: int, north: int, east: int) -> list[tuple[int, int]]:
+    """(lat_floor, lon_floor) of all 1° tiles with south <= lat < north, west <= lon < east."""
+    return [(lat, lon) for lat in range(south, north) for lon in range(west, east)]
+
+
+def tile_url(lat: int, lon: int) -> str:
+    stem = tile_filename(lat, lon).removesuffix(".tif")
+    return f"{DEM_BASE_URL}/{stem}/{stem}.tif"
+
+
+Fetcher = Callable[[str], bytes | None]  # returns None for "no such tile" (sea)
+
+
+def _urllib_fetch(url: str) -> bytes | None:
+    try:
+        with urllib.request.urlopen(url, timeout=120) as r:  # noqa: S310 (fixed https URL)
+            return r.read()
+    except urllib.error.HTTPError as e:
+        if e.code in (403, 404):  # S3 answers 403/404 for tiles over the sea
+            return None
+        raise
+
+
+def fetch_tiles(
+    tiles: list[tuple[int, int]], out: Path, fetch: Fetcher = _urllib_fetch
+) -> dict[str, int]:
+    """Download missing tiles into `out` (already present files are kept)."""
+    out.mkdir(parents=True, exist_ok=True)
+    stats = {"downloaded": 0, "present": 0, "missing": 0}
+    for lat, lon in tiles:
+        path = out / tile_filename(lat, lon)
+        if path.exists():
+            stats["present"] += 1
+            continue
+        data = fetch(tile_url(lat, lon))
+        if data is None:
+            stats["missing"] += 1
+            continue
+        tmp = path.with_suffix(".part")
+        tmp.write_bytes(data)
+        tmp.rename(path)  # atomic: no half-written tiles after an interruption
+        stats["downloaded"] += 1
+    return stats

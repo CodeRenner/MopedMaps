@@ -79,3 +79,32 @@ def test_real_glo30_tiles_are_plausible():
     hills = dem.elevation(52.95, 8.15)  # Wildeshauser Geest, higher ground
     assert hills > bremen
     assert dem.elevation(52.5, 9.5) == dem.elevation(52.5, 9.5)  # finite, N52/E009 tile
+
+
+def test_tiles_for_bbox_and_urls():
+    from mopedmaps_pipeline.dem import GERMANY_BBOX, tile_url, tiles_for_bbox
+
+    assert tiles_for_bbox(52, 8, 54, 10) == [(52, 8), (52, 9), (53, 8), (53, 9)]
+    assert len(tiles_for_bbox(*GERMANY_BBOX)) == 88
+    assert tile_url(53, 8) == (
+        "https://copernicus-dem-30m.s3.amazonaws.com/"
+        "Copernicus_DSM_COG_10_N53_00_E008_00_DEM/Copernicus_DSM_COG_10_N53_00_E008_00_DEM.tif"
+    )
+
+
+def test_fetch_tiles_skips_present_and_sea(tmp_path):
+    from mopedmaps_pipeline.dem import fetch_tiles
+
+    (tmp_path / tile_filename(52, 8)).write_bytes(b"old")
+    calls = []
+
+    def fake(url):
+        calls.append(url)
+        return None if "E009" in url else b"tif"
+
+    stats = fetch_tiles([(52, 8), (53, 8), (53, 9)], tmp_path, fake)
+    assert stats == {"downloaded": 1, "present": 1, "missing": 1}
+    assert (tmp_path / tile_filename(52, 8)).read_bytes() == b"old"
+    assert (tmp_path / tile_filename(53, 8)).read_bytes() == b"tif"
+    assert len(calls) == 2
+    assert not list(tmp_path.glob("*.part"))

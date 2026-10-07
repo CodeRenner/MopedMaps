@@ -199,7 +199,20 @@ def main(argv: list[str] | None = None) -> int:
     z = sub.add_parser("plz", help="GeoNames DE.zip -> bundled PLZ table (JSON)")
     z.add_argument("input", type=Path, help="GeoNames DE.zip")
     z.add_argument("output", type=Path, help="output .json")
+    d = sub.add_parser("dem-fetch", help="download Copernicus GLO-30 tiles for a bounding box")
+    d.add_argument("output", type=Path, help="directory for the .tif tiles")
+    d.add_argument(
+        "--bbox", type=int, nargs=4, metavar=("SOUTH", "WEST", "NORTH", "EAST"),
+        help="integer degrees, north/east exclusive (default: Germany 47 5 55 16)",
+    )  # fmt: skip
     args = p.parse_args(argv)
+
+    if args.cmd == "dem-fetch":
+        from mopedmaps_pipeline.dem import GERMANY_BBOX, fetch_tiles, tiles_for_bbox
+
+        stats = fetch_tiles(tiles_for_bbox(*(args.bbox or GERMANY_BBOX)), args.output)
+        print(json.dumps(stats))
+        return 0
 
     if args.cmd == "plz":
         from mopedmaps_pipeline.plz import aggregate, read_geonames_zip, write_table

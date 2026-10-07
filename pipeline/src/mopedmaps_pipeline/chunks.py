@@ -152,8 +152,8 @@ def split_into_chunks(graph: Graph, size: float = config.TILE_SIZE_DEG) -> dict[
                 min(e.signals, 255),
                 round(e.length_m * 10),  # decimetres
                 min(round(e.curvature_deg), 0xFFFF),
-                0,  # ascent_dm  (reserved, roadmap step 6)
-                0,  # descent_dm (reserved, roadmap step 6)
+                min(round(e.ascent_m * 10), 0xFFFF),  # ascent forward, decimetres
+                min(round(e.descent_m * 10), 0xFFFF),  # descent forward, decimetres
                 max(1, risk_score(e)),  # risk 1..255 (0 = not computed)
                 0,  # reserved
                 offset,

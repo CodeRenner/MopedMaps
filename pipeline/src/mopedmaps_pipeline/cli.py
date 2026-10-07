@@ -13,7 +13,9 @@ from mopedmaps_pipeline.chunks import HEADER, VERSION, decode_chunk, split_into_
 from mopedmaps_pipeline.graph import build_graph
 
 
-def build(src: Path, out: Path, tile_size: float = config.TILE_SIZE_DEG) -> dict:
+def build(
+    src: Path, out: Path, tile_size: float = config.TILE_SIZE_DEG, dem_dir: Path | None = None
+) -> dict:
     """Build tiles + manifest.json from an OSM file. Returns the manifest."""
     from mopedmaps_pipeline.osm_pbf import read_osm  # lazy: needs pyosmium
 
@@ -22,6 +24,13 @@ def build(src: Path, out: Path, tile_size: float = config.TILE_SIZE_DEG) -> dict
     t_read = time.monotonic() - t0
     graph = build_graph(data)
     t_graph = time.monotonic() - t0 - t_read
+    no_dem = len(graph.edges)
+    if dem_dir is not None:
+        from mopedmaps_pipeline.dem import Dem
+        from mopedmaps_pipeline.elevation import apply_elevation
+
+        graph, no_dem = apply_elevation(graph, Dem(dem_dir))
+    t_elev = time.monotonic() - t0 - t_read - t_graph
     chunks = split_into_chunks(graph, tile_size)
 
     out.mkdir(parents=True, exist_ok=True)
@@ -53,6 +62,8 @@ def build(src: Path, out: Path, tile_size: float = config.TILE_SIZE_DEG) -> dict
             "max_tile_bytes": max((t["bytes"] for t in tiles.values()), default=0),
             "read_s": round(t_read, 1),
             "graph_s": round(t_graph, 1),
+            "elevation_s": round(t_elev, 1),
+            "edges_without_elevation": no_dem,
         },
         "tiles": tiles,
     }
@@ -73,6 +84,7 @@ def main(argv: list[str] | None = None) -> int:
     b.add_argument("output", type=Path, help="output directory for tiles")
     b.add_argument("--tile-size", type=float, default=config.TILE_SIZE_DEG)
     b.add_argument("--verify", action="store_true", help="decode every tile afterwards")
+    b.add_argument("--dem", type=Path, help="directory with Copernicus GLO-30 tiles")
     z = sub.add_parser("plz", help="GeoNames DE.zip -> bundled PLZ table (JSON)")
     z.add_argument("input", type=Path, help="GeoNames DE.zip")
     z.add_argument("output", type=Path, help="output .json")
@@ -86,7 +98,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{len(rows)} PLZ -> {args.output} ({args.output.stat().st_size} bytes)")
         return 0
 
-    m = build(args.input, args.output, args.tile_size)
+    m = build(args.input, args.output, args.tile_size, args.dem)
     if args.verify:
         _verify(args.output)
     json.dump(m["totals"], sys.stdout, indent=1)

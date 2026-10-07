@@ -6,7 +6,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 done (PR #5, branch `safety/risk-score`); 6 (elevation + energy) — next
-- Next task: step 6 — download GLO-30 tiles for Bremen area, DEM sampler (tifffile+numpy), ascent/descent per edge
+- Next task: ascent/descent per edge (sample every ~30 m, smooth DSM noise), write bytes 22–25, rebuild
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` (local, stacked on #5) = step 6
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
@@ -56,8 +56,8 @@ updates "Current state". Newest entries at the bottom.
 - [x] Browser check, then PR #5
 
 ## Task backlog (step 6)
-- [ ] DEM: download GLO-30 tiles (N52/N53 × E008/E009), sampler with bilinear interpolation, tests on synthetic raster
-- [ ] Pipeline: ascent/descent per edge (sample along geometry every ~30 m, light smoothing) into bytes 22–25; rebuild
+- [x] DEM: download GLO-30 tiles (N52/N53 × E008/E009), sampler with bilinear interpolation, tests on synthetic raster
+- [ ] Pipeline: ascent/descent per edge (sample along geometry every ~30 m; smoothing needed: GLO-30 is a DSM incl. buildings/trees; ignore small wiggles via hysteresis threshold) into bytes 22–25; rebuild
 - [ ] Router: energy model — electric Wh/km by speed + gradient, combustion l/100km; c·energy in cost; documented constants
 - [ ] UI: energy slider c, summary shows Wh or litres + range hint; elevation attribution
 - [ ] Browser check, then PR #6
@@ -469,3 +469,18 @@ updates "Current state". Newest entries at the bottom.
 - User decided: elevation = Copernicus GLO-30 (AWS open data), raster lib =
   tifffile + numpy. Recorded in DECISIONS.md; branch `energy/elevation`;
   step 6 backlog added. Download of the 4 Bremen-area tiles approved.
+
+### 2026-10-07 — Iteration 27 (DEM reader)
+- Downloaded 4 GLO-30 tiles (N52/N53 × E008/E009, 25–33 MB each, 120 MB)
+  to `data/dem/` (gitignored). tifffile 2026.9 + numpy 2.5 (BSD) added.
+- What: `dem.py` — `DemTile` reads GeoTIFF tags (pixel scale, tiepoint,
+  pixel-is-point), decodes deflate tiles and undoes TIFF predictor 3 in
+  numpy (`undo_float_predictor`; avoids the heavy `imagecodecs` dep),
+  bilinear `sample` with edge clamping; `Dem` lazily loads 1° tiles by
+  Copernicus file name, NaN outside coverage. Attribution string included.
+- Finding: GLO-30 is a *surface* model — Bremen Marktplatz 11.7 m, but a
+  point near Hbf reads 25.4 m (buildings). Edge gradients need smoothing.
+- Tests: ruff clean; pytest 66 passed (predictor round-trip vs reference
+  encoder, synthetic GeoTIFF bilinear/clamp/NaN, real-tile plausibility).
+- Commit: d844275
+- Next: ascent/descent per edge.

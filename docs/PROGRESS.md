@@ -8,8 +8,7 @@ updates "Current state". Newest entries at the bottom.
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 (frontend) — next
 - Next task: size budget + older-iPhone sanity check (last item of step 4), then push + PR #4
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` (local, stacked on #3) = step 4
-- Blockers / questions for the user:
-  - In-app browser preview: tab stays in "Policy check in progress" and navigation to http://localhost:5173 is denied — needs the user to allow it in the Browser pane (visual checks skipped until then)
+- Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
   not installed globally (use a venv for Python tooling).
   Node 22 in ~/.local/node — prefix commands with `export PATH="$HOME/.local/node/bin:$PATH"`
@@ -46,6 +45,7 @@ updates "Current state". Newest entries at the bottom.
 - [x] PLZ input + radius slider -> loadArea with progress; area circle on map
 - [x] Tap to set start/destination, route request via WorkerRouterPort, draw route + summary
 - [x] Profile settings (vmax presets 25/45 + free input, drive type), persisted locally
+- [ ] Mobile UX: collapse area panel after loading, shorter attribution on phones
 - [ ] Size budget check (bundle size) and older-iPhone sanity (ES2020, no heavy deps)
 
 ## Log
@@ -362,3 +362,21 @@ updates "Current state". Newest entries at the bottom.
 - Tests: tsc clean; vitest 86 passed. Build 292 KB gzip.
 - Commit: 88f0c90
 - Next: size budget check, then step 4 PR.
+
+### 2026-10-07 — Iteration 21b (first visual check + fix)
+- User started localhost; Browser pane navigation now allowed.
+- Bug found: map stayed blank — "Worker failed to load" from MapLibre.
+  Cause: MapLibre 6 loads `maplibre-gl-worker.mjs` relative to its module;
+  Vite dev pre-bundling relocates it. Fix: `setWorkerUrl(...?url)` in
+  `ui/map.ts` (also emits the worker as its own asset in builds, 508 KB).
+- Verified in the browser (desktop 800x600 + mobile 375x812):
+  map + OpenFreeMap style + attributions OK; PLZ 28195, radius 25 ->
+  "25 km Umkreis geladen · Download ca. 1,1 MB", dashed circle + fitBounds;
+  two taps in Bremen -> route line, "12,6 km · 30 min" (45 km/h);
+  switching to 25 km/h preset rerouted -> "12,4 km · 41 min".
+- UX notes (added to backlog): on phones the expanded panels cover about half
+  the map and the attribution wraps to 3 lines.
+- Data note: local test graph is state Bremen only; Lower Saxony towns in
+  the circle have no graph yet.
+- Tests: vitest 86 passed.
+- Commit: 451e7be

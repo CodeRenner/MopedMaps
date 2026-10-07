@@ -20,6 +20,7 @@ on:
 
 permissions:
   contents: read
+  actions: read # the called deploy workflow downloads the tiles artifact
 
 concurrency:
   group: graph-build

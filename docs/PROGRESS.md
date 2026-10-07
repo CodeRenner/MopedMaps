@@ -5,9 +5,9 @@ first, does ONE small runnable increment, then appends an entry below and
 updates "Current state". Newest entries at the bottom.
 
 ## Current state
-- Roadmap step: 1 done (except band-wise Germany build); 2 done (local branch `router/astar`, PR pending user OK); 3 (PLZ + chunk loading + IndexedDB) — starting
+- Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 (PLZ + chunk loading + IndexedDB) — starting
 - Next task: PLZ lookup data: pipeline script that builds a compact PLZ -> centroid table from GeoNames DE postal codes (CC BY 4.0)
-- Branches: `pipeline/graph-chunks` = PR #1 (step 1, pushed). `router/astar` (local, based on it) = step 2 work
+- Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` (local, stacked on #2) = step 3 work
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
   not installed globally (use a venv for Python tooling).
@@ -33,7 +33,7 @@ updates "Current state". Newest entries at the bottom.
 - [x] Worker wrapper (no DOM in router core)
 
 ## Task backlog (step 3)
-- [ ] PLZ table: pipeline script GeoNames DE.zip -> compact `plz.json`/binary (needs download OK — GeoNames, CC BY 4.0, attribution)
+- [ ] PLZ table: pipeline script GeoNames DE.zip -> compact `plz.json`/binary (download approved 2026-10-07)
 - [ ] PLZ lookup module in web (exact + prefix search), tests
 - [ ] Tiles-in-radius computation (circle vs tile rectangles), uses manifest
 - [ ] Chunk loader: fetch with retry, IndexedDB cache keyed by build version, re-fetch when evicted (iOS)
@@ -198,3 +198,11 @@ updates "Current state". Newest entries at the bottom.
 - Commit: ae75e69
 - Next: roadmap step 3 (PLZ + chunk loading). Step 2 PR: asking user
   whether to push `router/astar` and open PR #2 (base: PR #1 branch).
+
+### 2026-10-07 — Iteration 11b (PR #2)
+- User approved: push + PR for step 2, and from now on push/open PRs
+  automatically when a roadmap step completes (recorded in DECISIONS.md).
+  Also approved GeoNames DE.zip download.
+- Opened https://github.com/CodeRenner/MopedMaps/pull/2 (base
+  `pipeline/graph-chunks`). Created local branch `data/plz-chunks` for step 3.
+- Next: PLZ table script.

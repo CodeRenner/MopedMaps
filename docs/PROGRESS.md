@@ -6,7 +6,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 done (PR #5, branch `safety/risk-score`); 6 done (PR #6, branch `energy/elevation`); 7 done (PR #7, branch `pwa/offline`); 8 (docs, licence, graph-build Action) — next
-- Next task: compact binary spool rows (Germany run with in-memory index is measuring in the background)
+- Next task: evaluate the Germany run with in-memory index; then graph-build GitHub Action (download, DEM tiles, streaming build, Cloudflare Pages deploy)
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5). `pwa/offline` = PR #7 (step 7, stacked on #6). `docs/release` (local, stacked on #7) = step 8
 - Blockers / questions for the user (asked 2026-10-07, not blocking current work):
   - ~~Cloudflare secrets~~ done 2026-10-07 (both present in repo secrets)
@@ -82,7 +82,7 @@ updates "Current state". Newest entries at the bottom.
   - [x] Prefilter memory: measured on Germany — 1.14 GB peak (bounded), keep BackReferenceWriter
   - [x] Measure on all of Germany: 103 min, peak 1.58 GB, 844 tiles, 903 MB / 490 MB gzip, max tile 4.87 MB
   - [x] Faster edge pass: node index in RAM (`flex_mem`, ~1 GB) instead of on-disk sparse_file_array (pass was I/O-bound, CPU 32 %)
-  - [ ] Compact binary spool rows instead of pickled Edge objects (spool ≥ 4 GB)
+  - [x] Compact binary spool rows instead of pickled Edge objects (Bremen 14 -> 9.4 MB)
   - [x] `--delete-source` to free 4.5 GB after the pre-filter (e.g. Niedersachsen or Hessen): time, peak RAM, disk
 - [ ] Monthly graph-build Action (Geofabrik Germany + GLO-30 tiles) + deploy to Cloudflare Pages — needs user to create CF account/API token secrets (ask when ready)
 
@@ -798,3 +798,14 @@ updates "Current state". Newest entries at the bottom.
 - Bremen too small to show a speed difference (1.5 s either way); a full
   Germany run with the in-memory index is running in the background.
 - Tests: pytest CLI 4 passed. Commit: 2f74d62
+
+### 2026-10-07 — Iteration 46 (binary spool)
+- What: `TileSpool` now writes fixed-layout struct rows (`encode_edge` /
+  `_decode_edges`, `<qdd` node rows) to `*.bin` instead of pickled lists;
+  float64 kept so tiles stay byte-identical (int32 e7 would save more but
+  could move points across exact tile borders). `size_bytes()` helper.
+- Bremen spool 14 -> 9.4 MB (-33 %; geometry dominates). All streaming tests
+  incl. Bremen byte-identity pass; codec round-trip test added.
+- Note: the Germany run started before this change uses the old pickle
+  spool (module already loaded) -> its numbers isolate the index change.
+- Commit: b93348a

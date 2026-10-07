@@ -40,5 +40,6 @@
   "weights.energy": "Gewicht Energie: {value}",
   "route.energy.electricWh": "↑ {climb} m · {wh} Wh",
   "route.energy.electricKwh": "↑ {climb} m · {kwh} kWh",
-  "route.energy.combustion": "↑ {climb} m · {litres} l"
+  "route.energy.combustion": "↑ {climb} m · {litres} l",
+  "map.offlineBasemap": "Kartenhintergrund offline nicht verfügbar – Route und Umkreis funktionieren trotzdem."
 }

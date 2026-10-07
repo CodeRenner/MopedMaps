@@ -1,6 +1,8 @@
 import './ui/style.css';
 import { startApp } from './app';
 import { detectLocale, setLocale, t } from './i18n';
+import { BASEMAP_TIMEOUT_MS } from './config';
+import { fallbackStyle } from './ui/basemap';
 import { createMap } from './ui/map';
 
 const locale = detectLocale(navigator.languages ?? [navigator.language]);
@@ -17,6 +19,26 @@ if (mapEl && uiEl) {
   const start = () => startApp(map, uiEl).catch((err) => console.error('startup failed', err));
   if (map.isStyleLoaded()) start();
   else map.once('style.load', start);
+
+  // Fall back to a local style if the basemap style can't load (offline on
+  // first visit, provider down). 'style.load' then fires for the fallback.
+  let usedFallback = false;
+  const useFallback = () => {
+    if (usedFallback || map.isStyleLoaded()) return;
+    usedFallback = true;
+    clearTimeout(timer);
+    document.body.dataset.basemap = 'offline';
+    map.setStyle(fallbackStyle());
+    const note = document.createElement('p');
+    note.className = 'offline-note';
+    note.textContent = t('map.offlineBasemap');
+    document.body.append(note);
+  };
+  const timer = setTimeout(useFallback, BASEMAP_TIMEOUT_MS);
+  map.on('error', () => {
+    if (!map.isStyleLoaded()) useFallback();
+  });
+  map.once('style.load', () => clearTimeout(timer));
 }
 
 // Offline support: only in production builds (dev server serves unbundled modules).

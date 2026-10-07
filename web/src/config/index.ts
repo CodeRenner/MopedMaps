@@ -120,3 +120,5 @@ export const COMBUSTION_IDLE_L_PER_H = 0.25;
 export const IDLE_S_PER_SIGNAL = 10;
 /** Routing cost per Wh of wheel energy, in seconds (cost = ... + c·energy). */
 export const ENERGY_COST_S_PER_WH = 1;
+/** Switch to the built-in fallback style if the basemap style hasn't loaded by then (ms). */
+export const BASEMAP_TIMEOUT_MS = 8000;

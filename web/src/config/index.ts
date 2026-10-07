@@ -126,3 +126,12 @@ export const BASEMAP_TIMEOUT_MS = 8000;
 export const CLIMB_HYSTERESIS_M = 5;
 /** Route chart: elevation line is reduced to about this many points. */
 export const ROUTE_CHART_MAX_POINTS = 300;
+
+// --- Range (step 9), see docs/energy-model.md ------------------------------
+/** Reference trip for calibrating against the user's real consumption: flat, no signals, this speed (capped at vmax). */
+export const RANGE_REFERENCE_SPEED_KMH = 40;
+/** Calibration factor (real / modelled consumption) is clamped to this range. */
+export const RANGE_CALIBRATION_MIN = 0.3;
+export const RANGE_CALIBRATION_MAX = 3;
+/** Default reserve: warn when less than this share of battery/tank is left after the trip. */
+export const RANGE_RESERVE_SHARE = 0.15;

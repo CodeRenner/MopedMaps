@@ -6,7 +6,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 (frontend) — next
-- Next task: step 4 — Vite app shell + MapLibre map with OpenFreeMap style + attribution footer (OSM, GeoNames)
+- Next task: i18n module (de first, en) and move UI strings there; then PLZ panel
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` (local, stacked on #3) = step 4
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
@@ -40,7 +40,7 @@ updates "Current state". Newest entries at the bottom.
 - [x] Wire loader -> worker `load`
 
 ## Task backlog (step 4)
-- [ ] Vite app shell, MapLibre map (OpenFreeMap style from config), attribution (OSM, GeoNames, basemap)
+- [x] Vite app shell, MapLibre map (OpenFreeMap style from config), attribution (OSM, GeoNames, basemap)
 - [ ] i18n module (de first, en), all UI strings via i18n files
 - [ ] PLZ input + radius slider -> loadArea with progress; area circle on map
 - [ ] Tap to set start/destination, route request via WorkerRouterPort, draw route + summary
@@ -288,3 +288,23 @@ updates "Current state". Newest entries at the bottom.
   (base `router/astar`), automatically per DECISIONS.
 - User decided: basemap = OpenFreeMap first, own PMTiles later; bundler = Vite.
   Recorded in DECISIONS.md; step 4 backlog added; branch `ui/map-frontend`.
+
+### 2026-10-07 — Iteration 17 (app shell + map)
+- What: Vite 8 (MIT, dev) + maplibre-gl 6.13 (BSD-3). `index.html`,
+  `src/main.ts`, `src/ui/map.ts` (map with OpenFreeMap "liberty" style from
+  config, compact attribution incl. OSM/ODbL + GeoNames/CC BY 4.0,
+  zoom control), `src/ui/attribution.ts`, config: BASEMAP_STYLE_URL,
+  initial view, GRAPH_BASE_URL, PLZ_TABLE_URL. `vite.config.ts` (ES2020,
+  sourcemaps; vitest config). `.claude/launch.json` for the dev server.
+- Licences (production deps): MIT 11, ISC 8, BSD-3 3, BSD-2 2,
+  MIT-or-Apache 1 (+ our own private package). ISC is permissive and
+  MIT-equivalent -> considered compatible.
+- Bundle: JS 1.04 MB / 281 KB gzip (almost all MapLibre), CSS 11 KB gzip.
+  Warning limit raised to 1200 KB with a comment.
+- Tests: tsc clean; vitest 63 passed (new: attribution + "no OSM tile
+  server" compliance test). `vite build` OK.
+- Visual check: NOT done yet — the in-app preview stayed in "starting" /
+  "Policy check in progress" (probably waiting for user approval). Vite
+  itself starts fine when run directly (HTTP 200).
+- Commit: ac73846
+- Next: i18n.

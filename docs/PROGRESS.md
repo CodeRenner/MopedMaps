@@ -10,7 +10,7 @@ updates "Current state". Newest entries at the bottom.
   - `feature/elevation-profile`: node heights in chunks (format v2) + route climb from profile with hysteresis
   - `feature/route-chart`: line chart speed + elevation over distance
   - `feature/range`: battery/tank capacity + real consumption calibration, range/reserve display
-- Next task: route chart view (SVG, collapsible, readout, i18n) on `feature/route-chart` (branched from `feature/elevation-profile`, PR #11 open)
+- Next task: `feature/range` — profile battery capacity / tank size + optional real consumption (calibration factor)
 - Germany graph (v1) live on mopedmaps.pages.dev since 2026-10-07 (run 37621466950)
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5). `pwa/offline` = PR #7 (step 7, stacked on #6). `docs/release` = PR #8 (step 8, stacked on #7)
 - Blockers / questions for the user (asked 2026-10-07, not blocking current work):
@@ -97,7 +97,7 @@ updates "Current state". Newest entries at the bottom.
 - [x] Router returns route profile (cumulative distance, node heights, per-edge speed); climb in summary from profile with hysteresis (config)
 - [x] Rebuild Bremen tiles + fixtures; check of climb on flat routes -> PR
 - [x] Route chart data model (pure): speed steps, downsampled elevation, ticks, readout, SVG paths
-- [ ] Route chart view: SVG line chart, x = distance, y = speed (km/h) + elevation (m), collapsible panel, touch/hover readout, de/en -> PR
+- [x] Route chart view: SVG line chart, x = distance, y = speed (km/h) + elevation (m), collapsible panel, touch/hover readout, de/en -> PR
 - [ ] Profile: battery capacity (Wh) / tank size (l), optional real consumption (Wh/km or l/100 km) -> model calibration factor
 - [ ] Route summary: share of battery/tank used, remaining range estimate, warning below reserve (config) -> PR
 
@@ -931,3 +931,16 @@ next monthly/manual build after `feature/elevation-profile` is merged; the clien
 - Tests: tsc clean; vitest 130 passed (new test/chartModel.test.ts, 6 tests).
 - Commit: bf8283f
 - Next: SVG view `ui/routeChart.ts` in a collapsible panel with touch/hover readout, de/en strings.
+
+### Iteration 55 — route chart view (2026-10-07)
+- What: `web/src/chart/layout.ts` (pure: fixed 320×150 viewBox, x axis = exact route length with round km ticks,
+  speed axis from 0 on the left, elevation axis on the right, area + line paths, x -> distance) and
+  `web/src/ui/routeChart.ts` (collapsible `<details>` panel under the area panel, hidden without a route,
+  pointer readout "km · km/h · m", legend; "no elevation data" note for v1 tiles). de/en strings, CSS.
+  Fix: `.panel[hidden]` must hide (`.panel {display:grid}` overrode the attribute).
+- Browser check (local Bremen v2 tiles, Bremen centre -> Vegesack, 21.6 km, ↑ 62 m): chart renders speed steps
+  25/30/45 km/h and elevation 5–30 m, hover readout works, no console errors. First version ran the x axis
+  to 30 km; now ends at the route end.
+- Tests: tsc clean; vitest 135 passed (new test/chartLayout.test.ts, 5 tests); vite build ok.
+- Commit: 36da6db; branch pushed, PR opened (stacked on `feature/elevation-profile` / PR #11).
+- Next: `feature/range`.

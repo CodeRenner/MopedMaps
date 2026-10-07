@@ -6,7 +6,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 (PLZ + chunk loading + IndexedDB) — starting
-- Next task: tiles-in-radius computation (circle vs tile rectangles, filtered by manifest)
+- Next task: chunk loader (fetch + retry, IndexedDB cache keyed by build id, re-fetch when evicted), with fake-indexeddb in tests
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` (local, stacked on #2) = step 3 work
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
@@ -35,7 +35,7 @@ updates "Current state". Newest entries at the bottom.
 ## Task backlog (step 3)
 - [x] PLZ table: pipeline script GeoNames DE.zip -> compact `plz.json`/binary (download approved 2026-10-07)
 - [x] PLZ lookup module in web (exact + prefix search), tests
-- [ ] Tiles-in-radius computation (circle vs tile rectangles), uses manifest
+- [x] Tiles-in-radius computation (circle vs tile rectangles), uses manifest
 - [ ] Chunk loader: fetch with retry, IndexedDB cache keyed by build version, re-fetch when evicted (iOS)
 - [ ] Wire loader -> worker `load`
 
@@ -226,3 +226,17 @@ updates "Current state". Newest entries at the bottom.
   entries, attribution, spot checks, all coords inside DE bbox).
 - Commit: 8983b16
 - Next: tiles in radius.
+
+### 2026-10-07 — Iteration 14 (tiles in radius)
+- What: `web/src/data/manifest.ts` (types, `parseManifest`, `buildId` for
+  cache invalidation) and `web/src/location/tiles.ts` (`tilesInRadius`:
+  bounding box then closest-point-of-rectangle haversine test;
+  `planTiles`: filter by manifest, sort nearest first, raw/gzip totals for
+  a download-size hint in the UI).
+- Tests: property test (2000 random points within radius always covered;
+  every returned tile actually within radius), monotonic in radius, 75 km
+  around Bremen in 40–90 tiles. tsc clean; vitest 51 passed.
+- Hiccup: an ad-hoc vitest run with `--root /` scanned the whole disk and was
+  stopped; no repo impact.
+- Commit: 3668518
+- Next: chunk loader + IndexedDB.

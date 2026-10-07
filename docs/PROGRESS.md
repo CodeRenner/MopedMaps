@@ -10,7 +10,7 @@ updates "Current state". Newest entries at the bottom.
   - `feature/elevation-profile`: node heights in chunks (format v2) + route climb from profile with hysteresis
   - `feature/route-chart`: line chart speed + elevation over distance
   - `feature/range`: battery/tank capacity + real consumption calibration, range/reserve display
-- Next task: `feature/range` — profile battery capacity / tank size + optional real consumption (calibration factor)
+- Next task: profile panel inputs for capacity + real consumption on `feature/range` (stacked on `feature/route-chart`, PR #12)
 - Germany graph (v1) live on mopedmaps.pages.dev since 2026-10-07 (run 37621466950)
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5). `pwa/offline` = PR #7 (step 7, stacked on #6). `docs/release` = PR #8 (step 8, stacked on #7)
 - Blockers / questions for the user (asked 2026-10-07, not blocking current work):
@@ -98,7 +98,8 @@ updates "Current state". Newest entries at the bottom.
 - [x] Rebuild Bremen tiles + fixtures; check of climb on flat routes -> PR
 - [x] Route chart data model (pure): speed steps, downsampled elevation, ticks, readout, SVG paths
 - [x] Route chart view: SVG line chart, x = distance, y = speed (km/h) + elevation (m), collapsible panel, touch/hover readout, de/en -> PR
-- [ ] Profile: battery capacity (Wh) / tank size (l), optional real consumption (Wh/km or l/100 km) -> model calibration factor
+- [x] Range model (pure): capacity, real-consumption calibration factor, range estimate, settings storage
+- [ ] Profile panel: inputs for capacity (Wh / l) and real consumption (Wh/km / l/100 km), de/en
 - [ ] Route summary: share of battery/tank used, remaining range estimate, warning below reserve (config) -> PR
 
 ## Later / improvements (found during checks)
@@ -944,3 +945,16 @@ next monthly/manual build after `feature/elevation-profile` is merged; the clien
 - Tests: tsc clean; vitest 135 passed (new test/chartLayout.test.ts, 5 tests); vite build ok.
 - Commit: 36da6db; branch pushed, PR opened (stacked on `feature/elevation-profile` / PR #11).
 - Next: `feature/range`.
+
+### Iteration 56 — range model (2026-10-07)
+- What: branch `feature/range` (from `feature/route-chart`). `web/src/router/range.ts`: `EnergySettings`
+  (capacity Wh|l, real consumption Wh/km|l/100 km, reserve share), `referenceConsumption` (model on a flat
+  1 km edge at min(40, vmax) km/h), `calibrationFactor` (real/reference, clamped 0.3–3), `estimateRange`
+  (calibrated use, per-km consumption, share used, remaining km, reserve warning; assumes full at start).
+  Storage `loadEnergySettings`/`saveEnergySettings` (key `mopedmaps.energy.v1`), `parsePositive`.
+  Config: `RANGE_REFERENCE_SPEED_KMH`, `RANGE_CALIBRATION_MIN/MAX`, `RANGE_RESERVE_SHARE`. Docs: energy-model.md "Range".
+- Why: user wants range with their real battery consumption; separate settings keep the routing profile unchanged.
+- Reference values: electric 12.2 Wh/km (25 km/h) / 21.6 Wh/km (45); petrol 0.91 / 1.62 l/100 km.
+- Tests: tsc clean; vitest 143 passed (new test/range.test.ts, 8 tests).
+- Commit: bbf169f
+- Next: profile panel inputs (capacity, real consumption), then summary display + PR.

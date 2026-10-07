@@ -6,10 +6,12 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 done (PR #5, branch `safety/risk-score`); 6 done (PR #6, branch `energy/elevation`); 7 done (PR #7, branch `pwa/offline`); 8 done (PR #8, branch `docs/release`) — all roadmap steps implemented
-- Next task: none in the roadmap. Waiting on the user:
-  1. Review + merge PRs #1–#8 (stacked, bottom-up) into main
-  2. First workflow runs: Actions → "Graph build" with region `europe/germany/bremen` (smoke test), then `europe/germany`
-  - Optional improvements: see "Later / improvements" below
+- Roadmap 1–8 merged into main (2026-10-07). Now: user-requested features (step 9), one branch + PR each:
+  - `feature/elevation-profile`: node heights in chunks (format v2) + route climb from profile with hysteresis
+  - `feature/route-chart`: line chart speed + elevation over distance
+  - `feature/range`: battery/tank capacity + real consumption calibration, range/reserve display
+- Next task: chunk format v2 — node height (int16 dm) in pipeline encoder/decoder (Python + TS), v1 still readable
+- Waiting on the user: first manual "Graph build" run (europe/germany/bremen smoke test, then europe/germany)
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5). `pwa/offline` = PR #7 (step 7, stacked on #6). `docs/release` = PR #8 (step 8, stacked on #7)
 - Blockers / questions for the user (asked 2026-10-07, not blocking current work):
   - ~~Cloudflare secrets~~ done 2026-10-07 (both present in repo secrets)
@@ -90,10 +92,18 @@ updates "Current state". Newest entries at the bottom.
 - [x] DEM fetch tool for the Action (`dem-fetch`)
 - [x] Monthly graph-build Action + Cloudflare Pages deploy workflow (secrets present)
 
+## Task backlog (step 9 — user requests 2026-10-07)
+- [ ] Format v2: per-node height (int16, decimetres, INT16_MIN = unknown) written by both builds; TS + Python decoders read v1 and v2; spec updated
+- [ ] Router returns route profile (cumulative distance, node heights, per-edge speed); climb in summary from profile with hysteresis (config)
+- [ ] Rebuild Bremen tiles + fixtures; browser check of climb on flat routes -> PR
+- [ ] Route chart: SVG line chart, x = distance, y = speed (km/h) + elevation (m), collapsible panel, touch/hover readout, de/en -> PR
+- [ ] Profile: battery capacity (Wh) / tank size (l), optional real consumption (Wh/km or l/100 km) -> model calibration factor
+- [ ] Route summary: share of battery/tank used, remaining range estimate, warning below reserve (config) -> PR
+
 ## Later / improvements (found during checks)
 - [ ] Snap start/target only to the largest connected component (taps near the data border hit isolated fragments -> "unreachable")
-- [ ] Range hint: battery capacity / tank size in the profile, show remaining range
-- [ ] Route climb still noisy on flat routes (Bremen centre -> Osterholz: 53 m over 13 km); tune smoothing or add per-route hysteresis
+- [ ] (moved to step 9) Range hint
+- [ ] (moved to step 9) Route climb noise
 - [ ] Risk tuning: junction density dominates on short urban edges
 - [ ] Memory-efficient band-wise build for all of Germany (needed before step 8)
 
@@ -856,3 +866,16 @@ updates "Current state". Newest entries at the bottom.
 - Autonomous loop stopped here: the remaining work needs the user (merging
   the stacked PRs; the graph-build/deploy workflows can only be dispatched
   from the default branch). Improvement backlog kept for a later loop.
+
+### 2026-10-07 — Iteration 50 (merge + step 9 planning)
+- User asked to merge everything. Merged #1 with `--delete-branch`, which made
+  GitHub *close* #2 (its base branch vanished) instead of retargeting.
+  Recovered: restored `pipeline/graph-chunks` at its old sha via the API,
+  reopened #2, retargeted to main; then retargeted and merged #2–#8 one by
+  one without deleting branches; finally deleted all 8 merged branches
+  (each verified as ancestor of main). Lesson: with stacked PRs, retarget
+  the next PR to main *before* deleting the previous base branch.
+- main CI after the merge: success. Deploy workflow started automatically
+  (push to main touching web/).
+- New user requests planned as step 9 (backlog above); branch
+  `feature/elevation-profile`.

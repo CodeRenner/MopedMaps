@@ -7,6 +7,7 @@
  */
 
 import { hashList, strategyFor } from './policy';
+import { withoutRedirect } from './response';
 
 declare const self: ServiceWorkerGlobalScope & { __PRECACHE_MANIFEST__?: string[] };
 
@@ -23,7 +24,17 @@ self.addEventListener('install', (ev) => {
   ev.waitUntil(
     caches
       .open(SHELL)
-      .then((c) => c.addAll(PRECACHE.map((p) => new URL(p, self.registration.scope).href)))
+      .then((c) =>
+        // Store redirect-free copies (see response.ts); cache.addAll would keep the flag.
+        Promise.all(
+          PRECACHE.map(async (p) => {
+            const url = new URL(p, self.registration.scope).href;
+            const res = await fetch(url, { cache: 'reload' });
+            if (!res.ok) throw new Error(`precache ${url}: ${res.status}`);
+            await c.put(url, await withoutRedirect(res));
+          }),
+        ),
+      )
       .then(() => self.skipWaiting()),
   );
 });
@@ -49,7 +60,8 @@ self.addEventListener('fetch', (ev) => {
 
   if (strategy === 'precache') {
     const key = req.mode === 'navigate' ? new URL('index.html', scope).href : req;
-    ev.respondWith(caches.match(key, MATCH).then((hit) => hit ?? fetch(req)));
+    // Also guards caches written by older workers that stored redirected responses.
+    ev.respondWith(caches.match(key, MATCH).then((hit) => (hit ? withoutRedirect(hit) : fetch(req))));
   } else if (strategy === 'network-first') {
     ev.respondWith(
       fetch(req)

@@ -6,7 +6,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 done (PR #5, branch `safety/risk-score`); 6 done (PR #6, branch `energy/elevation`); 7 done (PR #7, branch `pwa/offline`); 8 (docs, licence, graph-build Action) — next
-- Next task: DEM sampling for country scale (sample nodes grouped by DEM tile, evict tiles) then measure on a mid-size state
+- Next task: measure the streaming build on all of Germany (download approved 2026-10-07); investigate prefilter memory
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5). `pwa/offline` = PR #7 (step 7, stacked on #6). `docs/release` (local, stacked on #7) = step 8
 - Blockers / questions for the user (asked 2026-10-07, not blocking current work):
   - ~~Cloudflare secrets~~ done 2026-10-07 (both present in repo secrets)
@@ -78,8 +78,9 @@ updates "Current state". Newest entries at the bottom.
   - [x] Assemble tiles from temp files (local indices by sorted id per tile), identical output to current build on Bremen
   - [x] Elevation in streaming mode (node heights + smoothing with neighbour lookups per tile band)
   - [x] CLI `build --streaming` (temp workdir, cleaned up)
-  - [ ] DEM at country scale: sample grouped by 1° tile + evict (else ~60 tiles × 35 MB in RAM)
-  - [ ] Measure on a mid-size state (e.g. Niedersachsen or Hessen): time, peak RAM, disk
+  - [x] DEM at country scale: sample grouped by 1° tile + evict (else ~60 tiles × 35 MB in RAM)
+  - [ ] Prefilter memory: BackReferenceWriter peaks at 582 MB on Bremen (43 MB on the tiny fixture) — grows with data; measure on Germany, replace with own two-step filter if needed
+  - [ ] Measure on all of Germany (user approved the 4.4 GB download) (e.g. Niedersachsen or Hessen): time, peak RAM, disk
 - [ ] Monthly graph-build Action (Geofabrik Germany + GLO-30 tiles) + deploy to Cloudflare Pages — needs user to create CF account/API token secrets (ask when ready)
 
 ## Later / improvements (found during checks)
@@ -752,3 +753,21 @@ updates "Current state". Newest entries at the bottom.
 - Tests: ruff clean; pytest 87 passed.
 - Commit: d6c1cf6
 - Next: DEM tiling for country scale, then a mid-size state measurement.
+
+### 2026-10-07 — Iteration 43 (DEM at scale + memory investigation)
+- What: `DemTile.sample_array` (vectorised bilinear, float64) and
+  `Dem.sample_many` (groups points by 1° tile, decodes each tile once, does
+  not cache). Scalar `elevation` and both builds use the same path (note:
+  numpy 2 computed the old scalar path in float32 -> tiny height changes;
+  Bremen tiles rebuilt; streaming == in-memory still byte-identical).
+  `ElevationSource` protocol is now `sample_many`.
+- Memory investigation (Bremen streaming build, peak RSS per phase):
+  prefilter 582 MB, everything after adds nothing. A single DEM tile decode
+  peaks at ~97 MB. On the tiny fixture the prefilter peaks at 43 MB -> the
+  BackReferenceWriter's memory grows with the data (likely libosmium id-set
+  bitmaps over the sparse id range). Need a real measurement: user approved
+  downloading the full Germany extract (4.4 GB).
+- Tests: ruff clean; pytest 88 passed (incl. sample_many == scalar on 200
+  random points of the real tiles).
+- Commit: 00c6676
+- Next: Germany measurement.

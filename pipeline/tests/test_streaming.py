@@ -3,10 +3,10 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from mopedmaps_pipeline.chunks import tile_of
+from mopedmaps_pipeline.chunks import split_into_chunks, tile_of
 from mopedmaps_pipeline.graph import build_graph
 from mopedmaps_pipeline.osm_pbf import read_osm
-from mopedmaps_pipeline.streaming import TileSpool, junction_ids, prefilter, stream_edges
+from mopedmaps_pipeline.streaming import TileSpool, assemble, junction_ids, prefilter, stream_edges
 
 FIX = Path(__file__).parent / "fixtures"
 BREMEN = Path(__file__).resolve().parents[2] / "data" / "bremen-latest.osm.pbf"
@@ -96,3 +96,23 @@ def test_prefilter_on_bremen(tmp_path):
     assert dst.stat().st_size < BREMEN.stat().st_size * 0.5
     _, stats, edges = _stream(dst, tmp_path / "s")
     assert stats["edges"] == len(build_graph(read_osm(BREMEN)).edges)
+
+
+def _assembled(path, tmp_path):
+    spool, _, _ = _stream(path, tmp_path)
+    return {ti.key: ti.data for ti in assemble(spool)}
+
+
+@pytest.mark.parametrize("name", ["small.osm", "cross_tile.osm"])
+def test_assembled_tiles_are_byte_identical(name, tmp_path):
+    path = FIX / name
+    assert _assembled(path, tmp_path) == split_into_chunks(build_graph(read_osm(path)))
+
+
+@pytest.mark.skipif(not BREMEN.exists(), reason="local Bremen extract missing")
+def test_assembled_tiles_byte_identical_on_bremen(tmp_path):
+    expected = split_into_chunks(build_graph(read_osm(BREMEN)))
+    got = _assembled(BREMEN, tmp_path)
+    assert set(got) == set(expected)
+    for key, data in expected.items():
+        assert got[key] == data, key

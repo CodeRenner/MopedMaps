@@ -10,6 +10,9 @@ Later passes stream edges into per-tile files (see docs/germany-build.md).
 
 import pickle
 from array import array
+from collections import OrderedDict
+from collections.abc import Iterator
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
@@ -17,8 +20,8 @@ import osmium
 
 from mopedmaps_pipeline import config
 from mopedmaps_pipeline import tags as t
-from mopedmaps_pipeline.chunks import TileKey, tile_of
-from mopedmaps_pipeline.graph import split_way
+from mopedmaps_pipeline.chunks import TileKey, encode_tile, tile_name, tile_of
+from mopedmaps_pipeline.graph import Edge, split_way
 from mopedmaps_pipeline.osm_pbf import KEEP_KEYS
 
 
@@ -179,3 +182,65 @@ def stream_edges(
         stats["skipped_incomplete"] += 1
     spool.close()
     return stats
+
+
+# --- Pass 3: assemble .mmg tiles from the spools ---------------------------------
+
+
+@dataclass(frozen=True)
+class TileInfo:
+    key: TileKey
+    name: str
+    data: bytes
+    nodes: int
+    edges: int
+
+
+class _NodeIndex:
+    """Per-tile sorted junction ids, loaded lazily with a small LRU cache."""
+
+    def __init__(self, spool: TileSpool, capacity: int = 64) -> None:
+        self.spool = spool
+        self.capacity = capacity
+        self._cache: OrderedDict[TileKey, tuple[np.ndarray, dict[int, tuple[float, float]]]] = (
+            OrderedDict()
+        )
+
+    def get(self, key: TileKey) -> tuple[np.ndarray, dict[int, tuple[float, float]]]:
+        if key in self._cache:
+            self._cache.move_to_end(key)
+            return self._cache[key]
+        coords = {nid: (lat, lon) for nid, lat, lon in self.spool.read("nodes", key)}
+        ids = np.array(sorted(coords), dtype=np.int64)
+        self._cache[key] = (ids, coords)
+        if len(self._cache) > self.capacity:
+            self._cache.popitem(last=False)
+        return ids, coords
+
+    def local_index(self, key: TileKey, nid: int) -> int:
+        ids, _ = self.get(key)
+        i = int(np.searchsorted(ids, nid))
+        if i >= len(ids) or ids[i] != nid:
+            raise KeyError(f"node {nid} missing from tile {key}")
+        return i
+
+
+def assemble(spool: TileSpool, tile_size: float = config.TILE_SIZE_DEG) -> Iterator[TileInfo]:
+    """Pass 3: yield encoded tiles one by one (bounded memory)."""
+    index = _NodeIndex(spool)
+    for key in spool.tiles("nodes"):
+        ids, coords = index.get(key)
+        edges: list[Edge] = spool.read("edges", key)
+        # Tile of a node = tile of its coordinates; the edge geometry carries
+        # both endpoints, so no global node->tile map is needed.
+        endpoint_tile: dict[int, TileKey] = {}
+        for e in edges:
+            endpoint_tile[e.from_node] = key
+            endpoint_tile[e.to_node] = tile_of(*e.geometry[-1], tile_size)
+
+        def locate(nid: int, tiles: dict[int, TileKey] = endpoint_tile) -> tuple[TileKey, int]:
+            k = tiles[nid]
+            return k, index.local_index(k, nid)
+
+        data = encode_tile(key, tile_size, [coords[int(n)] for n in ids], edges, locate)
+        yield TileInfo(key, tile_name(key), data, len(ids), len(edges))

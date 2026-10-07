@@ -9,6 +9,7 @@ loaded tiles into one graph.
 
 import math
 import struct
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
 
 from mopedmaps_pipeline import config
@@ -108,8 +109,66 @@ def _speed(v: int | None) -> int:
     return 0 if v is None else min(v, 254)
 
 
+def encode_tile(
+    key: TileKey,
+    size: float,
+    nodes: Sequence[tuple[float, float]],
+    edges: Iterable[Edge],
+    locate: Callable[[int], tuple[TileKey, int]],
+) -> bytes:
+    """Encode one tile. `nodes` are the tile's junctions in local-index order
+    (sorted by OSM id); `locate(node_id)` returns (tile, local index) of any
+    node, also in neighbouring tiles. Shared by the in-memory and the
+    streaming build so both write identical bytes."""
+    geom = bytearray()
+    edge_bytes = bytearray()
+    n_edges = 0
+    for e in edges:
+        from_key, from_idx = locate(e.from_node)
+        assert from_key == key, "edge spooled into the wrong tile"
+        to_key, to_idx = locate(e.to_node)
+        dx, dy = to_key[0] - key[0], to_key[1] - key[1]
+        if not (-128 <= dx <= 127 and -128 <= dy <= 127):
+            raise ValueError(f"edge {e.way_id} spans too many tiles")
+        offset = len(geom)
+        prev = (_e7(e.geometry[0][0]), _e7(e.geometry[0][1]))
+        for lat, lon in e.geometry[1:-1]:
+            cur = (_e7(lat), _e7(lon))
+            _write_varint(geom, _zigzag(cur[0] - prev[0]))
+            _write_varint(geom, _zigzag(cur[1] - prev[1]))
+            prev = cur
+        attrs = int(e.surface) | (_lit_code(e.lit) << 3) | (int(e.cycleway) << 5)
+        edge_bytes += EDGE.pack(
+            from_idx,
+            to_idx,
+            dx,
+            dy,
+            int(e.road_class),
+            int(e.flags),
+            _speed(e.maxspeed_fwd),
+            _speed(e.maxspeed_bwd),
+            attrs,
+            min(e.signals, 255),
+            round(e.length_m * 10),  # decimetres
+            min(round(e.curvature_deg), 0xFFFF),
+            min(round(e.ascent_m * 10), 0xFFFF),  # ascent forward, decimetres
+            min(round(e.descent_m * 10), 0xFFFF),  # descent forward, decimetres
+            max(1, risk_score(e)),  # risk 1..255 (0 = not computed)
+            0,  # reserved
+            offset,
+            len(e.geometry) - 2,
+            0,  # reserved
+        )
+        n_edges += 1
+    header = HEADER.pack(
+        MAGIC, VERSION, 0, key[0], key[1], _e7(size), len(nodes), n_edges, len(geom)
+    )
+    node_bytes = b"".join(NODE.pack(_e7(lat), _e7(lon)) for lat, lon in nodes)
+    return header + node_bytes + bytes(edge_bytes) + bytes(geom)
+
+
 def split_into_chunks(graph: Graph, size: float = config.TILE_SIZE_DEG) -> dict[TileKey, bytes]:
-    """Assign nodes/edges to tiles and encode each tile as bytes."""
+    """Assign nodes/edges of an in-memory graph to tiles and encode each tile."""
     node_tile: dict[int, TileKey] = {}
     tile_nodes: dict[TileKey, list[int]] = {}
     for nid in sorted(graph.nodes):
@@ -122,58 +181,13 @@ def split_into_chunks(graph: Graph, size: float = config.TILE_SIZE_DEG) -> dict[
     for e in graph.edges:
         tile_edges[node_tile[e.from_node]].append(e)
 
-    out = {}
-    for key, nids in tile_nodes.items():
-        geom = bytearray()
-        edge_bytes = bytearray()
-        for e in tile_edges[key]:
-            to_key = node_tile[e.to_node]
-            dx, dy = to_key[0] - key[0], to_key[1] - key[1]
-            if not (-128 <= dx <= 127 and -128 <= dy <= 127):
-                raise ValueError(f"edge {e.way_id} spans too many tiles")
-            offset = len(geom)
-            prev = (_e7(e.geometry[0][0]), _e7(e.geometry[0][1]))
-            for lat, lon in e.geometry[1:-1]:
-                cur = (_e7(lat), _e7(lon))
-                _write_varint(geom, _zigzag(cur[0] - prev[0]))
-                _write_varint(geom, _zigzag(cur[1] - prev[1]))
-                prev = cur
-            attrs = int(e.surface) | (_lit_code(e.lit) << 3) | (int(e.cycleway) << 5)
-            edge_bytes += EDGE.pack(
-                local_idx[e.from_node],
-                local_idx[e.to_node],
-                dx,
-                dy,
-                int(e.road_class),
-                int(e.flags),
-                _speed(e.maxspeed_fwd),
-                _speed(e.maxspeed_bwd),
-                attrs,
-                min(e.signals, 255),
-                round(e.length_m * 10),  # decimetres
-                min(round(e.curvature_deg), 0xFFFF),
-                min(round(e.ascent_m * 10), 0xFFFF),  # ascent forward, decimetres
-                min(round(e.descent_m * 10), 0xFFFF),  # descent forward, decimetres
-                max(1, risk_score(e)),  # risk 1..255 (0 = not computed)
-                0,  # reserved
-                offset,
-                len(e.geometry) - 2,
-                0,  # reserved
-            )
-        header = HEADER.pack(
-            MAGIC,
-            VERSION,
-            0,
-            key[0],
-            key[1],
-            _e7(size),
-            len(nids),
-            len(tile_edges[key]),
-            len(geom),
-        )
-        nodes = b"".join(NODE.pack(*map(_e7, graph.nodes[n])) for n in nids)
-        out[key] = header + nodes + bytes(edge_bytes) + bytes(geom)
-    return out
+    def locate(nid: int) -> tuple[TileKey, int]:
+        return node_tile[nid], local_idx[nid]
+
+    return {
+        key: encode_tile(key, size, [graph.nodes[n] for n in nids], tile_edges[key], locate)
+        for key, nids in tile_nodes.items()
+    }
 
 
 # --- decoding (reference implementation, mirrors the JS client) ---------------

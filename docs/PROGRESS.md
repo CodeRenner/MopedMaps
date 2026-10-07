@@ -6,7 +6,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 (PLZ + chunk loading + IndexedDB) — starting
-- Next task: chunk loader (fetch + retry, IndexedDB cache keyed by build id, re-fetch when evicted), with fake-indexeddb in tests
+- Next task: wire PLZ -> plan -> loader -> worker `load` into one `AreaLoader` (last item of step 3); then push + PR #3
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` (local, stacked on #2) = step 3 work
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
@@ -36,7 +36,7 @@ updates "Current state". Newest entries at the bottom.
 - [x] PLZ table: pipeline script GeoNames DE.zip -> compact `plz.json`/binary (download approved 2026-10-07)
 - [x] PLZ lookup module in web (exact + prefix search), tests
 - [x] Tiles-in-radius computation (circle vs tile rectangles), uses manifest
-- [ ] Chunk loader: fetch with retry, IndexedDB cache keyed by build version, re-fetch when evicted (iOS)
+- [x] Chunk loader: fetch with retry, IndexedDB cache keyed by build version, re-fetch when evicted (iOS)
 - [ ] Wire loader -> worker `load`
 
 ## Log
@@ -249,3 +249,16 @@ updates "Current state". Newest entries at the bottom.
 - Lesson: check `git status` / `git show --stat` after each commit.
 - Tests: tsc clean; vitest 51 passed.
 - Commit: 37c6851
+
+### 2026-10-07 — Iteration 15 (chunk loader + IndexedDB)
+- What: `web/src/data/store.ts` (`ChunkStore` interface; `MemoryStore`;
+  `IdbStore` — object store keyed `buildId|name`, `prune(keep)` drops old
+  builds) and `web/src/data/loader.ts` (`loadChunks`: cache-first, fetch
+  with exponential-backoff retry (3), no retry on 4xx, concurrency 4,
+  progress callback, AbortSignal; cache read/write failures are ignored so
+  iOS eviction or quota errors just trigger a re-download).
+- Dev dep: fake-indexeddb (Apache-2.0). tsconfig default lib now DOM
+  (worker.ts keeps its webworker reference).
+- Tests: tsc clean; vitest 57 passed.
+- Commit: e941ac6
+- Next: AreaLoader glue, then step 3 PR.

@@ -10,7 +10,7 @@ updates "Current state". Newest entries at the bottom.
   - `feature/elevation-profile`: node heights in chunks (format v2) + route climb from profile with hysteresis
   - `feature/route-chart`: line chart speed + elevation over distance
   - `feature/range`: battery/tank capacity + real consumption calibration, range/reserve display
-- Next task: chunk format v2 — node height (int16 dm) in pipeline encoder/decoder (Python + TS), v1 still readable
+- Next task: router route profile (distance, node heights, speeds) + summary climb from profile with hysteresis
 - Waiting on the user: first manual "Graph build" run (europe/germany/bremen smoke test, then europe/germany)
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5). `pwa/offline` = PR #7 (step 7, stacked on #6). `docs/release` = PR #8 (step 8, stacked on #7)
 - Blockers / questions for the user (asked 2026-10-07, not blocking current work):
@@ -93,7 +93,7 @@ updates "Current state". Newest entries at the bottom.
 - [x] Monthly graph-build Action + Cloudflare Pages deploy workflow (secrets present)
 
 ## Task backlog (step 9 — user requests 2026-10-07)
-- [ ] Format v2: per-node height (int16, decimetres, INT16_MIN = unknown) written by both builds; TS + Python decoders read v1 and v2; spec updated
+- [x] Format v2: per-node height (int16, decimetres, INT16_MIN = unknown) written by both builds; TS + Python decoders read v1 and v2; spec updated
 - [ ] Router returns route profile (cumulative distance, node heights, per-edge speed); climb in summary from profile with hysteresis (config)
 - [ ] Rebuild Bremen tiles + fixtures; browser check of climb on flat routes -> PR
 - [ ] Route chart: SVG line chart, x = distance, y = speed (km/h) + elevation (m), collapsible panel, touch/hover readout, de/en -> PR
@@ -879,3 +879,18 @@ updates "Current state". Newest entries at the bottom.
   (push to main touching web/).
 - New user requests planned as step 9 (backlog above); branch
   `feature/elevation-profile`.
+
+### 2026-10-07 — Iteration 51 (chunk format v2)
+- What: node record 8 -> 10 bytes (`<iih`, height in dm, −32768 unknown),
+  `VERSION = 2`; `Graph.heights` filled by `apply_elevation`, streaming
+  `assemble` passes heights per tile; Python + TS decoders accept v1 and v2
+  (`Chunk.heights`, graph `height: Float64Array` with NaN); manifest v1|v2
+  accepted by the web app (tiles from the currently running v1 graph build
+  keep working). Frozen `v1_small_*` fixture + new `small_dem_*` fixture
+  (synthetic ramp DEM). Spec updated with version history.
+- Tests: pytest 93 passed (height round-trip, unknown without DEM, v1
+  decode); vitest 116 passed (v1/v2 decode, heights vs Python decoder).
+  Streaming == in-memory still byte-identical (incl. heights).
+- Local Bremen tiles rebuilt as v2 with DEM.
+- Commit: cfce526
+- Next: route profile + climb hysteresis.

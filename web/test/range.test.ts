@@ -96,3 +96,21 @@ describe('energy settings storage', () => {
     expect(parsePositive('abc')).toBeNull();
   });
 });
+
+describe('range summary text', () => {
+  it('formats share, remaining km and reserve warning', async () => {
+    const { rangeSummary } = await import('../src/ui/messages');
+    const base = { used: 600, perKmUnit: 30, usedShare: 0.29, remainingKm: 47.4, belowReserve: false };
+    expect(rangeSummary('de', 'electric', base, 0.15)).toEqual({
+      key: 'route.range.electric', params: { share: '29', km: '47' }, warning: null,
+    });
+    expect(rangeSummary('de', 'combustion', { ...base, usedShare: 0.9, remainingKm: 4.25, belowReserve: true }, 0.15)).toEqual({
+      key: 'route.range.combustion', params: { share: '90', km: '4,3' },
+      warning: { key: 'route.range.reserve', params: { reserve: '15' } },
+    });
+    expect(rangeSummary('en', 'electric', { ...base, usedShare: null, remainingKm: null }, 0.15)).toBeNull();
+    expect(rangeSummary('de', 'electric', { ...base, usedShare: 1.07, remainingKm: 0, belowReserve: true }, 0.15)).toEqual({
+      key: 'route.range.electricShort', params: { share: '107' }, warning: { key: 'route.range.short', params: {} },
+    });
+  });
+});

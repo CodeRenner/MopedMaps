@@ -53,5 +53,11 @@
   "profile.capacity.combustion": "Tankinhalt (l)",
   "profile.consumption.electric": "Echter Verbrauch (Wh/km, optional)",
   "profile.consumption.combustion": "Echter Verbrauch (l/100 km, optional)",
-  "profile.energyHint": "Mit Kapazität zeigt die Route die Reichweite. Der echte Verbrauch kalibriert das Energiemodell."
+  "profile.energyHint": "Mit Kapazität zeigt die Route die Reichweite. Der echte Verbrauch kalibriert das Energiemodell.",
+  "route.range.electric": "{share} % Akku · Rest ca. {km} km",
+  "route.range.combustion": "{share} % Tank · Rest ca. {km} km",
+  "route.range.reserve": "Achtung: weniger als {reserve} % Reserve übrig",
+  "route.range.electricShort": "{share} % Akku",
+  "route.range.combustionShort": "{share} % Tank",
+  "route.range.short": "Reicht nicht ohne Laden/Tanken"
 }

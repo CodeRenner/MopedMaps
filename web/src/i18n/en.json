@@ -53,5 +53,11 @@
   "profile.capacity.combustion": "Tank size (l)",
   "profile.consumption.electric": "Real consumption (Wh/km, optional)",
   "profile.consumption.combustion": "Real consumption (l/100 km, optional)",
-  "profile.energyHint": "With a capacity the route shows the range. Real consumption calibrates the energy model."
+  "profile.energyHint": "With a capacity the route shows the range. Real consumption calibrates the energy model.",
+  "route.range.electric": "{share} % battery · about {km} km left",
+  "route.range.combustion": "{share} % tank · about {km} km left",
+  "route.range.reserve": "Warning: less than {reserve} % reserve left",
+  "route.range.electricShort": "{share} % battery",
+  "route.range.combustionShort": "{share} % tank",
+  "route.range.short": "Not enough without recharging/refuelling"
 }

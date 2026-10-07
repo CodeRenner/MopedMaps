@@ -152,3 +152,10 @@ def test_streaming_elevation_on_bremen(tmp_path):
     assert got.keys() == expected.keys()
     for key in expected:
         assert got[key] == expected[key], key
+
+
+def test_edge_codec_roundtrip():
+    from mopedmaps_pipeline.streaming import _decode_edges, encode_edge
+
+    edges = build_graph(read_osm(FIX / "small.osm")).edges
+    assert _decode_edges(b"".join(encode_edge(e) for e in edges)) == edges

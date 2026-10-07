@@ -8,7 +8,7 @@ rule of `graph.build_graph`, without holding OSM objects in memory.
 Later passes stream edges into per-tile files (see docs/germany-build.md).
 """
 
-import pickle
+import struct
 from array import array
 from collections import OrderedDict
 from collections.abc import Iterator
@@ -73,33 +73,84 @@ def junction_ids(path: Path) -> np.ndarray:
 # --- Pass 2: edges into per-tile spool files ------------------------------------
 
 
-class TileSpool:
-    """Buffered append-only pickle spools, one file per (tile, kind).
+_EDGE_HEAD = struct.Struct("<qqqdBHHBBb?dHI")  # fixed part of a spooled edge
+_NODE_ROW = struct.Struct("<qdd")
+_LIT = {None: -1, False: 0, True: 1}
+_LIT_BACK = {-1: None, 0: False, 1: True}
 
-    Keeps at most `flush_every` items in memory per tile and never more than
+
+def encode_edge(e: Edge) -> bytes:
+    """Compact, lossless binary row (floats kept as float64 so tiles stay
+    byte-identical). Ascent/descent are not spooled: they are added later."""
+    head = _EDGE_HEAD.pack(
+        e.from_node, e.to_node, e.way_id, e.length_m, int(e.road_class),
+        e.maxspeed_fwd or 0, e.maxspeed_bwd or 0, int(e.flags), int(e.surface),
+        _LIT[e.lit], e.cycleway, e.curvature_deg, e.signals, len(e.geometry),
+    )  # fmt: skip
+    coords = struct.pack(f"<{2 * len(e.geometry)}d", *(c for p in e.geometry for c in p))
+    return head + coords
+
+
+def _decode_edges(buf: bytes) -> list[Edge]:
+    out = []
+    pos = 0
+    while pos < len(buf):
+        (fr, to, way, length, rc, msf, msb, flags, surf, lit, cyc, curv, sig, n) = (
+            _EDGE_HEAD.unpack_from(buf, pos)
+        )
+        pos += _EDGE_HEAD.size
+        flat = struct.unpack_from(f"<{2 * n}d", buf, pos)
+        pos += 16 * n
+        out.append(
+            Edge(
+                from_node=fr,
+                to_node=to,
+                way_id=way,
+                geometry=tuple(zip(flat[0::2], flat[1::2], strict=True)),
+                length_m=length,
+                road_class=t.RoadClass(rc),
+                maxspeed_fwd=msf or None,
+                maxspeed_bwd=msb or None,
+                flags=t.AccessFlag(flags),
+                surface=t.Surface(surf),
+                lit=_LIT_BACK[lit],
+                cycleway=cyc,
+                curvature_deg=curv,
+                signals=sig,
+            )  # fmt: skip
+        )
+    return out
+
+
+class TileSpool:
+    """Buffered append-only binary spools, one file per (tile, kind).
+
+    Kinds: "edges" (`encode_edge` rows) and "nodes" ((id, lat, lon) rows).
+    Keeps at most `flush_every` rows in memory per tile and never more than
     one open file at a time, so it scales to ~1000 tiles.
     """
 
     def __init__(self, directory: Path, flush_every: int = 2000) -> None:
         self.directory = directory
         self.flush_every = flush_every
-        self._buf: dict[tuple[str, TileKey], list] = {}
+        self._buf: dict[tuple[str, TileKey], list[bytes]] = {}
         directory.mkdir(parents=True, exist_ok=True)
 
     def path(self, kind: str, key: TileKey) -> Path:
-        return self.directory / f"{key[1]}_{key[0]}.{kind}.pkl"
+        return self.directory / f"{key[1]}_{key[0]}.{kind}.bin"
 
     def add(self, kind: str, key: TileKey, item: object) -> None:
+        row = encode_edge(item) if kind == "edges" else _NODE_ROW.pack(*item)  # type: ignore[arg-type]
         buf = self._buf.setdefault((kind, key), [])
-        buf.append(item)
+        buf.append(row)
         if len(buf) >= self.flush_every:
             self._flush(kind, key)
 
     def _flush(self, kind: str, key: TileKey) -> None:
-        items = self._buf.pop((kind, key), [])
-        if items:
+        rows = self._buf.pop((kind, key), [])
+        if rows:
             with self.path(kind, key).open("ab") as f:
-                pickle.dump(items, f, protocol=pickle.HIGHEST_PROTOCOL)
+                f.write(b"".join(rows))
 
     def close(self) -> None:
         for kind, key in list(self._buf):
@@ -107,22 +158,22 @@ class TileSpool:
 
     def tiles(self, kind: str) -> list[TileKey]:
         out = []
-        for p in self.directory.glob(f"*.{kind}.pkl"):
+        for p in self.directory.glob(f"*.{kind}.bin"):
             iy, ix = p.name.split(".")[0].split("_")
             out.append((int(ix), int(iy)))
         return sorted(out)
 
     def read(self, kind: str, key: TileKey) -> list:
-        items: list = []
         p = self.path(kind, key)
         if not p.exists():
-            return items
-        with p.open("rb") as f:
-            while True:
-                try:
-                    items.extend(pickle.load(f))
-                except EOFError:
-                    return items
+            return []
+        buf = p.read_bytes()
+        if kind == "edges":
+            return _decode_edges(buf)
+        return list(_NODE_ROW.iter_unpack(buf))
+
+    def size_bytes(self) -> int:
+        return sum(p.stat().st_size for p in self.directory.glob("*.bin"))
 
 
 def stream_edges(

@@ -46,7 +46,7 @@
    "curvature_deg": 0,
    "ascent_m": 0.0,
    "descent_m": 0.0,
-   "risk": 0,
+   "risk": 29,
    "shape": []
   },
   {
@@ -68,7 +68,7 @@
    "curvature_deg": 0,
    "ascent_m": 0.0,
    "descent_m": 0.0,
-   "risk": 0,
+   "risk": 29,
    "shape": []
   },
   {
@@ -90,7 +90,7 @@
    "curvature_deg": 0,
    "ascent_m": 0.0,
    "descent_m": 0.0,
-   "risk": 0,
+   "risk": 124,
    "shape": []
   },
   {
@@ -112,7 +112,7 @@
    "curvature_deg": 108,
    "ascent_m": 0.0,
    "descent_m": 0.0,
-   "risk": 0,
+   "risk": 28,
    "shape": [
     [
      53.071,

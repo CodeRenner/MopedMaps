@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from mopedmaps_pipeline import config
 from mopedmaps_pipeline import tags as t
 from mopedmaps_pipeline.graph import Edge, Graph
+from mopedmaps_pipeline.risk import risk_score
 
 MAGIC = b"MMG1"
 VERSION = 1
@@ -153,7 +154,7 @@ def split_into_chunks(graph: Graph, size: float = config.TILE_SIZE_DEG) -> dict[
                 min(round(e.curvature_deg), 0xFFFF),
                 0,  # ascent_dm  (reserved, roadmap step 6)
                 0,  # descent_dm (reserved, roadmap step 6)
-                0,  # risk       (reserved, roadmap step 5)
+                max(1, risk_score(e)),  # risk 1..255 (0 = not computed)
                 0,  # reserved
                 offset,
                 len(e.geometry) - 2,

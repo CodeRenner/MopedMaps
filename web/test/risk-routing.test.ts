@@ -61,7 +61,7 @@ describe('risk in cost', () => {
 const BREMEN = join(__dirname, '..', '..', 'data', 'tiles-bremen');
 describe.skipIf(!existsSync(BREMEN))('Bremen with risk (local data)', () => {
   const g = assembleGraph(
-    readdirSync(BREMEN).filter((f) => f.endsWith('.mmg')).map((f) => decodeChunk(readFileSync(join(BREMEN, f)))),
+    (existsSync(BREMEN) ? readdirSync(BREMEN) : []).filter((f) => f.endsWith('.mmg')).map((f) => decodeChunk(readFileSync(join(BREMEN, f)))),
   );
   const s = nearestNode(g, 53.0833, 8.8131);
   const t = nearestNode(g, 53.1717, 8.6206);

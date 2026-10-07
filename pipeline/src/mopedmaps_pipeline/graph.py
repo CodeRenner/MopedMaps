@@ -6,6 +6,7 @@ and energy are computed by the router from the runtime vehicle profile.
 """
 
 from collections import Counter
+from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass
 
 from mopedmaps_pipeline import tags as t
@@ -55,6 +56,50 @@ def _curvature(geom: list[tuple[float, float]]) -> float:
     return sum(turn_deg(b1, b2) for b1, b2 in zip(bearings, bearings[1:], strict=False))
 
 
+def split_way(
+    way_id: int,
+    refs: Sequence[int],
+    coords: Sequence[tuple[float, float]],
+    tags: t.Tags,
+    flags: t.AccessFlag,
+    is_split: Callable[[int], bool],
+    is_signal: Callable[[int], bool],
+) -> Iterator[Edge]:
+    """Split one routable way into edges at junction nodes (shared by the
+    in-memory and the streaming build so both produce identical edges)."""
+    rc = t.road_class(tags)
+    assert rc is not None
+    ms_fwd = t.maxspeed_for_direction(tags, forward=True)
+    ms_bwd = t.maxspeed_for_direction(tags, forward=False)
+    surface, lit, cycleway = t.surface(tags), t.lit(tags), t.has_cycleway(tags)
+    start = 0
+    last = len(refs) - 1
+    for i in range(1, len(refs)):
+        if i != last and not is_split(refs[i]):
+            continue
+        seg = refs[start : i + 1]
+        geom = list(coords[start : i + 1])
+        start = i
+        if seg[0] == seg[-1] and len(seg) == 2:
+            continue  # degenerate self-loop from duplicate node
+        yield Edge(
+            from_node=seg[0],
+            to_node=seg[-1],
+            way_id=way_id,
+            geometry=tuple(geom),
+            length_m=sum(haversine_m(a, b) for a, b in zip(geom, geom[1:], strict=False)),
+            road_class=rc,
+            maxspeed_fwd=ms_fwd,
+            maxspeed_bwd=ms_bwd,
+            flags=flags,
+            surface=surface,
+            lit=lit,
+            cycleway=cycleway,
+            curvature_deg=_curvature(geom),
+            signals=sum(1 for r in seg[1:] if is_signal(r)),
+        )
+
+
 def build_graph(data: OsmData) -> Graph:
     ways = _routable(data)
     usage: Counter[int] = Counter()
@@ -65,37 +110,17 @@ def build_graph(data: OsmData) -> Graph:
 
     edges: list[Edge] = []
     for w, flags in ways:
-        start = 0
-        for i in range(1, len(w.refs)):
-            if usage[w.refs[i]] < 2 and i != len(w.refs) - 1:
-                continue
-            refs = w.refs[start : i + 1]
-            start = i
-            if refs[0] == refs[-1] and len(refs) == 2:
-                continue  # degenerate self-loop from duplicate node
-            geom = [data.nodes[r] for r in refs]
-            edges.append(
-                Edge(
-                    from_node=refs[0],
-                    to_node=refs[-1],
-                    way_id=w.id,
-                    geometry=tuple(geom),
-                    length_m=sum(haversine_m(a, b) for a, b in zip(geom, geom[1:], strict=False)),
-                    road_class=t.road_class(w.tags),  # type: ignore[arg-type]
-                    maxspeed_fwd=t.maxspeed_for_direction(w.tags, forward=True),
-                    maxspeed_bwd=t.maxspeed_for_direction(w.tags, forward=False),
-                    flags=flags,
-                    surface=t.surface(w.tags),
-                    lit=t.lit(w.tags),
-                    cycleway=t.has_cycleway(w.tags),
-                    curvature_deg=_curvature(geom),
-                    signals=sum(
-                        1
-                        for r in refs[1:]
-                        if data.node_tags.get(r, {}).get("highway") == "traffic_signals"
-                    ),
-                )
+        edges.extend(
+            split_way(
+                w.id,
+                w.refs,
+                [data.nodes[r] for r in w.refs],
+                w.tags,
+                flags,
+                is_split=lambda r: usage[r] >= 2,
+                is_signal=lambda r: data.node_tags.get(r, {}).get("highway") == "traffic_signals",
             )
+        )
 
     junctions = {e.from_node for e in edges} | {e.to_node for e in edges}
     return Graph(nodes={n: data.nodes[n] for n in junctions}, edges=edges)

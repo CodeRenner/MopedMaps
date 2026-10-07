@@ -41,3 +41,21 @@ later (e.g. drop shape points from the routing chunk, smaller edge records).
    replace dict-based storage with arrays. To do before step 8.
 2. **Hosting:** ~ 300–650 MB in ~ 1,000 files, max file a few MB. See
    options in PROGRESS.md / ask user.
+
+## Germany, measured (2026-10-07, streaming build, no DEM)
+`python -m mopedmaps_pipeline build germany-latest.osm.pbf OUT --streaming`
+on a 2023 Apple Silicon Mac (Geofabrik extract 4.5 GB).
+
+| Metric | Value | Earlier estimate |
+|--------|-------|------------------|
+| Tiles | 844 | 700–900 |
+| Junction nodes / edges | 14.2 M / 16.8 M | — |
+| Raw size | 903 MB | ~640 MB |
+| gzip size | 490 MB | ~300 MB |
+| Largest tile | 4.87 MB (< Cloudflare Pages 25 MiB limit) | 2–4 MB |
+| Wall time | 103 min (prefilter 12.3, junctions 4.1, edges 78.0, assemble ~8.8) | 20–60 min |
+| Peak RAM | 1.58 GB | ~50 GB in-memory |
+| Temp disk (workdir) | filtered PBF 0.85 GB + node index 0.97 GB + spool ≳ 4 GB | — |
+
+Per-user download for a 75 km radius therefore ~1.6× the earlier estimate
+(roughly 15–110 MB gzip depending on density).

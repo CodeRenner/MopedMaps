@@ -12,3 +12,4 @@ dist/
 
 # Local dev graph tiles (symlink to /data/tiles-*)
 web/public/graph
+*.egg-info/

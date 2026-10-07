@@ -5,10 +5,17 @@ first, does ONE small runnable increment, then appends an entry below and
 updates "Current state". Newest entries at the bottom.
 
 ## Current state
-- Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 done (PR #5, branch `safety/risk-score`); 6 done (PR #6, branch `energy/elevation`); 7 done (PR #7, branch `pwa/offline`); 8 (docs, licence, graph-build Action) — next
-- Next task: step 8 — README (EN), LICENSE (MIT), attribution/third-party notices
-- Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5). `pwa/offline` = PR #7 (step 7, stacked on #6)
-- Blockers / questions for the user: none
+- Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 done (PR #5, branch `safety/risk-score`); 6 done (PR #6, branch `energy/elevation`); 7 done (PR #7, branch `pwa/offline`); 8 done (PR #8, branch `docs/release`) — all roadmap steps implemented
+- Next task: none in the roadmap. Waiting on the user:
+  1. Review + merge PRs #1–#8 (stacked, bottom-up) into main
+  2. First workflow runs: Actions → "Graph build" with region `europe/germany/bremen` (smoke test), then `europe/germany`
+  - Optional improvements: see "Later / improvements" below
+- Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5). `pwa/offline` = PR #7 (step 7, stacked on #6). `docs/release` = PR #8 (step 8, stacked on #7)
+- Blockers / questions for the user (asked 2026-10-07, not blocking current work):
+  - ~~Cloudflare secrets~~ done 2026-10-07 (both present in repo secrets)
+  - Pages project: `mopedmaps` (default, no other name given); app + tiles in one project (user decided 2026-10-07)
+  - LICENSE holder name ("MopedMaps contributors" for now)
+  - Review/merge PRs #1–#7 (stacked, bottom-up)
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
   not installed globally (use a venv for Python tooling).
   Node 22 in ~/.local/node — prefix commands with `export PATH="$HOME/.local/node/bin:$PATH"`
@@ -62,6 +69,26 @@ updates "Current state". Newest entries at the bottom.
 - [x] Ask the browser for persistent storage (navigator.storage.persist) after loading an area; show storage note on iOS
 - [x] Offline test in the browser (server stopped), then PR #7
 - Note: no bulk prefetching of OpenFreeMap tiles (respect their usage policy); full offline basemap comes with own PMTiles later
+
+## Task backlog (step 8)
+- [x] LICENSE (MIT, decided) + README (EN): what/why, features, architecture, dev setup, data sources & attribution, limitations
+- [x] THIRD_PARTY / data notices (DATA_SOURCES.md) (ODbL, CC BY 4.0 GeoNames, Copernicus DEM, OpenFreeMap/OpenMapTiles)
+- [x] CI workflow: ruff + pytest (pipeline), tsc + vitest + vite build (web) on PRs
+- [ ] Streaming Germany build (decided 2026-10-07):
+  - [x] Pass 1: routable way refs -> sorted junction id array (numpy), test == build_graph junctions
+  - [x] Pass 2: ways with on-disk locations -> split at junctions -> edge rows into per-tile temp files + junction (id, lat, lon, tile) list
+  - [x] Pass 0: pre-filter PBF (routable highway ways + referenced nodes + signal nodes) so the on-disk location index only holds road nodes (DE estimate otherwise ~7 GB index + 4.4 GB PBF + ~3 GB spool > runner disk)
+  - [x] Assemble tiles from temp files (local indices by sorted id per tile), identical output to current build on Bremen
+  - [x] Elevation in streaming mode (node heights + smoothing with neighbour lookups per tile band)
+  - [x] CLI `build --streaming` (temp workdir, cleaned up)
+  - [x] DEM at country scale: sample grouped by 1° tile + evict (else ~60 tiles × 35 MB in RAM)
+  - [x] Prefilter memory: measured on Germany — 1.14 GB peak (bounded), keep BackReferenceWriter
+  - [x] Measure on all of Germany: 103 min, peak 1.58 GB, 844 tiles, 903 MB / 490 MB gzip, max tile 4.87 MB
+  - [x] Faster edge pass: node index in RAM (`flex_mem`, ~1 GB) instead of on-disk sparse_file_array (pass was I/O-bound, CPU 32 %)
+  - [x] Compact binary spool rows instead of pickled Edge objects (Bremen 14 -> 9.4 MB)
+  - [x] `--delete-source` to free 4.5 GB after the pre-filter (e.g. Niedersachsen or Hessen): time, peak RAM, disk
+- [x] DEM fetch tool for the Action (`dem-fetch`)
+- [x] Monthly graph-build Action + Cloudflare Pages deploy workflow (secrets present)
 
 ## Later / improvements (found during checks)
 - [ ] Snap start/target only to the largest connected component (taps near the data border hit isolated fragments -> "unreachable")
@@ -611,3 +638,221 @@ updates "Current state". Newest entries at the bottom.
   first start online).
 - Commit: 6ef7d55
 - Next: push + PR #7; then step 8.
+
+### 2026-10-07 — Iteration 34b (PR #7)
+- Opened https://github.com/CodeRenner/MopedMaps/pull/7 (base `energy/elevation`).
+  Branch `docs/release` for step 8; backlog added.
+
+### 2026-10-07 — Iteration 35 (licence + README)
+- What: `LICENSE` (MIT, "MopedMaps contributors" — user may want a personal
+  name instead), `README.md` (EN: features, architecture, dev setup, local
+  test graph, limitations, licences), `DATA_SOURCES.md` (OSM/ODbL incl.
+  derived-database note for graph tiles, GeoNames CC BY 4.0, Copernicus
+  full notice, OpenFreeMap; dependency licences).
+- Tests: docs only.
+- Commit: d91bbe4
+- Next: CI workflow.
+
+### 2026-10-07 — Iteration 36 (CI)
+- What: `.github/workflows/ci.yml` — on pull_request (all bases, so stacked
+  PRs are checked) and push to main; job `pipeline` (Python 3.12, pip cache,
+  `pip install -e .[dev]`, ruff check + format --check, pytest) and job `web`
+  (Node 22, npm cache, `npm ci`, typecheck, vitest, build). Read-only
+  permissions, concurrency cancels superseded runs.
+- Verified like CI would run: pipeline in a fresh venv from pyproject deps
+  (69 passed); web from a clean `git archive` export -> found a real CI
+  failure: `describe.skipIf` still runs the describe body at collection, so
+  `readdirSync(data/tiles-bremen)` threw ENOENT in astar/risk-routing tests.
+  Guarded the reads; clean export now 107 passed / 6 skipped.
+- Commit: 65afe1e
+- Next: band-wise Germany build.
+
+### 2026-10-07 — Iteration 36b (questions + Germany build decision)
+- Listed what the user needs to provide (Cloudflare account/token/account ID
+  as GitHub secrets, project name, licence holder, PR merges) -> blockers
+  section; none blocks current work.
+- Asked before the larger pipeline change: user chose the two-pass streaming
+  pipeline (recorded in DECISIONS.md); backlog broken down.
+
+### 2026-10-07 — Iteration 37 (streaming pass 1)
+- What: `streaming.py` — `routable_tags(way)` (shared filter) and
+  `junction_ids(path)`: ways-only pass with pyosmium FileProcessor +
+  KeyFilter, refs in `array('q')`, `np.unique` counts -> sorted junction ids.
+  Design + estimates in `docs/germany-build.md`.
+- Result: identical junction set to the in-memory build on both fixtures and
+  on Bremen (51,387 nodes), 1.25 s for Bremen (~5 min extrapolated for DE).
+- Tests: ruff clean; pytest 3 new passed (incl. Bremen when present).
+- Commit: 2d2ce44
+- Next: pass 2 (edges into per-tile temp files).
+
+### 2026-10-07 — Iteration 38 (streaming pass 2)
+- Refactor: `graph.split_way(...)` (edge splitting + attributes) now shared
+  by `build_graph` and the streaming build — no duplicated logic; all
+  existing tests still pass.
+- What: `streaming.TileSpool` (buffered pickle spools per tile/kind, one
+  open file at a time) and `stream_edges(path, junctions, spool,
+  location_store)`: FileProcessor with locations + KeyFilter("highway"),
+  traffic-signal nodes collected on the fly, ways split via
+  `np.searchsorted` junction lookup, edges spooled by from-tile, endpoint
+  nodes spooled by their own tile.
+- Result: identical edges to the in-memory build on both fixtures and on
+  Bremen (59,515 edges). Bremen with `sparse_file_array` on disk: pass1
+  1.2 s + pass2 2.2 s, peak RSS 162 MB (in-memory build 245 MB), spool
+  14 MB, node index 32 MB.
+- Finding: the location index stores *all* nodes of the extract -> for DE
+  ~7 GB; with PBF + spool that exceeds a runner's disk. Added pass 0
+  (pre-filter) to the backlog.
+- Tests: ruff clean; pytest 76 passed.
+- Commit: 0ae00c7
+- Next: pass 0 pre-filter.
+
+### 2026-10-07 — Iteration 39 (streaming pass 0)
+- What: `streaming.prefilter(src, dst)` — FileProcessor + KeyFilter, writes
+  routable ways (same `routable_tags` rule) and traffic-signal nodes through
+  `osmium.BackReferenceWriter`, which appends the referenced nodes.
+- Result Bremen: 21.2 MB -> 2.5 MB (12 %), index 32 -> 16 MB, 2.5 s; edges
+  identical after filtering (fixtures + Bremen). Doc updated with DE disk
+  estimate (fits a runner).
+- Tests: ruff clean; pytest streaming 11 passed.
+- Commit: d99c9b7
+- Next: assembly of .mmg tiles from spools.
+
+### 2026-10-07 — Iteration 40 (streaming assembly)
+- Refactor: `chunks.encode_tile(key, size, nodes, edges, locate)` extracted
+  from `split_into_chunks` (which now uses it); web fixtures regenerate
+  byte-identically.
+- What: `streaming.assemble(spool)` yields `TileInfo` per tile: junction ids
+  per tile sorted (local indices = rank), to-node index via the to-tile's
+  sorted ids (lazy LRU `_NodeIndex`, 64 tiles), node->tile from the edge
+  geometry endpoints (no global map), then `encode_tile`.
+- Result: tiles byte-identical to the in-memory build on both fixtures and
+  on all 5 Bremen tiles.
+- Tests: ruff clean; pytest 82 passed.
+- Commit: 83a7b18
+- Next: elevation in streaming mode, then a `build --streaming` CLI.
+
+### 2026-10-07 — Iteration 41 (streaming elevation)
+- What: `elevation.smooth_heights(z, fr, to)` — Jacobi Laplacian smoothing
+  with `np.bincount` (NaN-aware), O(nodes+edges) memory; `edge_climbs`;
+  `apply_elevation` now uses the same array code (Bremen still 1.94 m/km,
+  0.6 s). Removed the old dict-based smoother (its only user was a test).
+  `streaming.stream_heights(spool, dem)` builds global junction arrays from
+  the node spools (`np.unique`, no Python dict) + edge index pairs, smooths
+  globally — no tile halos needed; `assemble(..., heights=...)` fills
+  ascent/descent per tile.
+- Result: streaming tiles *with DEM* byte-identical to the in-memory build on
+  the fixture (synthetic ramp) and on Bremen with GLO-30.
+- Tests: ruff clean; pytest 85 passed.
+- Commit: f067189
+- Next: CLI wiring for the streaming build.
+
+### 2026-10-07 — Iteration 42 (streaming CLI)
+- What: `cli.write_tiles` (tiles + manifest, shared by both modes),
+  `_Clock` for per-phase timings, `build_streaming` (TemporaryDirectory in
+  `--workdir`: prefilter -> junctions -> edges with on-disk index ->
+  heights -> assemble), flags `--streaming --workdir`. Manifest reports
+  `skipped_incomplete_ways`, `nodes_without_elevation`.
+- Bremen via CLI with DEM: prefilter 2.6 s, junctions 0.7 s, edges 1.5 s,
+  elevation 0.5 s; all 5 tiles byte-identical to the in-memory build. Peak
+  RSS 572 MB, mostly 4 decoded DEM tiles (~35 MB each) -> country-scale DEM
+  handling added to backlog.
+- User confirmed Cloudflare secrets; `gh secret list` shows both names.
+- Tests: ruff clean; pytest 87 passed.
+- Commit: d6c1cf6
+- Next: DEM tiling for country scale, then a mid-size state measurement.
+
+### 2026-10-07 — Iteration 43 (DEM at scale + memory investigation)
+- What: `DemTile.sample_array` (vectorised bilinear, float64) and
+  `Dem.sample_many` (groups points by 1° tile, decodes each tile once, does
+  not cache). Scalar `elevation` and both builds use the same path (note:
+  numpy 2 computed the old scalar path in float32 -> tiny height changes;
+  Bremen tiles rebuilt; streaming == in-memory still byte-identical).
+  `ElevationSource` protocol is now `sample_many`.
+- Memory investigation (Bremen streaming build, peak RSS per phase):
+  prefilter 582 MB, everything after adds nothing. A single DEM tile decode
+  peaks at ~97 MB. On the tiny fixture the prefilter peaks at 43 MB -> the
+  BackReferenceWriter's memory grows with the data (likely libosmium id-set
+  bitmaps over the sparse id range). Need a real measurement: user approved
+  downloading the full Germany extract (4.4 GB).
+- Tests: ruff clean; pytest 88 passed (incl. sample_many == scalar on 200
+  random points of the real tiles).
+- Commit: 00c6676
+- Next: Germany measurement.
+
+### 2026-10-07 — Iteration 44 (Germany measurement)
+- Downloaded Geofabrik `germany-latest.osm.pbf` (4.5 GB, user-approved) and
+  ran `build --streaming` (no DEM; only Bremen DEM tiles exist locally).
+- Result: 844 tiles, 14.2 M junctions, 16.8 M edges, 903 MB raw / 490 MB
+  gzip, largest tile 4.87 MB; 103 min total (prefilter 12.3 min, junctions
+  4.1, edges 78.0, assemble ~8.8); peak RSS 1.58 GB; workdir cleaned up.
+  Pre-filter memory is bounded (1.14 GB) -> BackReferenceWriter stays.
+- Sizes ~1.4–1.6× the Bremen-based extrapolation; still well inside
+  Cloudflare Pages limits (20k files, 25 MiB/file).
+- Bottleneck: edge pass I/O-bound (CPU ~32 %) — on-disk node index + bulky
+  pickle spools. Disk on a runner would be ~11–13 GB of 14 -> follow-ups
+  added (index in RAM, binary spool, delete source after prefilter).
+- Docs: size-measurement.md and germany-build.md updated with the numbers.
+- Next: speed/disk improvements, then the graph-build Action.
+
+### 2026-10-07 — Iteration 45 (index in RAM, delete source)
+- What: `build --streaming --node-index mem|disk` (default mem = pyosmium
+  `flex_mem`; disk = previous `sparse_file_array` in the workdir) and
+  `--delete-source` (removes the input after the pre-filter). Test: both
+  index modes give identical tiles; source file is deleted.
+- Bremen too small to show a speed difference (1.5 s either way); a full
+  Germany run with the in-memory index is running in the background.
+- Tests: pytest CLI 4 passed. Commit: 2f74d62
+
+### 2026-10-07 — Iteration 46 (binary spool)
+- What: `TileSpool` now writes fixed-layout struct rows (`encode_edge` /
+  `_decode_edges`, `<qdd` node rows) to `*.bin` instead of pickled lists;
+  float64 kept so tiles stay byte-identical (int32 e7 would save more but
+  could move points across exact tile borders). `size_bytes()` helper.
+- Bremen spool 14 -> 9.4 MB (-33 %; geometry dominates). All streaming tests
+  incl. Bremen byte-identity pass; codec round-trip test added.
+- Note: the Germany run started before this change uses the old pickle
+  spool (module already loaded) -> its numbers isolate the index change.
+- Commit: b93348a
+
+### 2026-10-07 — Iteration 46b (Germany with index in RAM + deploy decision)
+- Germany re-run with `--node-index mem`: prefilter 16.2 min, junctions
+  5.6, edges 23.5 (was 78.0), total 54 min (was 103), peak 1.80 GB; all
+  844 tiles byte-identical to the first run. Duplicate output deleted.
+- User decided: one Cloudflare Pages project for app + tiles (app deploys
+  reuse the last graph build's tiles via a GitHub artifact). DECISIONS.md.
+
+### 2026-10-07 — Iteration 47 (DEM fetch)
+- What: `dem.tiles_for_bbox`, `tile_url`, `fetch_tiles(tiles, out, fetch)`
+  (urllib, skips present files, treats S3 403/404 as "sea tile", atomic
+  `.part` rename); CLI `python -m mopedmaps_pipeline dem-fetch OUT [--bbox S W
+  N E]`, default Germany 47..55 N x 5..16 E (88 tiles).
+- Checked against S3: N54/E005 (North Sea) -> 404, N53/E008 -> 200; local run
+  reports the 4 Bremen-area tiles as present.
+- Tests: pytest DEM 7 passed (bbox/URL, fake fetcher with present/sea/new).
+- Commit: 31cb84d
+- Next: workflows.
+
+### 2026-10-07 — Iteration 48 (workflows)
+- What: `.github/workflows/graph-build.yml` (cron 3rd of month 02:00 UTC +
+  manual with `region` / `deploy` inputs; frees runner disk, pip cache, DEM
+  tiles cached via actions/cache, `dem-fetch`, Geofabrik download, streaming
+  build with `--dem --delete-source --verify`, uploads `graph-tiles`
+  artifact (90 days), then calls deploy) and `.github/workflows/deploy.yml`
+  (push to main on web/**, manual, or workflow_call with `graph-run-id`;
+  builds the app, downloads the tiles artifact of the given or latest
+  successful graph build (warns and deploys without data if none yet),
+  `wrangler@4 pages project create || true` + `pages deploy` to `mopedmaps`).
+  `web/public/_headers`: no-cache for sw.js/index.html/graph manifest, 1 day
+  for tiles, immutable for hashed assets. README deployment section.
+- Validation: actionlint clean (all 3 workflows); `_headers` present in
+  dist; vitest 113 passed. Workflows only run once on GitHub (after merge
+  to main / manual dispatch) — not executed yet.
+- Commit: 76777f3
+- Next: push + PR #8 (step 8).
+
+### 2026-10-07 — Iteration 49 (PR #8, loop paused)
+- Pushed `docs/release`, opened https://github.com/CodeRenner/MopedMaps/pull/8
+  (base `pwa/offline`). All 8 roadmap steps are implemented.
+- Autonomous loop stopped here: the remaining work needs the user (merging
+  the stacked PRs; the graph-build/deploy workflows can only be dispatched
+  from the default branch). Improvement backlog kept for a later loop.

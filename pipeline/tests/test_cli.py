@@ -24,3 +24,31 @@ def test_build_writes_tiles_and_manifest(tmp_path, capsys):
     assert (tmp_path / "212_35.mmg").stat().st_size == m["tiles"]["212_35.mmg"]["bytes"]
     assert "OpenStreetMap" in m["attribution"]
     assert json.loads(capsys.readouterr().out)["edges"] == 4
+
+
+def test_streaming_build_writes_identical_tiles(tmp_path):
+    mem, stream = tmp_path / "mem", tmp_path / "stream"
+    assert main(["build", str(FIXTURE), str(mem)]) == 0
+    assert (
+        main(["build", str(FIXTURE), str(stream), "--streaming", "--workdir", str(tmp_path)]) == 0
+    )
+    for f in mem.glob("*.mmg"):
+        assert (stream / f.name).read_bytes() == f.read_bytes()
+    a = json.loads((mem / "manifest.json").read_text())
+    b = json.loads((stream / "manifest.json").read_text())
+    assert a["tiles"] == b["tiles"]
+    for k in ("prefilter_s", "junctions_s", "edges_s", "elevation_s"):
+        assert k in b["totals"]
+    assert not list(tmp_path.glob("mmg-build-*"))  # temp dir cleaned up
+
+
+def test_streaming_disk_index_and_delete_source(tmp_path):
+    src = tmp_path / "copy.osm"
+    src.write_bytes(FIXTURE.read_bytes())
+    mem, disk = tmp_path / "mem", tmp_path / "disk"
+    assert main(["build", str(FIXTURE), str(mem), "--streaming", "--workdir", str(tmp_path)]) == 0
+    args = ["build", str(src), str(disk), "--streaming", "--node-index", "disk", "--delete-source"]
+    assert main([*args, "--workdir", str(tmp_path)]) == 0
+    assert not src.exists()
+    for f in mem.glob("*.mmg"):
+        assert (disk / f.name).read_bytes() == f.read_bytes()

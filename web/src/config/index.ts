@@ -75,3 +75,16 @@ export const DESTINATION_PENALTY_S = 120;
 // --- Snapping ----------------------------------------------------------------
 /** Max distance from a tapped point to the nearest usable road node (m). */
 export const MAX_SNAP_DISTANCE_M = 1000;
+
+// --- Map ---------------------------------------------------------------------
+/**
+ * Basemap style. OpenFreeMap: free, no key, no account (see DECISIONS.md).
+ * Replace with an own PMTiles style for full offline use later.
+ */
+export const BASEMAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
+/** Initial view: centre of Germany. */
+export const MAP_INITIAL_CENTER: [number, number] = [10.45, 51.16]; // [lon, lat]
+export const MAP_INITIAL_ZOOM = 5.3;
+/** Where graph tiles are served from (relative to the app, or absolute URL). */
+export const GRAPH_BASE_URL = './graph';
+export const PLZ_TABLE_URL = './data/plz.json';

@@ -1,0 +1,11 @@
+html,
+body {
+  margin: 0;
+  height: 100%;
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #f4f4f2;
+}
+#map {
+  position: absolute;
+  inset: 0;
+}

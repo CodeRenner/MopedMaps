@@ -4,48 +4,49 @@ import argparse
 import gzip
 import json
 import sys
+import tempfile
 import time
+from collections.abc import Iterable
 from datetime import UTC, datetime
 from pathlib import Path
 
+import numpy as np
+
 from mopedmaps_pipeline import config
-from mopedmaps_pipeline.chunks import HEADER, VERSION, decode_chunk, split_into_chunks, tile_name
+from mopedmaps_pipeline.chunks import (
+    HEADER,
+    VERSION,
+    TileKey,
+    decode_chunk,
+    split_into_chunks,
+    tile_name,
+)
 from mopedmaps_pipeline.graph import build_graph
 
 
-def build(
-    src: Path, out: Path, tile_size: float = config.TILE_SIZE_DEG, dem_dir: Path | None = None
+def write_tiles(
+    tiles: Iterable[tuple[TileKey, bytes]],
+    out: Path,
+    src: Path,
+    tile_size: float,
+    timings: dict[str, float],
+    extra: dict[str, int],
 ) -> dict:
-    """Build tiles + manifest.json from an OSM file. Returns the manifest."""
-    from mopedmaps_pipeline.osm_pbf import read_osm  # lazy: needs pyosmium
-
-    t0 = time.monotonic()
-    data = read_osm(src)
-    t_read = time.monotonic() - t0
-    graph = build_graph(data)
-    t_graph = time.monotonic() - t0 - t_read
-    no_dem = len(graph.edges)
-    if dem_dir is not None:
-        from mopedmaps_pipeline.dem import Dem
-        from mopedmaps_pipeline.elevation import apply_elevation
-
-        graph, no_dem = apply_elevation(graph, Dem(dem_dir))
-    t_elev = time.monotonic() - t0 - t_read - t_graph
-    chunks = split_into_chunks(graph, tile_size)
-
+    """Write .mmg files and manifest.json; shared by both build modes."""
     out.mkdir(parents=True, exist_ok=True)
-    tiles = {}
-    total = total_gz = 0
-    for key, buf in sorted(chunks.items()):
+    meta = {}
+    total = total_gz = nodes = edges = 0
+    for key, buf in tiles:
         name = tile_name(key)
         (out / name).write_bytes(buf)
         _, _, _, _, _, _, n_nodes, n_edges, _ = HEADER.unpack_from(buf, 0)
         gz = len(gzip.compress(buf, 9))
-        tiles[name] = {"ix": key[0], "iy": key[1], "bytes": len(buf), "gzip_bytes": gz,
-                       "nodes": n_nodes, "edges": n_edges}  # fmt: skip
+        meta[name] = {"ix": key[0], "iy": key[1], "bytes": len(buf), "gzip_bytes": gz,
+                      "nodes": n_nodes, "edges": n_edges}  # fmt: skip
         total += len(buf)
         total_gz += gz
-
+        nodes += n_nodes
+        edges += n_edges
     manifest = {
         "format": "mmg",
         "version": VERSION,
@@ -54,21 +55,94 @@ def build(
         "source": src.name,
         "attribution": "© OpenStreetMap contributors (ODbL)",
         "totals": {
-            "tiles": len(tiles),
-            "nodes": len(graph.nodes),
-            "edges": len(graph.edges),
+            "tiles": len(meta),
+            "nodes": nodes,
+            "edges": edges,
             "bytes": total,
             "gzip_bytes": total_gz,
-            "max_tile_bytes": max((t["bytes"] for t in tiles.values()), default=0),
-            "read_s": round(t_read, 1),
-            "graph_s": round(t_graph, 1),
-            "elevation_s": round(t_elev, 1),
-            "edges_without_elevation": no_dem,
+            "max_tile_bytes": max((t["bytes"] for t in meta.values()), default=0),
+            **{f"{k}_s": round(v, 1) for k, v in timings.items()},
+            **extra,
         },
-        "tiles": tiles,
+        "tiles": dict(sorted(meta.items())),
     }
     (out / "manifest.json").write_text(json.dumps(manifest, indent=1))
     return manifest
+
+
+def build(
+    src: Path, out: Path, tile_size: float = config.TILE_SIZE_DEG, dem_dir: Path | None = None
+) -> dict:
+    """In-memory build (small extracts). Returns the manifest."""
+    from mopedmaps_pipeline.osm_pbf import read_osm  # lazy: needs pyosmium
+
+    clock = _Clock()
+    data = read_osm(src)
+    clock.lap("read")
+    graph = build_graph(data)
+    clock.lap("graph")
+    no_dem = len(graph.edges)
+    if dem_dir is not None:
+        from mopedmaps_pipeline.dem import Dem
+        from mopedmaps_pipeline.elevation import apply_elevation
+
+        graph, no_dem = apply_elevation(graph, Dem(dem_dir))
+    clock.lap("elevation")
+    chunks = split_into_chunks(graph, tile_size)
+    return write_tiles(
+        sorted(chunks.items()), out, src, tile_size, clock.laps,
+        {"edges_without_elevation": no_dem},
+    )  # fmt: skip
+
+
+def build_streaming(
+    src: Path,
+    out: Path,
+    tile_size: float = config.TILE_SIZE_DEG,
+    dem_dir: Path | None = None,
+    workdir: Path | None = None,
+) -> dict:
+    """Streaming build with bounded memory (country-sized extracts)."""
+    from mopedmaps_pipeline import streaming as st
+
+    clock = _Clock()
+    with tempfile.TemporaryDirectory(dir=workdir, prefix="mmg-build-") as tmp_name:
+        tmp = Path(tmp_name)
+        filtered = tmp / "filtered.osm.pbf"
+        st.prefilter(src, filtered)
+        clock.lap("prefilter")
+        junctions = st.junction_ids(filtered)
+        clock.lap("junctions")
+        spool = st.TileSpool(tmp / "spool")
+        stats = st.stream_edges(
+            filtered, junctions, spool, f"sparse_file_array,{tmp / 'nodes.idx'}", tile_size
+        )
+        del junctions
+        clock.lap("edges")
+        heights = None
+        if dem_dir is not None:
+            from mopedmaps_pipeline.dem import Dem
+
+            heights = st.stream_heights(spool, Dem(dem_dir))
+        clock.lap("elevation")
+        tiles = ((ti.key, ti.data) for ti in st.assemble(spool, tile_size, heights))
+        missing = 0 if heights is None else int(np.isnan(heights[1]).sum())
+        return write_tiles(
+            tiles, out, src, tile_size, clock.laps,
+            {"skipped_incomplete_ways": stats["skipped_incomplete"],
+             "nodes_without_elevation": missing if heights is not None else -1},
+        )  # fmt: skip
+
+
+class _Clock:
+    def __init__(self) -> None:
+        self.t = time.monotonic()
+        self.laps: dict[str, float] = {}
+
+    def lap(self, name: str) -> None:
+        now = time.monotonic()
+        self.laps[name] = now - self.t
+        self.t = now
 
 
 def _verify(out: Path) -> None:
@@ -85,6 +159,10 @@ def main(argv: list[str] | None = None) -> int:
     b.add_argument("--tile-size", type=float, default=config.TILE_SIZE_DEG)
     b.add_argument("--verify", action="store_true", help="decode every tile afterwards")
     b.add_argument("--dem", type=Path, help="directory with Copernicus GLO-30 tiles")
+    b.add_argument(
+        "--streaming", action="store_true", help="bounded-memory build for large extracts"
+    )
+    b.add_argument("--workdir", type=Path, help="where to put temp files (streaming mode)")
     z = sub.add_parser("plz", help="GeoNames DE.zip -> bundled PLZ table (JSON)")
     z.add_argument("input", type=Path, help="GeoNames DE.zip")
     z.add_argument("output", type=Path, help="output .json")
@@ -98,7 +176,10 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{len(rows)} PLZ -> {args.output} ({args.output.stat().st_size} bytes)")
         return 0
 
-    m = build(args.input, args.output, args.tile_size, args.dem)
+    if args.streaming:
+        m = build_streaming(args.input, args.output, args.tile_size, args.dem, args.workdir)
+    else:
+        m = build(args.input, args.output, args.tile_size, args.dem)
     if args.verify:
         _verify(args.output)
     json.dump(m["totals"], sys.stdout, indent=1)

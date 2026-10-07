@@ -7,7 +7,7 @@ updates "Current state". Newest entries at the bottom.
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 (safety score + sliders) — next
 - Next task: step 5 — risk score in the pipeline (fills the reserved edge byte) + sliders a/b/c in the UI
-- Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3)
+- Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` (local, stacked on #4) = step 5
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
   not installed globally (use a venv for Python tooling).
@@ -47,6 +47,13 @@ updates "Current state". Newest entries at the bottom.
 - [x] Profile settings (vmax presets 25/45 + free input, drive type), persisted locally
 - [x] Mobile UX: collapse area panel after loading (attribution kept fully visible for ODbL compliance)
 - [x] Size budget check (bundle size) and older-iPhone sanity (ES2020, no heavy deps)
+
+## Task backlog (step 5)
+- [ ] Risk model doc + constants (pipeline config): fast rural roads w/o cycleway, no lighting, bad surface, many junctions/signals; bonus for 30/50 side streets
+- [ ] Pipeline: compute per-edge risk (0–255) into the reserved byte; tests; rebuild Bremen + web fixtures
+- [ ] Router: cost = a·time + b·risk·length + c·energy (risk per km), heuristic stays admissible; tests
+- [ ] UI: sliders a/b (c later in step 6), instant reroute; route summary shows risk indicator
+- [ ] Browser check, then PR #5
 
 ## Log
 ### 2026-10-06 — Iteration 0 (setup)
@@ -394,3 +401,7 @@ updates "Current state". Newest entries at the bottom.
 - Tests: vitest 86 passed; build OK.
 - Commits: 15b65c3 (+ this log/doc commit)
 - Next: push `ui/map-frontend`, open PR #4; then step 5.
+
+### 2026-10-07 — Iteration 22b (PR #4)
+- Opened https://github.com/CodeRenner/MopedMaps/pull/4 (base `data/plz-chunks`),
+  automatically per DECISIONS. Branch `safety/risk-score` for step 5; backlog added.

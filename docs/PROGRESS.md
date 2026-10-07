@@ -6,7 +6,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 done (PR #5, branch `safety/risk-score`); 6 done (PR #6, branch `energy/elevation`); 7 done (PR #7, branch `pwa/offline`); 8 (docs, licence, graph-build Action) — next
-- Next task: streaming pass 2 — edges with on-disk node locations into per-tile temp files
+- Next task: streaming pass 0 — pre-filter extract to routable ways + referenced nodes (shrinks location index for DE)
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5). `pwa/offline` = PR #7 (step 7, stacked on #6). `docs/release` (local, stacked on #7) = step 8
 - Blockers / questions for the user (asked 2026-10-07, not blocking current work):
   - Cloudflare account + API token (Pages: Edit) + account ID as GitHub secrets CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID
@@ -73,7 +73,8 @@ updates "Current state". Newest entries at the bottom.
 - [x] CI workflow: ruff + pytest (pipeline), tsc + vitest + vite build (web) on PRs
 - [ ] Streaming Germany build (decided 2026-10-07):
   - [x] Pass 1: routable way refs -> sorted junction id array (numpy), test == build_graph junctions
-  - [ ] Pass 2: ways with on-disk locations -> split at junctions -> edge rows into per-tile temp files + junction (id, lat, lon, tile) list
+  - [x] Pass 2: ways with on-disk locations -> split at junctions -> edge rows into per-tile temp files + junction (id, lat, lon, tile) list
+  - [ ] Pass 0: pre-filter PBF (routable highway ways + referenced nodes + signal nodes) so the on-disk location index only holds road nodes (DE estimate otherwise ~7 GB index + 4.4 GB PBF + ~3 GB spool > runner disk)
   - [ ] Assemble tiles from temp files (local indices by sorted id per tile), identical output to current build on Bremen
   - [ ] Elevation in streaming mode (node heights + smoothing with neighbour lookups per tile band)
   - [ ] Measure on a mid-size state (e.g. Niedersachsen or Hessen): time, peak RAM, disk
@@ -673,3 +674,24 @@ updates "Current state". Newest entries at the bottom.
 - Tests: ruff clean; pytest 3 new passed (incl. Bremen when present).
 - Commit: 2d2ce44
 - Next: pass 2 (edges into per-tile temp files).
+
+### 2026-10-07 — Iteration 38 (streaming pass 2)
+- Refactor: `graph.split_way(...)` (edge splitting + attributes) now shared
+  by `build_graph` and the streaming build — no duplicated logic; all
+  existing tests still pass.
+- What: `streaming.TileSpool` (buffered pickle spools per tile/kind, one
+  open file at a time) and `stream_edges(path, junctions, spool,
+  location_store)`: FileProcessor with locations + KeyFilter("highway"),
+  traffic-signal nodes collected on the fly, ways split via
+  `np.searchsorted` junction lookup, edges spooled by from-tile, endpoint
+  nodes spooled by their own tile.
+- Result: identical edges to the in-memory build on both fixtures and on
+  Bremen (59,515 edges). Bremen with `sparse_file_array` on disk: pass1
+  1.2 s + pass2 2.2 s, peak RSS 162 MB (in-memory build 245 MB), spool
+  14 MB, node index 32 MB.
+- Finding: the location index stores *all* nodes of the extract -> for DE
+  ~7 GB; with PBF + spool that exceeds a runner's disk. Added pass 0
+  (pre-filter) to the backlog.
+- Tests: ruff clean; pytest 76 passed.
+- Commit: 0ae00c7
+- Next: pass 0 pre-filter.

@@ -6,7 +6,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 done (PR #5, branch `safety/risk-score`); 6 done (PR #6, branch `energy/elevation`); 7 done (PR #7, branch `pwa/offline`); 8 (docs, licence, graph-build Action) — next
-- Next task: streaming pass 0 — pre-filter extract to routable ways + referenced nodes (shrinks location index for DE)
+- Next task: streaming assembly — per-tile .mmg from spools, byte-identical to the in-memory build on Bremen
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5). `pwa/offline` = PR #7 (step 7, stacked on #6). `docs/release` (local, stacked on #7) = step 8
 - Blockers / questions for the user (asked 2026-10-07, not blocking current work):
   - Cloudflare account + API token (Pages: Edit) + account ID as GitHub secrets CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID
@@ -74,7 +74,7 @@ updates "Current state". Newest entries at the bottom.
 - [ ] Streaming Germany build (decided 2026-10-07):
   - [x] Pass 1: routable way refs -> sorted junction id array (numpy), test == build_graph junctions
   - [x] Pass 2: ways with on-disk locations -> split at junctions -> edge rows into per-tile temp files + junction (id, lat, lon, tile) list
-  - [ ] Pass 0: pre-filter PBF (routable highway ways + referenced nodes + signal nodes) so the on-disk location index only holds road nodes (DE estimate otherwise ~7 GB index + 4.4 GB PBF + ~3 GB spool > runner disk)
+  - [x] Pass 0: pre-filter PBF (routable highway ways + referenced nodes + signal nodes) so the on-disk location index only holds road nodes (DE estimate otherwise ~7 GB index + 4.4 GB PBF + ~3 GB spool > runner disk)
   - [ ] Assemble tiles from temp files (local indices by sorted id per tile), identical output to current build on Bremen
   - [ ] Elevation in streaming mode (node heights + smoothing with neighbour lookups per tile band)
   - [ ] Measure on a mid-size state (e.g. Niedersachsen or Hessen): time, peak RAM, disk
@@ -695,3 +695,14 @@ updates "Current state". Newest entries at the bottom.
 - Tests: ruff clean; pytest 76 passed.
 - Commit: 0ae00c7
 - Next: pass 0 pre-filter.
+
+### 2026-10-07 — Iteration 39 (streaming pass 0)
+- What: `streaming.prefilter(src, dst)` — FileProcessor + KeyFilter, writes
+  routable ways (same `routable_tags` rule) and traffic-signal nodes through
+  `osmium.BackReferenceWriter`, which appends the referenced nodes.
+- Result Bremen: 21.2 MB -> 2.5 MB (12 %), index 32 -> 16 MB, 2.5 s; edges
+  identical after filtering (fixtures + Bremen). Doc updated with DE disk
+  estimate (fits a runner).
+- Tests: ruff clean; pytest streaming 11 passed.
+- Commit: d99c9b7
+- Next: assembly of .mmg tiles from spools.

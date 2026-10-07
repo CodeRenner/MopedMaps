@@ -240,3 +240,12 @@ updates "Current state". Newest entries at the bottom.
   stopped; no repo impact.
 - Commit: 3668518
 - Next: chunk loader + IndexedDB.
+
+### 2026-10-07 — Iteration 14b (fix: ignored files)
+- Found: `.gitignore` pattern `data/` matched every `data/` dir, so
+  `web/public/data/plz.json` + README (iteration 12 — its log entry wrongly
+  said they were committed) and `web/src/data/manifest.ts` (iteration 14)
+  were untracked. Changed to `/data/` (root only), committed the files.
+- Lesson: check `git status` / `git show --stat` after each commit.
+- Tests: tsc clean; vitest 51 passed.
+- Commit: 37c6851

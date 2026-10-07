@@ -5,9 +5,9 @@ first, does ONE small runnable increment, then appends an entry below and
 updates "Current state". Newest entries at the bottom.
 
 ## Current state
-- Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 (PLZ + chunk loading + IndexedDB) — starting
-- Next task: wire PLZ -> plan -> loader -> worker `load` into one `AreaLoader` (last item of step 3); then push + PR #3
-- Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` (local, stacked on #2) = step 3 work
+- Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 (frontend) — next
+- Next task: step 4 — frontend scaffold (Vite? needs bundler choice; MapLibre GL JS + PMTiles; i18n de first)
+- Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2)
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
   not installed globally (use a venv for Python tooling).
@@ -37,7 +37,7 @@ updates "Current state". Newest entries at the bottom.
 - [x] PLZ lookup module in web (exact + prefix search), tests
 - [x] Tiles-in-radius computation (circle vs tile rectangles), uses manifest
 - [x] Chunk loader: fetch with retry, IndexedDB cache keyed by build version, re-fetch when evicted (iOS)
-- [ ] Wire loader -> worker `load`
+- [x] Wire loader -> worker `load`
 
 ## Log
 ### 2026-10-06 — Iteration 0 (setup)
@@ -262,3 +262,15 @@ updates "Current state". Newest entries at the bottom.
 - Tests: tsc clean; vitest 57 passed.
 - Commit: e941ac6
 - Next: AreaLoader glue, then step 3 PR.
+
+### 2026-10-07 — Iteration 16 (area loader) — step 3 complete
+- What: `web/src/router/port.ts` (`RouterPort`; `LocalRouterPort` in-process,
+  `WorkerRouterPort` id-correlated postMessage with transferables) and
+  `web/src/data/area.ts` (`loadArea`: PLZ or coords -> clamp radius 25–100
+  -> `planTiles` -> `loadChunks` -> router `load` (transfers copies so the
+  cache keeps its buffers) -> prune old builds; typed `AreaError` codes).
+- Tests: fixture end-to-end (load, route, second load from cache), unknown
+  PLZ / no tiles, radius clamp; Bremen end-to-end with real plz.json +
+  manifest (local data only). tsc clean; vitest 61 passed; pytest 53 passed.
+- Commit: ccb82d6
+- Next: push `data/plz-chunks`, open PR #3 (auto, per DECISIONS); then step 4.

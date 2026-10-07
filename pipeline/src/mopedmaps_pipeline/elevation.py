@@ -19,7 +19,7 @@ from mopedmaps_pipeline.graph import Edge, Graph
 
 
 class ElevationSource(Protocol):
-    def elevation(self, lat: float, lon: float) -> float: ...
+    def sample_many(self, lats: np.ndarray, lons: np.ndarray) -> np.ndarray: ...
 
 
 def smooth_heights(
@@ -64,7 +64,8 @@ def edge_climbs(
 def apply_elevation(graph: Graph, dem: ElevationSource) -> tuple[Graph, int]:
     """Return a graph with ascent/descent filled in, plus the count of edges without DEM data."""
     ids = np.array(sorted(graph.nodes), dtype=np.int64)
-    raw = np.array([dem.elevation(*graph.nodes[int(n)]) for n in ids], dtype=np.float64)
+    coords = np.array([graph.nodes[int(n)] for n in ids], dtype=np.float64).reshape(-1, 2)
+    raw = dem.sample_many(coords[:, 0], coords[:, 1])
     from_ids = np.array([e.from_node for e in graph.edges], dtype=np.int64)
     to_ids = np.array([e.to_node for e in graph.edges], dtype=np.int64)
     z = smooth_heights(raw, np.searchsorted(ids, from_ids), np.searchsorted(ids, to_ids))

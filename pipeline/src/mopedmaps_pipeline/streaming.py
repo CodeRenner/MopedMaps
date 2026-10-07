@@ -287,10 +287,7 @@ def stream_heights(spool: TileSpool, dem: ElevationSource) -> tuple[np.ndarray, 
     lats = np.frombuffer(lat_buf, dtype=np.float64)[first]
     lons = np.frombuffer(lon_buf, dtype=np.float64)[first]
     del nid_buf, lat_buf, lon_buf
-    raw = np.array(
-        [dem.elevation(float(la), float(lo)) for la, lo in zip(lats, lons, strict=True)],
-        dtype=np.float64,
-    )
+    raw = dem.sample_many(lats, lons)
     fr_ids = array("q")
     to_ids = array("q")
     for key in spool.tiles("edges"):

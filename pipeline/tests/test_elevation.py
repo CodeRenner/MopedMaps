@@ -1,5 +1,3 @@
-import math
-
 import numpy as np
 import pytest
 
@@ -13,13 +11,13 @@ from tests.test_graph import FIXTURE
 class Ramp:
     """Elevation rises 10 m per 0.01° of longitude (~670 m at 53°N)."""
 
-    def elevation(self, lat, lon):
-        return (lon - 8.80) * 1000.0
+    def sample_many(self, lats, lons):
+        return (np.asarray(lons) - 8.80) * 1000.0
 
 
 class Nowhere:
-    def elevation(self, lat, lon):
-        return math.nan
+    def sample_many(self, lats, lons):
+        return np.full(len(lats), np.nan)
 
 
 def test_smoothing_removes_noise_but_keeps_trend():

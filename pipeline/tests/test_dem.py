@@ -53,6 +53,20 @@ def test_bilinear_sampling_on_synthetic_tile(tmp_path):
     dem = Dem(tmp_path)
     assert dem.elevation(53.5, 8.5) == pytest.approx(110)
     assert math.isnan(dem.elevation(50.5, 8.5))
+    many = dem.sample_many(np.array([53.5, 50.5, 53.75]), np.array([8.5, 8.5, 8.25]))
+    assert many[0] == pytest.approx(110) and math.isnan(many[1]) and many[2] == pytest.approx(55)
+
+
+def test_sample_many_matches_scalar_on_real_tiles():
+    if not (REAL / tile_filename(53, 8)).exists():
+        pytest.skip("local DEM tiles missing")
+    dem = Dem(REAL)
+    rng = np.random.default_rng(3)
+    lats = rng.uniform(52.2, 53.9, 200)
+    lons = rng.uniform(8.1, 9.9, 200)
+    many = dem.sample_many(lats, lons)
+    for la, lo, z in zip(lats, lons, many, strict=True):
+        assert dem.elevation(la, lo) == z
 
 
 @pytest.mark.skipif(not (REAL / tile_filename(53, 8)).exists(), reason="local DEM tiles missing")

@@ -59,17 +59,22 @@ class DemTile:
             out[r * th : (r + 1) * th, c * tw : (c + 1) * tw] = undo_float_predictor(raw, tw, th)
         return out[:h, :w]
 
-    def sample(self, lat: float, lon: float) -> float:
-        """Bilinear interpolation; edge pixels are clamped."""
-        x = min(max((lon - self.lon0) / self.dx, 0.0), self.width - 1.0)
-        y = min(max((self.lat0 - lat) / self.dy, 0.0), self.height - 1.0)
-        x0, y0 = int(x), int(y)
-        x1, y1 = min(x0 + 1, self.width - 1), min(y0 + 1, self.height - 1)
+    def sample_array(self, lats: np.ndarray, lons: np.ndarray) -> np.ndarray:
+        """Vectorised bilinear interpolation (float64); edge pixels are clamped."""
+        x = np.clip((np.asarray(lons, np.float64) - self.lon0) / self.dx, 0.0, self.width - 1.0)
+        y = np.clip((self.lat0 - np.asarray(lats, np.float64)) / self.dy, 0.0, self.height - 1.0)
+        x0 = x.astype(np.int64)
+        y0 = y.astype(np.int64)
+        x1 = np.minimum(x0 + 1, self.width - 1)
+        y1 = np.minimum(y0 + 1, self.height - 1)
         fx, fy = x - x0, y - y0
         d = self.data
         top = d[y0, x0] * (1 - fx) + d[y0, x1] * fx
         bottom = d[y1, x0] * (1 - fx) + d[y1, x1] * fx
-        return float(top * (1 - fy) + bottom * fy)
+        return top * (1 - fy) + bottom * fy
+
+    def sample(self, lat: float, lon: float) -> float:
+        return float(self.sample_array(np.array([lat]), np.array([lon]))[0])
 
 
 class Dem:
@@ -89,3 +94,24 @@ class Dem:
     def elevation(self, lat: float, lon: float) -> float:
         tile = self._tile(lat, lon)
         return tile.sample(lat, lon) if tile else math.nan
+
+    def sample_many(self, lats: np.ndarray, lons: np.ndarray) -> np.ndarray:
+        """Heights for many points, loading each 1° tile once and releasing it
+        afterwards (country scale: one decoded tile in memory at a time)."""
+        lats = np.asarray(lats, np.float64)
+        lons = np.asarray(lons, np.float64)
+        out = np.full(len(lats), np.nan)
+        keys = np.floor(lats).astype(np.int64) * 1000 + np.floor(lons).astype(np.int64)
+        order = np.argsort(keys, kind="stable")
+        bounds = np.flatnonzero(np.diff(keys[order])) + 1
+        for group in np.split(order, bounds):
+            if len(group) == 0:
+                continue
+            key = (math.floor(lats[group[0]]), math.floor(lons[group[0]]))
+            path = self.directory / tile_filename(*key)
+            if not path.exists():
+                continue
+            tile = self._tiles.get(key) or DemTile(path)
+            out[group] = tile.sample_array(lats[group], lons[group])
+            del tile  # not cached: bounded memory
+        return out

@@ -128,8 +128,8 @@ def test_assembled_tiles_byte_identical_on_bremen(tmp_path):
 
 
 class _Ramp:
-    def elevation(self, lat, lon):
-        return (lon - 8.0) * 1000.0 + lat * 10
+    def sample_many(self, lats, lons):
+        return (np.asarray(lons) - 8.0) * 1000.0 + np.asarray(lats) * 10
 
 
 def test_streaming_elevation_matches_in_memory(tmp_path):

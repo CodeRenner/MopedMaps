@@ -22,6 +22,9 @@ export interface RouteResult {
   timeS: number;
   cost: number;
   riskAvg: number;
+  energyWh: number;
+  fuelL: number;
+  ascentM: number;
   geometry: LatLon[];
   settled: number;
   computeMs: number;

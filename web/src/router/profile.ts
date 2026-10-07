@@ -5,11 +5,12 @@
  * - time in seconds incl. penalties
  * - risk: static edge score (points per km, docs/risk-model.md) × length in km,
  *   so with b = 1 a 1 km stretch of risk 70 weighs like 70 s of travel
- * - energy: roadmap step 6, contributes 0 for now
+ * - energy: wheel energy in Wh (router/energy.ts) × ENERGY_COST_S_PER_WH
  */
 
 import * as cfg from '../config';
 import { AccessFlag, type ChunkEdge, RoadClass } from './chunk';
+import { edgeEnergy } from './energy';
 
 export type Drive = 'electric' | 'combustion';
 
@@ -78,6 +79,6 @@ export function edgeCost(
   if (!canUse(e, p)) return Infinity;
   let time = travelTimeS(e, forward, p);
   if ((e.flags & AccessFlag.DESTINATION) !== 0) time += cfg.DESTINATION_PENALTY_S;
-  // + w.energy * energy (step 6)
-  return w.time * time + w.risk * edgeRisk(e);
+  const energy = w.energy > 0 ? edgeEnergy(e, forward, p).wheelWh * cfg.ENERGY_COST_S_PER_WH : 0;
+  return w.time * time + w.risk * edgeRisk(e) + w.energy * energy;
 }

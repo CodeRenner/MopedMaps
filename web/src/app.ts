@@ -10,12 +10,13 @@ import { circleBounds, circlePolygon } from './location/circle';
 import { PlzIndex } from './location/plz';
 import { type RouterPort, WorkerRouterPort } from './router/port';
 import type { CostWeights, VehicleProfile } from './router/profile';
+import { type EnergySettings, estimateRange } from './router/range';
 import { createAreaPanel } from './ui/areaPanel';
 import { requestPersistence } from './ui/basemap';
-import { areaErrorKey, downloadMb, energySummary, routeErrorKey, routeSummaryParams } from './ui/messages';
+import { areaErrorKey, downloadMb, energySummary, rangeSummary, routeErrorKey, routeSummaryParams } from './ui/messages';
 import { createProfilePanel } from './ui/profilePanel';
 import { createRouteChart } from './ui/routeChart';
-import { loadProfile, saveProfile } from './ui/profileStore';
+import { loadEnergySettings, loadProfile, saveEnergySettings, saveProfile } from './ui/profileStore';
 import { RouteLayer } from './ui/routeLayer';
 import { EMPTY, hintKey, type PickerState, tap, wantsRoute } from './ui/routePicker';
 import { loadWeights, riskClass, saveWeights } from './ui/weights';
@@ -77,6 +78,10 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
   let routeSeq = 0;
   const storage = safeLocalStorage();
   let profile: VehicleProfile = loadProfile(storage);
+  const energyAccess = {
+    get: (d: VehicleProfile['drive']) => loadEnergySettings(storage, d),
+    set: (d: VehicleProfile['drive'], s: EnergySettings) => saveEnergySettings(storage, d, s),
+  };
   let weights: CostWeights = loadWeights(storage);
   let rerouteTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -110,8 +115,15 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
       const summary = t('route.summary', routeSummaryParams(getLocale(), res.route.distanceM, res.route.timeS));
       const r = res.route;
       const risk = r.riskAvg > 0 ? ` · ${t(`route.risk.${riskClass(r.riskAvg)}`)}` : '';
-      const en = energySummary(getLocale(), profile.drive, r.energyWh, r.fuelL, r.ascentM);
-      panel.setStatus(`${summary}${risk} · ${t(en.key, en.params)}`);
+      // Energy shown calibrated to the user's real consumption (if given), plus range with a capacity.
+      const es = energyAccess.get(profile.drive);
+      const est = estimateRange(profile, es, r);
+      const electric = profile.drive === 'electric';
+      const en = energySummary(getLocale(), profile.drive, electric ? est.used : 0, electric ? 0 : est.used, r.ascentM);
+      const range = rangeSummary(getLocale(), profile.drive, est, es.reserveShare);
+      const rangeText = range ? ` · ${t(range.key, range.params)}` : '';
+      const warning = range?.warning ? ` · ${t(range.warning.key, range.warning.params)}` : '';
+      panel.setStatus(`${summary}${risk} · ${t(en.key, en.params)}${rangeText}${warning}`, !!range?.warning);
     } else if (res.type === 'no-route') {
       panel.setStatus(t(routeErrorKey(res.reason)), true);
     } else if (res.type === 'error') {
@@ -159,7 +171,7 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
     profile = p;
     saveProfile(storage, p);
     if (areaLoaded && wantsRoute(picker)) void computeRoute();
-  });
+  }, energyAccess);
   const weightsPanel = createWeightsPanel(weights, (w) => {
     weights = w;
     saveWeights(storage, w);

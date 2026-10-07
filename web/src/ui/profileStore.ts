@@ -2,6 +2,7 @@
 
 import { MAX_VMAX_KMH, MIN_VMAX_KMH } from '../config';
 import { DEFAULT_PROFILE, type Drive, type VehicleProfile } from '../router/profile';
+import { DEFAULT_ENERGY_SETTINGS, type EnergySettings } from '../router/range';
 
 export const PROFILE_STORAGE_KEY = 'mopedmaps.profile.v1';
 
@@ -41,5 +42,42 @@ export function saveProfile(storage: KeyValueStorage | null, p: VehicleProfile):
     storage?.setItem(PROFILE_STORAGE_KEY, JSON.stringify(p));
   } catch {
     // storage full or blocked (private mode): keep the in-memory profile
+  }
+}
+
+/** Energy settings are kept per drive type (units differ: Wh vs. litres). */
+export const energyStorageKey = (drive: Drive) => `mopedmaps.energy.v1.${drive}`;
+
+/** Parse a positive number input ("4,5", " 1200 "); null if empty or invalid. */
+export function parsePositive(input: string): number | null {
+  const s = input.trim().replace(',', '.');
+  if (s === '') return null;
+  const n = Number(s);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+const posOrNull = (x: unknown) => (typeof x === 'number' && Number.isFinite(x) && x > 0 ? x : null);
+
+export function loadEnergySettings(storage: KeyValueStorage | null, drive: Drive): EnergySettings {
+  try {
+    const raw = storage?.getItem(energyStorageKey(drive));
+    if (!raw) return DEFAULT_ENERGY_SETTINGS;
+    const s = JSON.parse(raw) as Partial<EnergySettings>;
+    const r = s.reserveShare;
+    return {
+      capacity: posOrNull(s.capacity),
+      realConsumption: posOrNull(s.realConsumption),
+      reserveShare: typeof r === 'number' && r >= 0 && r < 1 ? r : DEFAULT_ENERGY_SETTINGS.reserveShare,
+    };
+  } catch {
+    return DEFAULT_ENERGY_SETTINGS;
+  }
+}
+
+export function saveEnergySettings(storage: KeyValueStorage | null, drive: Drive, s: EnergySettings): void {
+  try {
+    storage?.setItem(energyStorageKey(drive), JSON.stringify(s));
+  } catch {
+    // storage full or blocked: keep in memory
   }
 }

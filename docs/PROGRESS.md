@@ -10,7 +10,8 @@ updates "Current state". Newest entries at the bottom.
   - `feature/elevation-profile`: node heights in chunks (format v2) + route climb from profile with hysteresis
   - `feature/route-chart`: line chart speed + elevation over distance
   - `feature/range`: battery/tank capacity + real consumption calibration, range/reserve display
-- Next task: route summary range display (share used, remaining km, reserve warning) on `feature/range`, then PR
+- Step 9 features done (PRs #11 elevation-profile, #12 route-chart, range PR stacked on #12). Waiting on the user: review/merge bottom-up, then a manual "Graph build" for v2 tiles.
+- Next task (if continuing): items from "Later / improvements" (snap to largest component, risk tuning)
 - Germany graph (v1) live on mopedmaps.pages.dev since 2026-10-07 (run 37621466950)
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5). `pwa/offline` = PR #7 (step 7, stacked on #6). `docs/release` = PR #8 (step 8, stacked on #7)
 - Blockers / questions for the user (asked 2026-10-07, not blocking current work):
@@ -100,7 +101,7 @@ updates "Current state". Newest entries at the bottom.
 - [x] Route chart view: SVG line chart, x = distance, y = speed (km/h) + elevation (m), collapsible panel, touch/hover readout, de/en -> PR
 - [x] Range model (pure): capacity, real-consumption calibration factor, range estimate, settings storage
 - [x] Profile panel: inputs for capacity (Wh / l) and real consumption (Wh/km / l/100 km), de/en
-- [ ] Route summary: share of battery/tank used, remaining range estimate, warning below reserve (config) -> PR
+- [x] Route summary: share of battery/tank used, remaining range estimate, warning below reserve (config) -> PR
 
 ## Later / improvements (found during checks)
 - [ ] Snap start/target only to the largest connected component (taps near the data border hit isolated fragments -> "unreachable")
@@ -969,3 +970,14 @@ next monthly/manual build after `feature/elevation-profile` is merged; the clien
 - Tests: tsc clean; vitest 143 passed (storage test now per drive).
 - Commit: 637ed5b
 - Next: show range in the route summary, then push + PR.
+
+### Iteration 58 — range in the route summary, PR (2026-10-07)
+- What: summary energy is now calibrated (`estimateRange`); with a capacity it adds "32 % Akku · Rest ca. 45 km";
+  below the reserve (15 %) a red warning; trips needing more than a full battery/tank show "107 % Akku · Reicht nicht
+  ohne Laden/Tanken" instead of "0 km left". Pure `rangeSummary` in ui/messages.ts, de/en strings.
+- Browser check (Bremen centre -> Vegesack, 21.6 km, electric 45 km/h, real 32 Wh/km): model 434 Wh -> calibrated
+  645 Wh; capacity 2000 Wh -> "32 % Akku · Rest ca. 45 km"; capacity 600 Wh -> warning in red (before the "short" text
+  fix). Test values removed from browser storage.
+- Tests: tsc clean; vitest 144 passed; vite build ok.
+- Commit: e9ea138; branch pushed, PR opened (stacked on `feature/route-chart` / PR #12).
+- Next: user review/merge of #11 -> #12 -> range PR; then Graph build for v2 tiles.

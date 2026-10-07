@@ -3,9 +3,10 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from mopedmaps_pipeline.chunks import tile_of
 from mopedmaps_pipeline.graph import build_graph
 from mopedmaps_pipeline.osm_pbf import read_osm
-from mopedmaps_pipeline.streaming import junction_ids
+from mopedmaps_pipeline.streaming import TileSpool, junction_ids, stream_edges
 
 FIX = Path(__file__).parent / "fixtures"
 BREMEN = Path(__file__).resolve().parents[2] / "data" / "bremen-latest.osm.pbf"
@@ -28,3 +29,42 @@ def test_junctions_match_on_bremen():
     # their nodes may still count here; allow only that kind of surplus.
     assert np.isin(expected, got).all()
     assert len(got) - len(expected) <= len(expected) * 0.001
+
+
+def _edge_key(e):
+    return (e.way_id, e.from_node, e.to_node)
+
+
+def _stream(path, tmp_path):
+    spool = TileSpool(tmp_path / "spool", flush_every=3)  # tiny buffer: exercise flushing
+    stats = stream_edges(path, junction_ids(path), spool)
+    edges = [e for key in spool.tiles("edges") for e in spool.read("edges", key)]
+    return spool, stats, edges
+
+
+@pytest.mark.parametrize("name", ["small.osm", "cross_tile.osm"])
+def test_stream_edges_equal_in_memory_edges(name, tmp_path):
+    path = FIX / name
+    expected = sorted(build_graph(read_osm(path)).edges, key=_edge_key)
+    spool, stats, edges = _stream(path, tmp_path)
+    assert sorted(edges, key=_edge_key) == expected
+    assert stats["edges"] == len(expected)
+    for key in spool.tiles("edges"):
+        for e in spool.read("edges", key):
+            assert tile_of(*e.geometry[0]) == key  # spooled by from-tile
+
+
+def test_spool_nodes_cover_all_endpoints(tmp_path):
+    spool, _, edges = _stream(FIX / "cross_tile.osm", tmp_path)
+    nodes = {n[0]: (k, n[1:]) for k in spool.tiles("nodes") for n in spool.read("nodes", k)}
+    for e in edges:
+        assert nodes[e.to_node][0] == tile_of(*e.geometry[-1])
+    assert set(spool.tiles("nodes")) == {(34, 212), (35, 213)}
+
+
+@pytest.mark.skipif(not BREMEN.exists(), reason="local Bremen extract missing")
+def test_stream_edges_on_bremen(tmp_path):
+    expected = build_graph(read_osm(BREMEN)).edges
+    _, stats, edges = _stream(BREMEN, tmp_path)
+    assert stats["edges"] == len(expected)
+    assert sorted(edges, key=_edge_key) == sorted(expected, key=_edge_key)

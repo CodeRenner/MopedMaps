@@ -6,7 +6,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 (frontend) — next
-- Next task: tap to set start/destination, route via worker, draw route + summary
+- Next task: profile settings panel (vmax presets 25/45 + free input, drive), persisted in localStorage; reroute on change
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` (local, stacked on #3) = step 4
 - Blockers / questions for the user:
   - In-app browser preview: tab stays in "Policy check in progress" and navigation to http://localhost:5173 is denied — needs the user to allow it in the Browser pane (visual checks skipped until then)
@@ -44,7 +44,7 @@ updates "Current state". Newest entries at the bottom.
 - [x] Vite app shell, MapLibre map (OpenFreeMap style from config), attribution (OSM, GeoNames, basemap)
 - [x] i18n module (de first, en), all UI strings via i18n files
 - [x] PLZ input + radius slider -> loadArea with progress; area circle on map
-- [ ] Tap to set start/destination, route request via WorkerRouterPort, draw route + summary
+- [x] Tap to set start/destination, route request via WorkerRouterPort, draw route + summary
 - [ ] Profile settings (vmax presets 25/45 + free input, drive type), persisted locally
 - [ ] Size budget check (bundle size) and older-iPhone sanity (ES2020, no heavy deps)
 
@@ -338,3 +338,15 @@ updates "Current state". Newest entries at the bottom.
   navigation denied).
 - Commit: 22fbbaa
 - Next: route interaction.
+
+### 2026-10-07 — Iteration 20 (tap to route)
+- What: `ui/routePicker.ts` (pure state machine: 1st tap start, 2nd target
+  -> route, 3rd restarts; hint keys), `ui/routeLayer.ts` (green/red markers,
+  route line with white casing), app wiring: clicks only after an area is
+  loaded; stale responses dropped via a sequence counter; summary
+  "x km · y min" or localized no-route reason. Uses DEFAULT_PROFILE until the
+  settings panel exists.
+- Tests: tsc clean; vitest 74 passed. Build 291 KB gzip. Visual check
+  still blocked (preview navigation denied).
+- Commit: 5e3b37c
+- Next: profile settings.

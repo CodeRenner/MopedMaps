@@ -36,9 +36,14 @@ max 3.3 % — plausible for a flat city with dykes and bridges.
 The router returns a route profile: cumulative distance, node height and
 effective speed per edge (`web/src/router/routeProfile.ts`). With format v2
 tiles every route node has a smoothed height, and the summary climb is the
-profile's total rise with hysteresis `CLIMB_HYSTERESIS_M` (3 m, in
+profile's total rise with hysteresis `CLIMB_HYSTERESIS_M` (5 m, in
 `web/src/config`): a rise counts only once it reaches the threshold from the
 last low, and a fall only resets the low after dropping the threshold below the
 last high. Real hills count in full; ripples from DEM noise, bridges and
 embankments don't. With v1 tiles (no node heights) the summary falls back to
 the sum of per-edge climbs.
+
+Calibration (Bremen v2 tiles, Hbf -> Vegesack, 19.9 km, node heights 3.8-29.5 m):
+threshold 0 m -> 88 m, 3 m -> 72 m, 5 m -> 63 m, 10 m -> 43 m climb. GLO-30 is
+a surface model (buildings, trees) with a few metres of vertical error, so 5 m
+was chosen.

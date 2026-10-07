@@ -6,7 +6,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 done (PR #5, branch `safety/risk-score`); 6 done (PR #6, branch `energy/elevation`); 7 done (PR #7, branch `pwa/offline`); 8 (docs, licence, graph-build Action) — next
-- Next task: streaming build pass 1 — global junction set (pyosmium ways only, numpy), equal to build_graph's junctions on fixtures
+- Next task: streaming pass 2 — edges with on-disk node locations into per-tile temp files
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5). `pwa/offline` = PR #7 (step 7, stacked on #6). `docs/release` (local, stacked on #7) = step 8
 - Blockers / questions for the user (asked 2026-10-07, not blocking current work):
   - Cloudflare account + API token (Pages: Edit) + account ID as GitHub secrets CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID
@@ -72,7 +72,7 @@ updates "Current state". Newest entries at the bottom.
 - [x] THIRD_PARTY / data notices (DATA_SOURCES.md) (ODbL, CC BY 4.0 GeoNames, Copernicus DEM, OpenFreeMap/OpenMapTiles)
 - [x] CI workflow: ruff + pytest (pipeline), tsc + vitest + vite build (web) on PRs
 - [ ] Streaming Germany build (decided 2026-10-07):
-  - [ ] Pass 1: routable way refs -> sorted junction id array (numpy), test == build_graph junctions
+  - [x] Pass 1: routable way refs -> sorted junction id array (numpy), test == build_graph junctions
   - [ ] Pass 2: ways with on-disk locations -> split at junctions -> edge rows into per-tile temp files + junction (id, lat, lon, tile) list
   - [ ] Assemble tiles from temp files (local indices by sorted id per tile), identical output to current build on Bremen
   - [ ] Elevation in streaming mode (node heights + smoothing with neighbour lookups per tile band)
@@ -662,3 +662,14 @@ updates "Current state". Newest entries at the bottom.
   section; none blocks current work.
 - Asked before the larger pipeline change: user chose the two-pass streaming
   pipeline (recorded in DECISIONS.md); backlog broken down.
+
+### 2026-10-07 — Iteration 37 (streaming pass 1)
+- What: `streaming.py` — `routable_tags(way)` (shared filter) and
+  `junction_ids(path)`: ways-only pass with pyosmium FileProcessor +
+  KeyFilter, refs in `array('q')`, `np.unique` counts -> sorted junction ids.
+  Design + estimates in `docs/germany-build.md`.
+- Result: identical junction set to the in-memory build on both fixtures and
+  on Bremen (51,387 nodes), 1.25 s for Bremen (~5 min extrapolated for DE).
+- Tests: ruff clean; pytest 3 new passed (incl. Bremen when present).
+- Commit: 2d2ce44
+- Next: pass 2 (edges into per-tile temp files).

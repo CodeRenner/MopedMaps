@@ -28,5 +28,6 @@
   "profile.drive.electric": "Elektro",
   "profile.drive.combustion": "Verbrenner",
   "profile.invalidVmax": "Bitte einen Wert zwischen {min} und {max} km/h eingeben.",
-  "info.limitations": "Routen nur innerhalb des geladenen Umkreises. Keine Verkehrsdaten."
+  "info.limitations": "Routen nur innerhalb des geladenen Umkreises. Keine Verkehrsdaten.",
+  "area.change": "Ändern"
 }

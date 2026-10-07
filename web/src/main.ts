@@ -12,7 +12,9 @@ const mapEl = document.getElementById('map');
 const uiEl = document.getElementById('ui');
 if (mapEl && uiEl) {
   const map = createMap(mapEl);
-  map.once('load', () => {
-    startApp(map, uiEl).catch((err) => console.error('startup failed', err));
-  });
+  // 'style.load' fires as soon as the style is ready (our layers need it);
+  // 'load' would also wait for every basemap tile, which took >10 s on slow links.
+  const start = () => startApp(map, uiEl).catch((err) => console.error('startup failed', err));
+  if (map.isStyleLoaded()) start();
+  else map.once('style.load', start);
 }

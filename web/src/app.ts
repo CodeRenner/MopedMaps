@@ -111,6 +111,7 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
       );
       showArea(map, area.centre[0], area.centre[1], area.radiusKm);
       areaLoaded = true;
+      panel.setCollapsed(true);
       picker = EMPTY;
       routeLayer.setPoints(picker);
       routeLayer.setRoute(null);

@@ -8,6 +8,8 @@ export interface AreaPanel {
   root: HTMLElement;
   setStatus(text: string, isError?: boolean): void;
   setBusy(busy: boolean): void;
+  /** Collapse to the status line (after an area is loaded) or expand again. */
+  setCollapsed(collapsed: boolean): void;
 }
 
 const RADIUS_STEP_KM = 5;
@@ -27,13 +29,18 @@ export function createAreaPanel(
       <input name="radius" type="range" />
     </label>
     <button type="submit"></button>
-    <p class="status" role="status" aria-live="polite"></p>`;
+    <div class="status-row">
+      <p class="status" role="status" aria-live="polite"></p>
+      <button type="button" class="change" hidden></button>
+    </div>`;
   const [plzLabel] = root.querySelectorAll('span');
   const plzInput = root.querySelector<HTMLInputElement>('input[name=plz]')!;
   const radius = root.querySelector<HTMLInputElement>('input[name=radius]')!;
   const radiusLabel = root.querySelector<HTMLElement>('.radius-label')!;
   const list = root.querySelector<HTMLDataListElement>('datalist')!;
-  const button = root.querySelector('button')!;
+  const button = root.querySelector<HTMLButtonElement>('button[type=submit]')!;
+  const change = root.querySelector<HTMLButtonElement>('button.change')!;
+  change.textContent = t('area.change');
   const status = root.querySelector<HTMLElement>('.status')!;
 
   plzLabel!.textContent = t('area.plzLabel');
@@ -60,6 +67,12 @@ export function createAreaPanel(
     );
   });
 
+  change.addEventListener('click', () => {
+    root.classList.remove('collapsed');
+    change.hidden = true;
+    plzInput.focus();
+  });
+
   root.addEventListener('submit', (ev) => {
     ev.preventDefault();
     // Accept "28195", "28195 Bremen" or a place name (first match).
@@ -76,6 +89,10 @@ export function createAreaPanel(
     },
     setBusy(busy) {
       button.disabled = busy;
+    },
+    setCollapsed(collapsed) {
+      root.classList.toggle('collapsed', collapsed);
+      change.hidden = !collapsed;
     },
   };
 }

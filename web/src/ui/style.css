@@ -94,3 +94,30 @@ body {
   margin: 0;
   color: #b00020;
 }
+.panel.collapsed > label,
+.panel.collapsed > button[type='submit'] {
+  display: none;
+}
+.status-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.status-row .status {
+  flex: 1;
+}
+.panel button.change {
+  padding: 6px 10px;
+  font-size: 14px;
+  background: #e2e8f0;
+  color: #1a202c;
+}
+@media (max-width: 480px) {
+  .panel {
+    padding: 10px;
+    font-size: 14px;
+  }
+  #ui {
+    right: 52px;
+  }
+}

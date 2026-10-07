@@ -28,5 +28,6 @@
   "profile.drive.electric": "Electric",
   "profile.drive.combustion": "Combustion",
   "profile.invalidVmax": "Please enter a value between {min} and {max} km/h.",
-  "info.limitations": "Routes only within the loaded radius. No traffic data."
+  "info.limitations": "Routes only within the loaded radius. No traffic data.",
+  "area.change": "Change"
 }

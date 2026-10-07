@@ -85,7 +85,7 @@ describe('findRoute (pipeline fixture)', () => {
 
 const BREMEN = join(__dirname, '..', '..', 'data', 'tiles-bremen');
 describe.skipIf(!existsSync(BREMEN))('Bremen fixed start/destination pairs (local data)', () => {
-  const chunks = readdirSync(BREMEN)
+  const chunks = (existsSync(BREMEN) ? readdirSync(BREMEN) : [])
     .filter((f) => f.endsWith('.mmg'))
     .map((f) => decodeChunk(readFileSync(join(BREMEN, f))));
   const g = assembleGraph(chunks);

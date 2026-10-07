@@ -6,7 +6,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 (PLZ + chunk loading + IndexedDB) — starting
-- Next task: PLZ lookup data: pipeline script that builds a compact PLZ -> centroid table from GeoNames DE postal codes (CC BY 4.0)
+- Next task: PLZ lookup module in web (load plz.json, exact + prefix search), tests
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` (local, stacked on #2) = step 3 work
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
@@ -33,7 +33,7 @@ updates "Current state". Newest entries at the bottom.
 - [x] Worker wrapper (no DOM in router core)
 
 ## Task backlog (step 3)
-- [ ] PLZ table: pipeline script GeoNames DE.zip -> compact `plz.json`/binary (download approved 2026-10-07)
+- [x] PLZ table: pipeline script GeoNames DE.zip -> compact `plz.json`/binary (download approved 2026-10-07)
 - [ ] PLZ lookup module in web (exact + prefix search), tests
 - [ ] Tiles-in-radius computation (circle vs tile rectangles), uses manifest
 - [ ] Chunk loader: fetch with retry, IndexedDB cache keyed by build version, re-fetch when evicted (iOS)
@@ -206,3 +206,14 @@ updates "Current state". Newest entries at the bottom.
 - Opened https://github.com/CodeRenner/MopedMaps/pull/2 (base
   `pipeline/graph-chunks`). Created local branch `data/plz-chunks` for step 3.
 - Next: PLZ table script.
+
+### 2026-10-07 — Iteration 12 (PLZ table)
+- What: downloaded GeoNames `DE.zip` (375 KB, CC BY 4.0) to `data/`.
+  `plz.py` aggregates rows per PLZ (mean of distinct points, most frequent
+  name), CLI `python -m mopedmaps_pipeline plz IN.zip OUT.json`. Generated
+  `web/public/data/plz.json`: 10,813 PLZ (incl. large-customer PLZs),
+  460 KB raw / 161 KB gzip. Data README with licence + rebuild command.
+  Spot checks: 28195 Bremen, 10115 Berlin, 80331 München.
+- Tests: ruff clean; pytest 53 passed.
+- Commit: 963e51c
+- Next: PLZ lookup in web.

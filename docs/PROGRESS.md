@@ -6,7 +6,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 (safety score + sliders) — next
-- Next task: router cost a·time + b·risk·km (admissible heuristic), tests
+- Next task: UI sliders (a = speed, b = safety), instant reroute, risk indicator in summary
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` (local, stacked on #4) = step 5
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
@@ -51,7 +51,7 @@ updates "Current state". Newest entries at the bottom.
 ## Task backlog (step 5)
 - [x] Risk model doc + constants (pipeline config): fast rural roads w/o cycleway, no lighting, bad surface, many junctions/signals; bonus for 30/50 side streets
 - [x] Pipeline: compute per-edge risk (0–255) into the reserved byte; tests; rebuild Bremen + web fixtures
-- [ ] Router: cost = a·time + b·risk·length + c·energy (risk per km), heuristic stays admissible; tests
+- [x] Router: cost = a·time + b·risk·length + c·energy (risk per km), heuristic stays admissible; tests
 - [ ] UI: sliders a/b (c later in step 6), instant reroute; route summary shows risk indicator
 - [ ] Browser check, then PR #5
 
@@ -428,3 +428,16 @@ updates "Current state". Newest entries at the bottom.
 - Tests: pytest 62 passed; vitest 86 passed.
 - Commit: 3f8466e
 - Next: risk in router cost.
+
+### 2026-10-07 — Iteration 25 (risk in router)
+- What: `edgeRisk(e) = risk × km`; `edgeCost = a·time + b·edgeRisk`
+  (energy still 0). Heuristic unchanged (risk term ≥ 0, not estimated ->
+  still admissible). Routes report `riskAvg` (length-weighted), passed
+  through the worker protocol.
+- Bremen Hbf -> Vegesack (45 km/h): b=0 19.9 km / 44.4 min / risk 100;
+  b=0.5 19.6 km / 44.6 min / 97; b=2 20.1 km / 49.3 min / 70. A* == Dijkstra
+  for every b.
+- Tests: tsc clean; vitest 90 passed (synthetic fast-risky vs calm-detour
+  switch, cost arithmetic, optimality).
+- Commit: 8b04983
+- Next: sliders in the UI.

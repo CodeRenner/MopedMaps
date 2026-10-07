@@ -6,7 +6,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 done (PR #5, branch `safety/risk-score`); 6 done (PR #6, branch `energy/elevation`); 7 done (PR #7, branch `pwa/offline`); 8 (docs, licence, graph-build Action) — next
-- Next task: measure the streaming build on all of Germany (download approved 2026-10-07); investigate prefilter memory
+- Next task: speed/disk for the Action — node index in RAM (flex_mem) + compact binary spool; option to delete source after prefilter
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5). `pwa/offline` = PR #7 (step 7, stacked on #6). `docs/release` (local, stacked on #7) = step 8
 - Blockers / questions for the user (asked 2026-10-07, not blocking current work):
   - ~~Cloudflare secrets~~ done 2026-10-07 (both present in repo secrets)
@@ -79,8 +79,11 @@ updates "Current state". Newest entries at the bottom.
   - [x] Elevation in streaming mode (node heights + smoothing with neighbour lookups per tile band)
   - [x] CLI `build --streaming` (temp workdir, cleaned up)
   - [x] DEM at country scale: sample grouped by 1° tile + evict (else ~60 tiles × 35 MB in RAM)
-  - [ ] Prefilter memory: BackReferenceWriter peaks at 582 MB on Bremen (43 MB on the tiny fixture) — grows with data; measure on Germany, replace with own two-step filter if needed
-  - [ ] Measure on all of Germany (user approved the 4.4 GB download) (e.g. Niedersachsen or Hessen): time, peak RAM, disk
+  - [x] Prefilter memory: measured on Germany — 1.14 GB peak (bounded), keep BackReferenceWriter
+  - [x] Measure on all of Germany: 103 min, peak 1.58 GB, 844 tiles, 903 MB / 490 MB gzip, max tile 4.87 MB
+  - [ ] Faster edge pass: node index in RAM (`flex_mem`, ~1 GB) instead of on-disk sparse_file_array (pass was I/O-bound, CPU 32 %)
+  - [ ] Compact binary spool rows instead of pickled Edge objects (spool ≥ 4 GB)
+  - [ ] `--delete-source` (or Action step) to free 4.5 GB after the pre-filter (e.g. Niedersachsen or Hessen): time, peak RAM, disk
 - [ ] Monthly graph-build Action (Geofabrik Germany + GLO-30 tiles) + deploy to Cloudflare Pages — needs user to create CF account/API token secrets (ask when ready)
 
 ## Later / improvements (found during checks)
@@ -771,3 +774,18 @@ updates "Current state". Newest entries at the bottom.
   random points of the real tiles).
 - Commit: 00c6676
 - Next: Germany measurement.
+
+### 2026-10-07 — Iteration 44 (Germany measurement)
+- Downloaded Geofabrik `germany-latest.osm.pbf` (4.5 GB, user-approved) and
+  ran `build --streaming` (no DEM; only Bremen DEM tiles exist locally).
+- Result: 844 tiles, 14.2 M junctions, 16.8 M edges, 903 MB raw / 490 MB
+  gzip, largest tile 4.87 MB; 103 min total (prefilter 12.3 min, junctions
+  4.1, edges 78.0, assemble ~8.8); peak RSS 1.58 GB; workdir cleaned up.
+  Pre-filter memory is bounded (1.14 GB) -> BackReferenceWriter stays.
+- Sizes ~1.4–1.6× the Bremen-based extrapolation; still well inside
+  Cloudflare Pages limits (20k files, 25 MiB/file).
+- Bottleneck: edge pass I/O-bound (CPU ~32 %) — on-disk node index + bulky
+  pickle spools. Disk on a runner would be ~11–13 GB of 14 -> follow-ups
+  added (index in RAM, binary spool, delete source after prefilter).
+- Docs: size-measurement.md and germany-build.md updated with the numbers.
+- Next: speed/disk improvements, then the graph-build Action.

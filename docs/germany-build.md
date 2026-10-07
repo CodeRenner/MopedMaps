@@ -33,3 +33,16 @@ Decision (2026-10-07, DECISIONS.md): two-pass streaming pipeline.
 - Pass 2: dominated by pyosmium + per-way Python work, ~30–60 min.
 - Disk after pre-filter: PBF 4.4 GB (can be deleted after pass 0) + filtered
   ~0.5 GB + node index ~1–2 GB + spool ~3 GB.
+
+## Measured on Germany (2026-10-07)
+See `docs/size-measurement.md`: 103 min, peak RAM 1.58 GB, 844 tiles,
+903 MB raw / 490 MB gzip. The edge pass was I/O-bound (CPU ~32 %): the
+on-disk `sparse_file_array` index (0.97 GB) is read randomly and the pickle
+spools are bulky.
+
+Follow-ups for the GitHub Action (runner: 7 GB RAM, ~14 GB free disk):
+- Node index fits in RAM after the pre-filter → use `flex_mem` (≈1 GB) and
+  drop the on-disk index.
+- Compact binary spool rows instead of pickled `Edge` objects.
+- Delete the source PBF right after the pre-filter (disk: 4.5 GB source +
+  0.85 GB filtered + ≥4 GB spool + 0.9 GB tiles ≈ 11–13 GB otherwise).

@@ -6,7 +6,7 @@ import pytest
 from mopedmaps_pipeline.chunks import tile_of
 from mopedmaps_pipeline.graph import build_graph
 from mopedmaps_pipeline.osm_pbf import read_osm
-from mopedmaps_pipeline.streaming import TileSpool, junction_ids, stream_edges
+from mopedmaps_pipeline.streaming import TileSpool, junction_ids, prefilter, stream_edges
 
 FIX = Path(__file__).parent / "fixtures"
 BREMEN = Path(__file__).resolve().parents[2] / "data" / "bremen-latest.osm.pbf"
@@ -68,3 +68,31 @@ def test_stream_edges_on_bremen(tmp_path):
     _, stats, edges = _stream(BREMEN, tmp_path)
     assert stats["edges"] == len(expected)
     assert sorted(edges, key=_edge_key) == sorted(expected, key=_edge_key)
+
+
+@pytest.mark.parametrize("name", ["small.osm", "cross_tile.osm"])
+def test_prefilter_keeps_edges_identical(name, tmp_path):
+    src = FIX / name
+    dst = tmp_path / "filtered.osm.pbf"
+    stats = prefilter(src, dst)
+    assert stats["ways"] >= 1
+    _, _, before = _stream(src, tmp_path / "a")
+    _, _, after = _stream(dst, tmp_path / "b")
+    assert sorted(after, key=_edge_key) == sorted(before, key=_edge_key)
+
+
+def test_prefilter_drops_unroutable(tmp_path):
+    dst = tmp_path / "filtered.osm.pbf"
+    prefilter(FIX / "small.osm", dst)
+    ways = {w.id for w in read_osm(dst).ways}
+    assert ways == {100, 101, 103}  # footway 104 and building 105 removed
+    assert read_osm(dst).node_tags == {4: {"highway": "traffic_signals"}}
+
+
+@pytest.mark.skipif(not BREMEN.exists(), reason="local Bremen extract missing")
+def test_prefilter_on_bremen(tmp_path):
+    dst = tmp_path / "bremen-filtered.osm.pbf"
+    prefilter(BREMEN, dst)
+    assert dst.stat().st_size < BREMEN.stat().st_size * 0.5
+    _, stats, edges = _stream(dst, tmp_path / "s")
+    assert stats["edges"] == len(build_graph(read_osm(BREMEN)).edges)

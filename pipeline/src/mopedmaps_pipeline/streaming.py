@@ -30,6 +30,25 @@ def routable_tags(way: osmium.osm.Way) -> dict[str, str] | None:
     return tags if t.access_flags(tags) else None
 
 
+def prefilter(src: Path, dst: Path) -> dict[str, int]:
+    """Pass 0: write only routable ways, traffic-signal nodes and the nodes the
+    ways reference (pyosmium BackReferenceWriter). Shrinks the input and,
+    crucially, the on-disk node location index for country-sized extracts.
+    """
+    stats = {"ways": 0, "signals": 0}
+    fp = osmium.FileProcessor(str(src)).with_filter(osmium.filter.KeyFilter("highway"))
+    with osmium.BackReferenceWriter(str(dst), ref_src=str(src), overwrite=True) as writer:
+        for obj in fp:
+            if obj.is_way():
+                if routable_tags(obj) is not None:
+                    writer.add(obj)
+                    stats["ways"] += 1
+            elif obj.is_node() and obj.tags.get("highway") == "traffic_signals":
+                writer.add(obj)
+                stats["signals"] += 1
+    return stats
+
+
 def junction_ids(path: Path) -> np.ndarray:
     """Sorted unique ids of all junction nodes (pass 1, ways only)."""
     refs = array("q")

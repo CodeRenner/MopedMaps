@@ -61,6 +61,16 @@ PLZ table: `python -m mopedmaps_pipeline plz DE.zip web/public/data/plz.json`
 (GeoNames). Elevation tiles: Copernicus GLO-30 from the
 `copernicus-dem-30m` open-data bucket into `data/dem/`.
 
+## Deployment
+Static hosting on Cloudflare Pages (project `mopedmaps`, app + graph tiles):
+- `.github/workflows/graph-build.yml` — monthly (3rd, 02:00 UTC) or manual:
+  Geofabrik extract + Copernicus GLO-30 → streaming build (~1 h for Germany)
+  → tiles artifact (90 days) → deploy.
+- `.github/workflows/deploy.yml` — on pushes to `main` touching `web/`:
+  builds the app and deploys it with the tiles of the latest graph build.
+- Required repository secrets: `CLOUDFLARE_API_TOKEN` (permission
+  *Account → Cloudflare Pages → Edit*) and `CLOUDFLARE_ACCOUNT_ID`.
+
 ## Known limitations
 - Routes only inside the loaded radius around the chosen PLZ.
 - iOS: no background GPS (keep the screen on), web storage may be evicted —

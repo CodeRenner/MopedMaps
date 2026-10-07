@@ -6,11 +6,11 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 done (PR #5, branch `safety/risk-score`); 6 done (PR #6, branch `energy/elevation`); 7 done (PR #7, branch `pwa/offline`); 8 (docs, licence, graph-build Action) — next
-- Next task: `build --streaming` CLI wiring (prefilter -> junctions -> edges -> heights -> assemble -> manifest), temp dir handling
+- Next task: DEM sampling for country scale (sample nodes grouped by DEM tile, evict tiles) then measure on a mid-size state
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5). `pwa/offline` = PR #7 (step 7, stacked on #6). `docs/release` (local, stacked on #7) = step 8
 - Blockers / questions for the user (asked 2026-10-07, not blocking current work):
-  - Cloudflare account + API token (Pages: Edit) + account ID as GitHub secrets CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID
-  - Pages project name (e.g. `mopedmaps`); host app + graph tiles together on Cloudflare Pages?
+  - ~~Cloudflare secrets~~ done 2026-10-07 (both present in repo secrets)
+  - Pages project name: no answer yet -> default `mopedmaps`; host app + graph tiles together (recommended, not yet confirmed)
   - LICENSE holder name ("MopedMaps contributors" for now)
   - Review/merge PRs #1–#7 (stacked, bottom-up)
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
@@ -77,6 +77,8 @@ updates "Current state". Newest entries at the bottom.
   - [x] Pass 0: pre-filter PBF (routable highway ways + referenced nodes + signal nodes) so the on-disk location index only holds road nodes (DE estimate otherwise ~7 GB index + 4.4 GB PBF + ~3 GB spool > runner disk)
   - [x] Assemble tiles from temp files (local indices by sorted id per tile), identical output to current build on Bremen
   - [x] Elevation in streaming mode (node heights + smoothing with neighbour lookups per tile band)
+  - [x] CLI `build --streaming` (temp workdir, cleaned up)
+  - [ ] DEM at country scale: sample grouped by 1° tile + evict (else ~60 tiles × 35 MB in RAM)
   - [ ] Measure on a mid-size state (e.g. Niedersachsen or Hessen): time, peak RAM, disk
 - [ ] Monthly graph-build Action (Geofabrik Germany + GLO-30 tiles) + deploy to Cloudflare Pages — needs user to create CF account/API token secrets (ask when ready)
 
@@ -735,3 +737,18 @@ updates "Current state". Newest entries at the bottom.
 - Tests: ruff clean; pytest 85 passed.
 - Commit: f067189
 - Next: CLI wiring for the streaming build.
+
+### 2026-10-07 — Iteration 42 (streaming CLI)
+- What: `cli.write_tiles` (tiles + manifest, shared by both modes),
+  `_Clock` for per-phase timings, `build_streaming` (TemporaryDirectory in
+  `--workdir`: prefilter -> junctions -> edges with on-disk index ->
+  heights -> assemble), flags `--streaming --workdir`. Manifest reports
+  `skipped_incomplete_ways`, `nodes_without_elevation`.
+- Bremen via CLI with DEM: prefilter 2.6 s, junctions 0.7 s, edges 1.5 s,
+  elevation 0.5 s; all 5 tiles byte-identical to the in-memory build. Peak
+  RSS 572 MB, mostly 4 decoded DEM tiles (~35 MB each) -> country-scale DEM
+  handling added to backlog.
+- User confirmed Cloudflare secrets; `gh secret list` shows both names.
+- Tests: ruff clean; pytest 87 passed.
+- Commit: d6c1cf6
+- Next: DEM tiling for country scale, then a mid-size state measurement.

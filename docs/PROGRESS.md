@@ -6,7 +6,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 done (PR #5, branch `safety/risk-score`); 6 done (PR #6, branch `energy/elevation`); 7 done (PR #7, branch `pwa/offline`); 8 (docs, licence, graph-build Action) — next
-- Next task: CI workflow (pipeline: ruff + pytest; web: tsc + vitest + build) on pull requests
+- Next task: band-wise Germany build (bounded memory) — prerequisite for the monthly graph Action
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5). `pwa/offline` = PR #7 (step 7, stacked on #6). `docs/release` (local, stacked on #7) = step 8
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
@@ -66,7 +66,7 @@ updates "Current state". Newest entries at the bottom.
 ## Task backlog (step 8)
 - [x] LICENSE (MIT, decided) + README (EN): what/why, features, architecture, dev setup, data sources & attribution, limitations
 - [x] THIRD_PARTY / data notices (DATA_SOURCES.md) (ODbL, CC BY 4.0 GeoNames, Copernicus DEM, OpenFreeMap/OpenMapTiles)
-- [ ] CI workflow: ruff + pytest (pipeline), tsc + vitest + vite build (web) on PRs
+- [x] CI workflow: ruff + pytest (pipeline), tsc + vitest + vite build (web) on PRs
 - [ ] Band-wise Germany build (memory) — prerequisite for the graph Action
 - [ ] Monthly graph-build Action (Geofabrik Germany + GLO-30 tiles) + deploy to Cloudflare Pages — needs user to create CF account/API token secrets (ask when ready)
 
@@ -632,3 +632,17 @@ updates "Current state". Newest entries at the bottom.
 - Tests: docs only.
 - Commit: d91bbe4
 - Next: CI workflow.
+
+### 2026-10-07 — Iteration 36 (CI)
+- What: `.github/workflows/ci.yml` — on pull_request (all bases, so stacked
+  PRs are checked) and push to main; job `pipeline` (Python 3.12, pip cache,
+  `pip install -e .[dev]`, ruff check + format --check, pytest) and job `web`
+  (Node 22, npm cache, `npm ci`, typecheck, vitest, build). Read-only
+  permissions, concurrency cancels superseded runs.
+- Verified like CI would run: pipeline in a fresh venv from pyproject deps
+  (69 passed); web from a clean `git archive` export -> found a real CI
+  failure: `describe.skipIf` still runs the describe body at collection, so
+  `readdirSync(data/tiles-bremen)` threw ENOENT in astar/risk-routing tests.
+  Guarded the reads; clean export now 107 passed / 6 skipped.
+- Commit: 65afe1e
+- Next: band-wise Germany build.

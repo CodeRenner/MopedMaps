@@ -10,7 +10,7 @@ updates "Current state". Newest entries at the bottom.
   - `feature/elevation-profile`: node heights in chunks (format v2) + route climb from profile with hysteresis
   - `feature/route-chart`: line chart speed + elevation over distance
   - `feature/range`: battery/tank capacity + real consumption calibration, range/reserve display
-- Next task: profile panel inputs for capacity + real consumption on `feature/range` (stacked on `feature/route-chart`, PR #12)
+- Next task: route summary range display (share used, remaining km, reserve warning) on `feature/range`, then PR
 - Germany graph (v1) live on mopedmaps.pages.dev since 2026-10-07 (run 37621466950)
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5). `pwa/offline` = PR #7 (step 7, stacked on #6). `docs/release` = PR #8 (step 8, stacked on #7)
 - Blockers / questions for the user (asked 2026-10-07, not blocking current work):
@@ -99,7 +99,7 @@ updates "Current state". Newest entries at the bottom.
 - [x] Route chart data model (pure): speed steps, downsampled elevation, ticks, readout, SVG paths
 - [x] Route chart view: SVG line chart, x = distance, y = speed (km/h) + elevation (m), collapsible panel, touch/hover readout, de/en -> PR
 - [x] Range model (pure): capacity, real-consumption calibration factor, range estimate, settings storage
-- [ ] Profile panel: inputs for capacity (Wh / l) and real consumption (Wh/km / l/100 km), de/en
+- [x] Profile panel: inputs for capacity (Wh / l) and real consumption (Wh/km / l/100 km), de/en
 - [ ] Route summary: share of battery/tank used, remaining range estimate, warning below reserve (config) -> PR
 
 ## Later / improvements (found during checks)
@@ -958,3 +958,14 @@ next monthly/manual build after `feature/elevation-profile` is merged; the clien
 - Tests: tsc clean; vitest 143 passed (new test/range.test.ts, 8 tests).
 - Commit: bbf169f
 - Next: profile panel inputs (capacity, real consumption), then summary display + PR.
+
+### Iteration 57 — capacity / real consumption inputs (2026-10-07)
+- What: vehicle panel gets "Nutzbare Akkukapazität (Wh)" / "Tankinhalt (l)" and "Echter Verbrauch (Wh/km | l/100 km,
+  optional)" with a hint; labels follow the drive type. Energy settings are stored per drive
+  (`mopedmaps.energy.v1.<drive>`) so Wh and litres never mix. Empty/invalid input clears the value. de/en strings.
+- Browser check: entered 1500 Wh / "32,5" Wh/km -> stored as 1500 / 32.5; switching to combustion shows litre
+  labels with empty values. Fixed: new inputs were unstyled (13 px, iOS zooms on focus) -> same style as vmax (16 px).
+  Test values removed from the browser storage afterwards.
+- Tests: tsc clean; vitest 143 passed (storage test now per drive).
+- Commit: 637ed5b
+- Next: show range in the route summary, then push + PR.

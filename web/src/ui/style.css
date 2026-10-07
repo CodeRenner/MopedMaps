@@ -147,3 +147,57 @@ body {
   font-size: 14px;
   box-shadow: 0 1px 6px rgb(0 0 0 / 0.15);
 }
+.chart summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.chart svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  touch-action: pan-y;
+  margin-top: 6px;
+}
+.chart .grid {
+  stroke: #e2e2e2;
+  stroke-width: 1;
+}
+.chart .axis {
+  font-size: 9px;
+  fill: #555;
+}
+.chart .axis.speed {
+  fill: #2b6cb0;
+}
+.chart .axis.elevation {
+  fill: #2f7d4f;
+}
+.chart .elevation-area {
+  fill: rgb(47 125 79 / 0.15);
+  stroke: none;
+}
+.chart .elevation-line {
+  fill: none;
+  stroke: #2f7d4f;
+  stroke-width: 1.5;
+}
+.chart .speed-line {
+  fill: none;
+  stroke: #2b6cb0;
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+.chart .cursor {
+  stroke: #1a202c;
+  stroke-width: 1;
+  stroke-dasharray: 3 2;
+}
+.chart-legend,
+.chart-readout {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #555;
+}
+.panel[hidden] {
+  display: none;
+}

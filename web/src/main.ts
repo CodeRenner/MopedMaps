@@ -1,4 +1,5 @@
 import './ui/style.css';
+import { startApp } from './app';
 import { detectLocale, setLocale, t } from './i18n';
 import { createMap } from './ui/map';
 
@@ -7,5 +8,11 @@ setLocale(locale);
 document.documentElement.lang = locale;
 document.title = t('app.title');
 
-const el = document.getElementById('map');
-if (el) createMap(el);
+const mapEl = document.getElementById('map');
+const uiEl = document.getElementById('ui');
+if (mapEl && uiEl) {
+  const map = createMap(mapEl);
+  map.once('load', () => {
+    startApp(map, uiEl).catch((err) => console.error('startup failed', err));
+  });
+}

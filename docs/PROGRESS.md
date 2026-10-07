@@ -10,8 +10,8 @@ updates "Current state". Newest entries at the bottom.
   - `feature/elevation-profile`: node heights in chunks (format v2) + route climb from profile with hysteresis
   - `feature/route-chart`: line chart speed + elevation over distance
   - `feature/range`: battery/tank capacity + real consumption calibration, range/reserve display
-- Next task: router route profile (distance, node heights, speeds) + summary climb from profile with hysteresis
-- Waiting on the user: first manual "Graph build" run (europe/germany/bremen smoke test, then europe/germany)
+- Next task: browser check of climb on Bremen v2 tiles, then push `feature/elevation-profile` + PR
+- Germany graph (v1) live on mopedmaps.pages.dev since 2026-10-07 (run 37621466950)
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5). `pwa/offline` = PR #7 (step 7, stacked on #6). `docs/release` = PR #8 (step 8, stacked on #7)
 - Blockers / questions for the user (asked 2026-10-07, not blocking current work):
   - ~~Cloudflare secrets~~ done 2026-10-07 (both present in repo secrets)
@@ -94,7 +94,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Task backlog (step 9 — user requests 2026-10-07)
 - [x] Format v2: per-node height (int16, decimetres, INT16_MIN = unknown) written by both builds; TS + Python decoders read v1 and v2; spec updated
-- [ ] Router returns route profile (cumulative distance, node heights, per-edge speed); climb in summary from profile with hysteresis (config)
+- [x] Router returns route profile (cumulative distance, node heights, per-edge speed); climb in summary from profile with hysteresis (config)
 - [ ] Rebuild Bremen tiles + fixtures; browser check of climb on flat routes -> PR
 - [ ] Route chart: SVG line chart, x = distance, y = speed (km/h) + elevation (m), collapsible panel, touch/hover readout, de/en -> PR
 - [ ] Profile: battery capacity (Wh) / tank size (l), optional real consumption (Wh/km or l/100 km) -> model calibration factor
@@ -900,3 +900,14 @@ GitHub graph-build run 37621466950 (`europe/germany`, deploy=true) succeeded: bu
 https://mopedmaps.pages.dev now serves 844 tiles (14.2 M nodes, 16.8 M edges, 511 MB gzip, format v1);
 spot checks: Bremen `212_35` and Munich `192_45` return 200. v2 tiles (node heights) follow with the
 next monthly/manual build after `feature/elevation-profile` is merged; the client reads both.
+
+### Iteration 52 — route profile + climb with hysteresis (2026-10-07)
+- What: new `web/src/router/routeProfile.ts` (`RouteProfile` = cumulative distance, node height, per-edge
+  speed; `climbWithHysteresis`). `findRoute` returns `profile`; worker passes it through `RouteResult`.
+  Summary climb = hysteresis climb over node heights (`CLIMB_HYSTERESIS_M = 3`) when all route nodes have
+  heights (v2 tiles), else the old per-edge sum (v1 tiles). Documented in docs/elevation.md.
+- Why: per-edge climbs over-count DEM noise; profile is also the data for the upcoming route chart.
+- Tests: tsc clean; vitest 124 passed (new test/routeProfile.test.ts: hysteresis cases, profile arrays,
+  reverse direction, v1 fallback).
+- Commit: 8317a01
+- Next: browser check of climb on flat Bremen routes with v2 tiles, then push + PR for `feature/elevation-profile`.

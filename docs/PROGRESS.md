@@ -5,19 +5,32 @@ first, does ONE small runnable increment, then appends an entry below and
 updates "Current state". Newest entries at the bottom.
 
 ## Current state
-- Roadmap step: 1 (pipeline) — in progress
-- Next task: OSM tag parsing (access rules, maxspeed, road class, surface, lit) as pure functions with tests
+- Roadmap step: 1 (pipeline) — done except band-wise Germany build; step 2 (router) — starting
+- Next task: scaffold `web/` TypeScript package (vitest) + chunk decoder in TS mirroring chunks.py, tested against a Python-generated fixture
+- Branch: `pipeline/graph-chunks` (PR #1 open against main); loop commits go here
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
-  not installed globally (use a venv for Python tooling)
+  not installed globally (use a venv for Python tooling).
+  Node 22 in ~/.local/node — prefix commands with `export PATH="$HOME/.local/node/bin:$PATH"`
 
 ## Task backlog (step 1)
 - [x] Scaffold pipeline package (pyproject, config.py with documented constants)
-- [ ] OSM tag parsing: access rules, maxspeed parsing, road class, surface, lit
-- [ ] Graph builder from small test extract (.osm.pbf fixture or synthetic XML)
-- [ ] Tiling: fixed grid, compact binary chunk format + format spec in docs
-- [ ] CLI: extract -> tiles; run on a real small region (e.g. Bremen) and measure size
-- [ ] Size extrapolation to Germany -> hosting options for user
+- [x] OSM tag parsing: access rules, maxspeed parsing, road class, surface, lit
+- [x] Graph builder from small test extract (.osm.pbf fixture or synthetic XML)
+- [x] Tiling: fixed grid, compact binary chunk format + format spec in docs
+- [x] CLI: extract -> tiles
+- [x] Run on a real small region (Bremen) (e.g. Bremen) and measure size
+- [x] Size extrapolation to Germany -> hosting options for user
+- [ ] Memory-efficient Germany build (band-wise), needed before step 8
+
+## Task backlog (step 2)
+- [ ] Scaffold `web/` (TypeScript, vitest, no framework), shared config constants
+- [ ] TS chunk decoder mirroring chunks.py; cross-language fixture test
+- [ ] Graph assembly from multiple chunks (global node ids = tile+index)
+- [ ] Vehicle profile + access rules (vmax<60 motorway/motorroad rule as documented config)
+- [ ] Edge cost: time = f(length, min(speed, vmax), curvature/junction/signal penalties)
+- [ ] A* (binary heap, haversine/vmax heuristic) + fixed start/destination tests
+- [ ] Worker wrapper (no DOM in router core)
 
 ## Log
 ### 2026-10-06 — Iteration 0 (setup)
@@ -34,3 +47,80 @@ updates "Current state". Newest entries at the bottom.
 - Commit: c687fec
 - Dev setup: `python3 -m venv .venv && .venv/bin/pip install -e 'pipeline[dev]'`
 - Next: tag parsing module.
+
+### 2026-10-06 — Iteration 2 (tag parsing)
+- What: `tags.py` — RoadClass/Surface enums (1-byte codes), AccessFlag bitset
+  (MOPED, MOFA, MOTORROAD, DESTINATION, ONEWAY, ONEWAY_REVERSE), maxspeed
+  parser (numbers, mph, DE zone codes, walk, multi-values -> min,
+  directional), access hierarchy access<vehicle<motor_vehicle<moped<mofa.
+- Design notes: cycleway/footway/path only open with explicit moped/mofa/
+  motor_vehicle permission (generic access=yes does not count). Motorway/trunk
+  are NOT excluded here — the vmax<60 rule is applied in the router from road
+  class + MOTORROAD flag, as CLAUDE.md requires.
+- Tests: ruff clean; pytest 27 passed.
+- Commit: 4f5a930
+- Next: graph builder.
+
+### 2026-10-06 — Iteration 3 (graph builder)
+- What: `osm_xml.py` (stdlib OSM XML reader -> `OsmData`), `geo.py`
+  (haversine, bearing, turn angle), `graph.py` (`build_graph`: filters
+  routable ways, splits at shared nodes/endpoints, one undirected `Edge` per
+  segment with geometry, length, road class, maxspeed fwd/bwd, access flags,
+  surface, lit, cycleway, curvature sum, traffic-signal count).
+  Fixture `tests/fixtures/small.osm` (synthetic, near Bremen).
+- Design notes: edges are stored once; direction handled via ONEWAY flags and
+  per-direction maxspeed. Curvature and signals are raw inputs for the
+  router's penalties. Gradient + risk score come in later roadmap steps
+  (5/6); the binary format will reserve fields for them.
+- PBF reading: plan to use pyosmium (BSD-2) as an adapter producing `OsmData`
+  (memory: will need a node-location store for Germany; handle in CLI step).
+- Tests: ruff clean; pytest 35 passed.
+- Commit: 725159a
+- Next: tiling + binary chunk format.
+
+### 2026-10-06 — Iteration 4 (tiling + chunk format)
+- What: `chunks.py` — grid tiling (`tile_of`, file `{iy}_{ix}.mmg`),
+  binary encoder `split_into_chunks` and reference decoder `decode_chunk`.
+  Spec in `docs/chunk-format.md` (32-byte header, 8-byte nodes, 36-byte edges,
+  zigzag-varint delta geometry).
+- Design notes: tile-local node indices + relative to-tile offset (int8) keep
+  records small; edges live in the tile of their from-node. Reserved fields for
+  ascent/descent (step 6) and risk (step 5) so the format stays v1.
+- Tests: ruff clean; pytest 49 passed (round-trip, cross-tile edge, varints).
+- Commit: 2932aff
+- Next: CLI + real-region size measurement (needs pyosmium + Geofabrik download).
+
+### 2026-10-06 — Iteration 5 (CLI + PBF reader)
+- Context: user requested a PR mid-iteration -> created branch
+  `pipeline/graph-chunks`, added .DS_Store to .gitignore, opened
+  https://github.com/CodeRenner/MopedMaps/pull/1 (iterations 2–4). The loop
+  continues on that branch.
+- What: `osm_pbf.py` (pyosmium 4.3, BSD-2; keeps only routable ways and the
+  tag keys we read; coords via osmium location index `flex_mem`), `cli.py`
+  (`python -m mopedmaps_pipeline build IN OUT [--tile-size] [--verify]`)
+  writing `.mmg` tiles + `manifest.json` (per-tile bytes/gzip/nodes/edges,
+  totals, timings, ODbL attribution).
+- Scaling note: whole-Germany in one Python process may exceed GitHub runner
+  RAM (7 GB). Decide after measuring Bremen (per-state processing with
+  border overlap is the fallback).
+- Tests: ruff clean; pytest 51 passed (pyosmium reader == XML reader on fixture).
+- Commit: 1b8dc72
+- Next: real-region measurement (waiting for download permission).
+
+### 2026-10-06 — Iteration 6 (real-region measurement)
+- User approved downloading Geofabrik Bremen (20 MB) and installing Node.js.
+- What: built Bremen: 5 tiles, 59.5k edges, 2.9 MB raw / 1.35 MB gzip,
+  5.7 s, 245 MB RAM. Write-up + Germany extrapolation in
+  `docs/size-measurement.md` (~640 MB raw / ~300 MB gzip, ~800 tiles,
+  largest tile a few MB; single-process RAM ~50 GB -> needs band-wise build).
+- Node.js install via Homebrew failed: /opt/homebrew not writable by user
+  `ai` (owned by another account). Not fixing permissions myself.
+- Tests: unchanged (51 passed); doc-only commit.
+- Commit: 49a5b2d
+- Next: hosting decision from user; Node.js for step 2.
+
+### 2026-10-06 — Iteration 6b (decisions)
+- User decided: hosting = Cloudflare Pages; Node via tarball in ~/.local/node.
+- Installed Node v22.23.3 (darwin-arm64, SHA-256 verified against nodejs.org
+  SHASUMS256.txt). Recorded both in DECISIONS.md. Added step-2 backlog.
+- Next: web/ scaffold + TS chunk decoder.

@@ -124,3 +124,5 @@ export const ENERGY_COST_S_PER_WH = 1;
 export const BASEMAP_TIMEOUT_MS = 8000;
 /** Route climb: rises/falls smaller than this (m) are treated as noise (docs/elevation.md). */
 export const CLIMB_HYSTERESIS_M = 5;
+/** Route chart: elevation line is reduced to about this many points. */
+export const ROUTE_CHART_MAX_POINTS = 300;

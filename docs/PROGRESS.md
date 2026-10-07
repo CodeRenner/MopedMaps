@@ -6,8 +6,8 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 done (PR #5, branch `safety/risk-score`); 6 (elevation + energy) — next
-- Next task: step 6 — elevation source decision/download (Copernicus DEM GLO-30 or SRTM), ascent/descent per edge in pipeline
-- Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4)
+- Next task: step 6 — download GLO-30 tiles for Bremen area, DEM sampler (tifffile+numpy), ascent/descent per edge
+- Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` (local, stacked on #5) = step 6
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
   not installed globally (use a venv for Python tooling).
@@ -54,6 +54,13 @@ updates "Current state". Newest entries at the bottom.
 - [x] Router: cost = a·time + b·risk·length + c·energy (risk per km), heuristic stays admissible; tests
 - [x] UI: sliders a/b (c later in step 6), instant reroute; route summary shows risk indicator
 - [x] Browser check, then PR #5
+
+## Task backlog (step 6)
+- [ ] DEM: download GLO-30 tiles (N52/N53 × E008/E009), sampler with bilinear interpolation, tests on synthetic raster
+- [ ] Pipeline: ascent/descent per edge (sample along geometry every ~30 m, light smoothing) into bytes 22–25; rebuild
+- [ ] Router: energy model — electric Wh/km by speed + gradient, combustion l/100km; c·energy in cost; documented constants
+- [ ] UI: energy slider c, summary shows Wh or litres + range hint; elevation attribution
+- [ ] Browser check, then PR #6
 
 ## Log
 ### 2026-10-06 — Iteration 0 (setup)
@@ -456,3 +463,9 @@ updates "Current state". Newest entries at the bottom.
 - Tests: tsc clean; vitest 93 passed.
 - Commit: 1d12d8d
 - Next: push + PR #5; then step 6.
+
+### 2026-10-07 — Iteration 26b (PR #5 + step 6 decisions)
+- Opened https://github.com/CodeRenner/MopedMaps/pull/5 (base `ui/map-frontend`).
+- User decided: elevation = Copernicus GLO-30 (AWS open data), raster lib =
+  tifffile + numpy. Recorded in DECISIONS.md; branch `energy/elevation`;
+  step 6 backlog added. Download of the 4 Bremen-area tiles approved.

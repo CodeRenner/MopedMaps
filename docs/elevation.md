@@ -31,3 +31,14 @@ max 3.3 % — plausible for a flat city with dykes and bridges.
 - A hill in the middle of a long edge with ends at similar height is missed.
 - Smoothing flattens very short steep ramps (bridge approaches).
 - Should be re-checked in hilly terrain (e.g. Weserbergland) before tuning.
+
+## Route climb (client)
+The router returns a route profile: cumulative distance, node height and
+effective speed per edge (`web/src/router/routeProfile.ts`). With format v2
+tiles every route node has a smoothed height, and the summary climb is the
+profile's total rise with hysteresis `CLIMB_HYSTERESIS_M` (3 m, in
+`web/src/config`): a rise counts only once it reaches the threshold from the
+last low, and a fall only resets the low after dropping the threshold below the
+last high. Real hills count in full; ripples from DEM noise, bridges and
+embankments don't. With v1 tiles (no node heights) the summary falls back to
+the sum of per-edge climbs.

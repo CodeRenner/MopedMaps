@@ -122,3 +122,5 @@ export const IDLE_S_PER_SIGNAL = 10;
 export const ENERGY_COST_S_PER_WH = 1;
 /** Switch to the built-in fallback style if the basemap style hasn't loaded by then (ms). */
 export const BASEMAP_TIMEOUT_MS = 8000;
+/** Route climb: rises/falls smaller than this (m) are treated as noise (docs/elevation.md). */
+export const CLIMB_HYSTERESIS_M = 3;

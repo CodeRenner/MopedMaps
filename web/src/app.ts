@@ -9,8 +9,11 @@ import { getLocale, t } from './i18n';
 import { circleBounds, circlePolygon } from './location/circle';
 import { PlzIndex } from './location/plz';
 import { type RouterPort, WorkerRouterPort } from './router/port';
+import { DEFAULT_PROFILE } from './router/profile';
 import { createAreaPanel } from './ui/areaPanel';
-import { areaErrorKey, downloadMb } from './ui/messages';
+import { areaErrorKey, downloadMb, routeErrorKey, routeSummaryParams } from './ui/messages';
+import { RouteLayer } from './ui/routeLayer';
+import { EMPTY, hintKey, type PickerState, tap, wantsRoute } from './ui/routePicker';
 
 async function fetchJson(url: string): Promise<unknown> {
   const r = await fetch(url);
@@ -48,6 +51,40 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
     new Worker(new URL('./router/worker.ts', import.meta.url), { type: 'module' }),
   );
   let manifest: Manifest | null = null;
+  let areaLoaded = false;
+  const routeLayer = new RouteLayer(map);
+  let picker: PickerState = EMPTY;
+  let routeSeq = 0;
+
+  map.on('click', async (ev) => {
+    if (!areaLoaded) return;
+    picker = tap(picker, [ev.lngLat.lat, ev.lngLat.lng]);
+    routeLayer.setPoints(picker);
+    routeLayer.setRoute(null);
+    if (!wantsRoute(picker)) {
+      panel.setStatus(t(hintKey(picker)));
+      return;
+    }
+    const seq = ++routeSeq;
+    panel.setStatus(t('route.computing'));
+    const res = await router.request({
+      type: 'route',
+      from: picker.start,
+      to: picker.target,
+      profile: DEFAULT_PROFILE,
+    });
+    if (seq !== routeSeq) return; // a newer tap superseded this request
+    if (res.type === 'route') {
+      routeLayer.setRoute(res.route.geometry);
+      panel.setStatus(
+        t('route.summary', routeSummaryParams(getLocale(), res.route.distanceM, res.route.timeS)),
+      );
+    } else if (res.type === 'no-route') {
+      panel.setStatus(t(routeErrorKey(res.reason)), true);
+    } else if (res.type === 'error') {
+      panel.setStatus(res.message, true);
+    }
+  });
 
   const panel = createAreaPanel(plz, async (code, radiusKm) => {
     panel.setBusy(true);
@@ -65,10 +102,14 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
         },
       );
       showArea(map, area.centre[0], area.centre[1], area.radiusKm);
+      areaLoaded = true;
+      picker = EMPTY;
+      routeLayer.setPoints(picker);
+      routeLayer.setRoute(null);
       panel.setStatus(
         `${t('area.loaded', { label: area.label, km: area.radiusKm })} · ${t('area.downloadHint', {
           mb: downloadMb(getLocale(), area.downloadGzipBytes),
-        })}`,
+        })} · ${t(hintKey(picker))}`,
       );
     } catch (err) {
       console.error(err);

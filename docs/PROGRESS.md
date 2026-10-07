@@ -6,8 +6,8 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 (frontend) — next
-- Next task: step 4 — frontend scaffold (Vite? needs bundler choice; MapLibre GL JS + PMTiles; i18n de first)
-- Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2)
+- Next task: step 4 — Vite app shell + MapLibre map with OpenFreeMap style + attribution footer (OSM, GeoNames)
+- Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` (local, stacked on #3) = step 4
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
   not installed globally (use a venv for Python tooling).
@@ -38,6 +38,14 @@ updates "Current state". Newest entries at the bottom.
 - [x] Tiles-in-radius computation (circle vs tile rectangles), uses manifest
 - [x] Chunk loader: fetch with retry, IndexedDB cache keyed by build version, re-fetch when evicted (iOS)
 - [x] Wire loader -> worker `load`
+
+## Task backlog (step 4)
+- [ ] Vite app shell, MapLibre map (OpenFreeMap style from config), attribution (OSM, GeoNames, basemap)
+- [ ] i18n module (de first, en), all UI strings via i18n files
+- [ ] PLZ input + radius slider -> loadArea with progress; area circle on map
+- [ ] Tap to set start/destination, route request via WorkerRouterPort, draw route + summary
+- [ ] Profile settings (vmax presets 25/45 + free input, drive type), persisted locally
+- [ ] Size budget check (bundle size) and older-iPhone sanity (ES2020, no heavy deps)
 
 ## Log
 ### 2026-10-06 — Iteration 0 (setup)
@@ -274,3 +282,9 @@ updates "Current state". Newest entries at the bottom.
   manifest (local data only). tsc clean; vitest 61 passed; pytest 53 passed.
 - Commit: ccb82d6
 - Next: push `data/plz-chunks`, open PR #3 (auto, per DECISIONS); then step 4.
+
+### 2026-10-07 — Iteration 16b (PR #3 + step 4 decisions)
+- Pushed `data/plz-chunks`, opened https://github.com/CodeRenner/MopedMaps/pull/3
+  (base `router/astar`), automatically per DECISIONS.
+- User decided: basemap = OpenFreeMap first, own PMTiles later; bundler = Vite.
+  Recorded in DECISIONS.md; step 4 backlog added; branch `ui/map-frontend`.

@@ -6,6 +6,6 @@ __pycache__/
 node_modules/
 dist/
 # Large data: OSM extracts and generated graph chunks
-data/
+/data/
 *.osm.pbf
 .DS_Store

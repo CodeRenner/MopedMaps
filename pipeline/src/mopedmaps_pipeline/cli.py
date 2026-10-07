@@ -73,7 +73,18 @@ def main(argv: list[str] | None = None) -> int:
     b.add_argument("output", type=Path, help="output directory for tiles")
     b.add_argument("--tile-size", type=float, default=config.TILE_SIZE_DEG)
     b.add_argument("--verify", action="store_true", help="decode every tile afterwards")
+    z = sub.add_parser("plz", help="GeoNames DE.zip -> bundled PLZ table (JSON)")
+    z.add_argument("input", type=Path, help="GeoNames DE.zip")
+    z.add_argument("output", type=Path, help="output .json")
     args = p.parse_args(argv)
+
+    if args.cmd == "plz":
+        from mopedmaps_pipeline.plz import aggregate, read_geonames_zip, write_table
+
+        rows = aggregate(read_geonames_zip(args.input))
+        write_table(rows, args.output)
+        print(f"{len(rows)} PLZ -> {args.output} ({args.output.stat().st_size} bytes)")
+        return 0
 
     m = build(args.input, args.output, args.tile_size)
     if args.verify:

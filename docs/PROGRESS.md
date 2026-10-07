@@ -5,9 +5,9 @@ first, does ONE small runnable increment, then appends an entry below and
 updates "Current state". Newest entries at the bottom.
 
 ## Current state
-- Roadmap step: 1 done (except band-wise Germany build); 2 done (local branch `router/astar`, PR pending user OK); 3 (PLZ + chunk loading + IndexedDB) — starting
-- Next task: PLZ lookup data: pipeline script that builds a compact PLZ -> centroid table from GeoNames DE postal codes (CC BY 4.0)
-- Branches: `pipeline/graph-chunks` = PR #1 (step 1, pushed). `router/astar` (local, based on it) = step 2 work
+- Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 (frontend) — next
+- Next task: step 4 — frontend scaffold (Vite? needs bundler choice; MapLibre GL JS + PMTiles; i18n de first)
+- Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2)
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
   not installed globally (use a venv for Python tooling).
@@ -33,11 +33,11 @@ updates "Current state". Newest entries at the bottom.
 - [x] Worker wrapper (no DOM in router core)
 
 ## Task backlog (step 3)
-- [ ] PLZ table: pipeline script GeoNames DE.zip -> compact `plz.json`/binary (needs download OK — GeoNames, CC BY 4.0, attribution)
-- [ ] PLZ lookup module in web (exact + prefix search), tests
-- [ ] Tiles-in-radius computation (circle vs tile rectangles), uses manifest
-- [ ] Chunk loader: fetch with retry, IndexedDB cache keyed by build version, re-fetch when evicted (iOS)
-- [ ] Wire loader -> worker `load`
+- [x] PLZ table: pipeline script GeoNames DE.zip -> compact `plz.json`/binary (download approved 2026-10-07)
+- [x] PLZ lookup module in web (exact + prefix search), tests
+- [x] Tiles-in-radius computation (circle vs tile rectangles), uses manifest
+- [x] Chunk loader: fetch with retry, IndexedDB cache keyed by build version, re-fetch when evicted (iOS)
+- [x] Wire loader -> worker `load`
 
 ## Log
 ### 2026-10-06 — Iteration 0 (setup)
@@ -198,3 +198,79 @@ updates "Current state". Newest entries at the bottom.
 - Commit: ae75e69
 - Next: roadmap step 3 (PLZ + chunk loading). Step 2 PR: asking user
   whether to push `router/astar` and open PR #2 (base: PR #1 branch).
+
+### 2026-10-07 — Iteration 11b (PR #2)
+- User approved: push + PR for step 2, and from now on push/open PRs
+  automatically when a roadmap step completes (recorded in DECISIONS.md).
+  Also approved GeoNames DE.zip download.
+- Opened https://github.com/CodeRenner/MopedMaps/pull/2 (base
+  `pipeline/graph-chunks`). Created local branch `data/plz-chunks` for step 3.
+- Next: PLZ table script.
+
+### 2026-10-07 — Iteration 12 (PLZ table)
+- What: downloaded GeoNames `DE.zip` (375 KB, CC BY 4.0) to `data/`.
+  `plz.py` aggregates rows per PLZ (mean of distinct points, most frequent
+  name), CLI `python -m mopedmaps_pipeline plz IN.zip OUT.json`. Generated
+  `web/public/data/plz.json`: 10,813 PLZ (incl. large-customer PLZs),
+  460 KB raw / 161 KB gzip. Data README with licence + rebuild command.
+  Spot checks: 28195 Bremen, 10115 Berlin, 80331 München.
+- Tests: ruff clean; pytest 53 passed.
+- Commit: 963e51c
+- Next: PLZ lookup in web.
+
+### 2026-10-07 — Iteration 13 (PLZ lookup)
+- What: `web/src/location/plz.ts` — `PlzIndex` (validates sorted v1 table;
+  `get` exact; `search` = binary-search digit prefix, or name prefix /
+  contains (>=3 chars) with umlaut/ß/diacritic normalisation, prefix first).
+- Tests: tsc clean; vitest 45 passed (incl. bundled plz.json sanity: >8000
+  entries, attribution, spot checks, all coords inside DE bbox).
+- Commit: 8983b16
+- Next: tiles in radius.
+
+### 2026-10-07 — Iteration 14 (tiles in radius)
+- What: `web/src/data/manifest.ts` (types, `parseManifest`, `buildId` for
+  cache invalidation) and `web/src/location/tiles.ts` (`tilesInRadius`:
+  bounding box then closest-point-of-rectangle haversine test;
+  `planTiles`: filter by manifest, sort nearest first, raw/gzip totals for
+  a download-size hint in the UI).
+- Tests: property test (2000 random points within radius always covered;
+  every returned tile actually within radius), monotonic in radius, 75 km
+  around Bremen in 40–90 tiles. tsc clean; vitest 51 passed.
+- Hiccup: an ad-hoc vitest run with `--root /` scanned the whole disk and was
+  stopped; no repo impact.
+- Commit: 3668518
+- Next: chunk loader + IndexedDB.
+
+### 2026-10-07 — Iteration 14b (fix: ignored files)
+- Found: `.gitignore` pattern `data/` matched every `data/` dir, so
+  `web/public/data/plz.json` + README (iteration 12 — its log entry wrongly
+  said they were committed) and `web/src/data/manifest.ts` (iteration 14)
+  were untracked. Changed to `/data/` (root only), committed the files.
+- Lesson: check `git status` / `git show --stat` after each commit.
+- Tests: tsc clean; vitest 51 passed.
+- Commit: 37c6851
+
+### 2026-10-07 — Iteration 15 (chunk loader + IndexedDB)
+- What: `web/src/data/store.ts` (`ChunkStore` interface; `MemoryStore`;
+  `IdbStore` — object store keyed `buildId|name`, `prune(keep)` drops old
+  builds) and `web/src/data/loader.ts` (`loadChunks`: cache-first, fetch
+  with exponential-backoff retry (3), no retry on 4xx, concurrency 4,
+  progress callback, AbortSignal; cache read/write failures are ignored so
+  iOS eviction or quota errors just trigger a re-download).
+- Dev dep: fake-indexeddb (Apache-2.0). tsconfig default lib now DOM
+  (worker.ts keeps its webworker reference).
+- Tests: tsc clean; vitest 57 passed.
+- Commit: e941ac6
+- Next: AreaLoader glue, then step 3 PR.
+
+### 2026-10-07 — Iteration 16 (area loader) — step 3 complete
+- What: `web/src/router/port.ts` (`RouterPort`; `LocalRouterPort` in-process,
+  `WorkerRouterPort` id-correlated postMessage with transferables) and
+  `web/src/data/area.ts` (`loadArea`: PLZ or coords -> clamp radius 25–100
+  -> `planTiles` -> `loadChunks` -> router `load` (transfers copies so the
+  cache keeps its buffers) -> prune old builds; typed `AreaError` codes).
+- Tests: fixture end-to-end (load, route, second load from cache), unknown
+  PLZ / no tiles, radius clamp; Bremen end-to-end with real plz.json +
+  manifest (local data only). tsc clean; vitest 61 passed; pytest 53 passed.
+- Commit: ccb82d6
+- Next: push `data/plz-chunks`, open PR #3 (auto, per DECISIONS); then step 4.

@@ -76,14 +76,16 @@ describe('energy settings storage', () => {
 
   it('round-trips and sanitises', () => {
     const st = mem();
-    expect(loadEnergySettings(st)).toEqual(DEFAULT_ENERGY_SETTINGS);
-    saveEnergySettings(st, { capacity: 1500, realConsumption: 32, reserveShare: 0.2 });
-    expect(loadEnergySettings(st)).toEqual({ capacity: 1500, realConsumption: 32, reserveShare: 0.2 });
-    st.setItem('mopedmaps.energy.v1', '{"capacity":-3,"realConsumption":"x","reserveShare":7}');
-    expect(loadEnergySettings(st)).toEqual(DEFAULT_ENERGY_SETTINGS);
-    st.setItem('mopedmaps.energy.v1', '{broken');
-    expect(loadEnergySettings(st)).toEqual(DEFAULT_ENERGY_SETTINGS);
-    expect(loadEnergySettings(null)).toEqual(DEFAULT_ENERGY_SETTINGS);
+    expect(loadEnergySettings(st, 'electric')).toEqual(DEFAULT_ENERGY_SETTINGS);
+    saveEnergySettings(st, 'electric', { capacity: 1500, realConsumption: 32, reserveShare: 0.2 });
+    expect(loadEnergySettings(st, 'electric')).toEqual({ capacity: 1500, realConsumption: 32, reserveShare: 0.2 });
+    // kept per drive type: litres don't mix with Wh
+    expect(loadEnergySettings(st, 'combustion')).toEqual(DEFAULT_ENERGY_SETTINGS);
+    st.setItem('mopedmaps.energy.v1.electric', '{"capacity":-3,"realConsumption":"x","reserveShare":7}');
+    expect(loadEnergySettings(st, 'electric')).toEqual(DEFAULT_ENERGY_SETTINGS);
+    st.setItem('mopedmaps.energy.v1.electric', '{broken');
+    expect(loadEnergySettings(st, 'electric')).toEqual(DEFAULT_ENERGY_SETTINGS);
+    expect(loadEnergySettings(null, 'electric')).toEqual(DEFAULT_ENERGY_SETTINGS);
   });
 
   it('parses positive numbers with comma decimals', () => {

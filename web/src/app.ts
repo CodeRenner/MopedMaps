@@ -10,12 +10,13 @@ import { circleBounds, circlePolygon } from './location/circle';
 import { PlzIndex } from './location/plz';
 import { type RouterPort, WorkerRouterPort } from './router/port';
 import type { CostWeights, VehicleProfile } from './router/profile';
+import type { EnergySettings } from './router/range';
 import { createAreaPanel } from './ui/areaPanel';
 import { requestPersistence } from './ui/basemap';
 import { areaErrorKey, downloadMb, energySummary, routeErrorKey, routeSummaryParams } from './ui/messages';
 import { createProfilePanel } from './ui/profilePanel';
 import { createRouteChart } from './ui/routeChart';
-import { loadProfile, saveProfile } from './ui/profileStore';
+import { loadEnergySettings, loadProfile, saveEnergySettings, saveProfile } from './ui/profileStore';
 import { RouteLayer } from './ui/routeLayer';
 import { EMPTY, hintKey, type PickerState, tap, wantsRoute } from './ui/routePicker';
 import { loadWeights, riskClass, saveWeights } from './ui/weights';
@@ -155,11 +156,15 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
       panel.setBusy(false);
     }
   });
+  const energyAccess = {
+    get: (d: VehicleProfile['drive']) => loadEnergySettings(storage, d),
+    set: (d: VehicleProfile['drive'], s: EnergySettings) => saveEnergySettings(storage, d, s),
+  };
   const profilePanel = createProfilePanel(profile, (p) => {
     profile = p;
     saveProfile(storage, p);
     if (areaLoaded && wantsRoute(picker)) void computeRoute();
-  });
+  }, energyAccess);
   const weightsPanel = createWeightsPanel(weights, (w) => {
     weights = w;
     saveWeights(storage, w);

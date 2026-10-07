@@ -6,7 +6,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 done (PR #5, branch `safety/risk-score`); 6 done (PR #6, branch `energy/elevation`); 7 done (PR #7, branch `pwa/offline`); 8 (docs, licence, graph-build Action) — next
-- Next task: elevation in the streaming build (node heights per tile + smoothing across tile borders)
+- Next task: `build --streaming` CLI wiring (prefilter -> junctions -> edges -> heights -> assemble -> manifest), temp dir handling
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5). `pwa/offline` = PR #7 (step 7, stacked on #6). `docs/release` (local, stacked on #7) = step 8
 - Blockers / questions for the user (asked 2026-10-07, not blocking current work):
   - Cloudflare account + API token (Pages: Edit) + account ID as GitHub secrets CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID
@@ -76,7 +76,7 @@ updates "Current state". Newest entries at the bottom.
   - [x] Pass 2: ways with on-disk locations -> split at junctions -> edge rows into per-tile temp files + junction (id, lat, lon, tile) list
   - [x] Pass 0: pre-filter PBF (routable highway ways + referenced nodes + signal nodes) so the on-disk location index only holds road nodes (DE estimate otherwise ~7 GB index + 4.4 GB PBF + ~3 GB spool > runner disk)
   - [x] Assemble tiles from temp files (local indices by sorted id per tile), identical output to current build on Bremen
-  - [ ] Elevation in streaming mode (node heights + smoothing with neighbour lookups per tile band)
+  - [x] Elevation in streaming mode (node heights + smoothing with neighbour lookups per tile band)
   - [ ] Measure on a mid-size state (e.g. Niedersachsen or Hessen): time, peak RAM, disk
 - [ ] Monthly graph-build Action (Geofabrik Germany + GLO-30 tiles) + deploy to Cloudflare Pages — needs user to create CF account/API token secrets (ask when ready)
 
@@ -720,3 +720,18 @@ updates "Current state". Newest entries at the bottom.
 - Tests: ruff clean; pytest 82 passed.
 - Commit: 83a7b18
 - Next: elevation in streaming mode, then a `build --streaming` CLI.
+
+### 2026-10-07 — Iteration 41 (streaming elevation)
+- What: `elevation.smooth_heights(z, fr, to)` — Jacobi Laplacian smoothing
+  with `np.bincount` (NaN-aware), O(nodes+edges) memory; `edge_climbs`;
+  `apply_elevation` now uses the same array code (Bremen still 1.94 m/km,
+  0.6 s). Removed the old dict-based smoother (its only user was a test).
+  `streaming.stream_heights(spool, dem)` builds global junction arrays from
+  the node spools (`np.unique`, no Python dict) + edge index pairs, smooths
+  globally — no tile halos needed; `assemble(..., heights=...)` fills
+  ascent/descent per tile.
+- Result: streaming tiles *with DEM* byte-identical to the in-memory build on
+  the fixture (synthetic ramp) and on Bremen with GLO-30.
+- Tests: ruff clean; pytest 85 passed.
+- Commit: f067189
+- Next: CLI wiring for the streaming build.

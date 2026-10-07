@@ -5,9 +5,9 @@ first, does ONE small runnable increment, then appends an entry below and
 updates "Current state". Newest entries at the bottom.
 
 ## Current state
-- Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 (safety score + sliders) — next
-- Next task: step 5 — risk score in the pipeline (fills the reserved edge byte) + sliders a/b/c in the UI
-- Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3)
+- Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 done (PR #5, branch `safety/risk-score`); 6 (elevation + energy) — next
+- Next task: step 6 — elevation source decision/download (Copernicus DEM GLO-30 or SRTM), ascent/descent per edge in pipeline
+- Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4)
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
   not installed globally (use a venv for Python tooling).
@@ -47,6 +47,13 @@ updates "Current state". Newest entries at the bottom.
 - [x] Profile settings (vmax presets 25/45 + free input, drive type), persisted locally
 - [x] Mobile UX: collapse area panel after loading (attribution kept fully visible for ODbL compliance)
 - [x] Size budget check (bundle size) and older-iPhone sanity (ES2020, no heavy deps)
+
+## Task backlog (step 5)
+- [x] Risk model doc + constants (pipeline config): fast rural roads w/o cycleway, no lighting, bad surface, many junctions/signals; bonus for 30/50 side streets
+- [x] Pipeline: compute per-edge risk (0–255) into the reserved byte; tests; rebuild Bremen + web fixtures
+- [x] Router: cost = a·time + b·risk·length + c·energy (risk per km), heuristic stays admissible; tests
+- [x] UI: sliders a/b (c later in step 6), instant reroute; route summary shows risk indicator
+- [x] Browser check, then PR #5
 
 ## Log
 ### 2026-10-06 — Iteration 0 (setup)
@@ -394,3 +401,58 @@ updates "Current state". Newest entries at the bottom.
 - Tests: vitest 86 passed; build OK.
 - Commits: 15b65c3 (+ this log/doc commit)
 - Next: push `ui/map-frontend`, open PR #4; then step 5.
+
+### 2026-10-07 — Iteration 22b (PR #4)
+- Opened https://github.com/CodeRenner/MopedMaps/pull/4 (base `data/plz-chunks`),
+  automatically per DECISIONS. Branch `safety/risk-score` for step 5; backlog added.
+
+### 2026-10-07 — Iteration 23 (risk model)
+- What: `RISK_*` constants in pipeline config, `risk.py` (`risk_score(edge)`
+  0..255 from speed limit/class default, road class, missing cycleway on
+  >=70 km/h roads, lighting, surface, signals/km, junction density/km
+  capped), `docs/risk-model.md` with formula, table, examples and gaps
+  (speed differential to vmax could be added at runtime later).
+- Tests: ruff clean; pytest 62 passed (exact values, monotonicity, clamping,
+  constants cover every enum member).
+- Commit: ec69558
+- Next: encode risk into chunks.
+
+### 2026-10-07 — Iteration 24 (risk in chunks)
+- What: `split_into_chunks` writes `max(1, risk_score(e))` into byte 26
+  (format stays v1; 0 still means "not computed"). Spec updated.
+  Regenerated web fixtures and local Bremen tiles.
+- Bremen distribution (59,515 edges): min 24, p10 55, median 70, p90 95,
+  max 255. Tuning note: junction density (capped +30) dominates on short
+  urban edges — revisit after seeing routes with b > 0.
+- Size: Bremen gzip 1.346 -> 1.391 MB (+3 %, risk byte less compressible).
+- Tests: pytest 62 passed; vitest 86 passed.
+- Commit: 3f8466e
+- Next: risk in router cost.
+
+### 2026-10-07 — Iteration 25 (risk in router)
+- What: `edgeRisk(e) = risk × km`; `edgeCost = a·time + b·edgeRisk`
+  (energy still 0). Heuristic unchanged (risk term ≥ 0, not estimated ->
+  still admissible). Routes report `riskAvg` (length-weighted), passed
+  through the worker protocol.
+- Bremen Hbf -> Vegesack (45 km/h): b=0 19.9 km / 44.4 min / risk 100;
+  b=0.5 19.6 km / 44.6 min / 97; b=2 20.1 km / 49.3 min / 70. A* == Dijkstra
+  for every b.
+- Tests: tsc clean; vitest 90 passed (synthetic fast-risky vs calm-detour
+  switch, cost arithmetic, optimality).
+- Commit: 8b04983
+- Next: sliders in the UI.
+
+### 2026-10-07 — Iteration 26 (weight sliders) — step 5 complete
+- What: config `WEIGHT_TIME_RANGE` (0.2–2, default 1), `WEIGHT_RISK_RANGE`
+  (0–3, default 0.5), risk classes (≤60 low, ≤90 medium, else high),
+  `REROUTE_DEBOUNCE_MS` 150. `ui/weights.ts` (pure clamp/persist/classify),
+  `ui/weightsPanel.ts` ("Routenwahl" <details> with two sliders, locale-
+  formatted values, hint text), app passes weights to the router, reroutes
+  debounced, summary adds "· geringes/mittleres/hohes Risiko". i18n de/en.
+- Browser check (Bremen, 25 km/h profile, Hbf -> Vegesack): b=0.5
+  "24,6 km · 78 min · mittleres Risiko"; dragging b to 3 rerouted to
+  "24,9 km · 80 min". Values persisted across reload; fixed "0.50" ->
+  "0,50" formatting found during the check.
+- Tests: tsc clean; vitest 93 passed.
+- Commit: 1d12d8d
+- Next: push + PR #5; then step 6.

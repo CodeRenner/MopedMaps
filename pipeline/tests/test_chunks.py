@@ -16,6 +16,7 @@ from mopedmaps_pipeline.chunks import (
 )
 from mopedmaps_pipeline.graph import build_graph
 from mopedmaps_pipeline.osm_xml import read_osm_xml
+from mopedmaps_pipeline.risk import risk_score
 from mopedmaps_pipeline.tags import AccessFlag, RoadClass, Surface
 
 FIXTURE = Path(__file__).parent / "fixtures" / "small.osm"
@@ -59,6 +60,7 @@ def test_roundtrip_single_tile():
         assert d.lit == orig.lit
         assert d.cycleway == orig.cycleway
         assert d.signals == orig.signals
+        assert d.risk == max(1, risk_score(orig))
         assert len(d.shape) == len(orig.geometry) - 2
         for got, want in zip(d.shape, orig.geometry[1:-1], strict=True):
             assert got == pytest.approx(want, abs=1e-7)

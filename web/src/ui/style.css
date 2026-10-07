@@ -121,3 +121,16 @@ body {
     right: 52px;
   }
 }
+.weights summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.weights input[type='range'],
+.panel input[name='radius'] {
+  width: 100%;
+}
+.hint-muted {
+  margin: 0;
+  font-size: 13px;
+  color: #555;
+}

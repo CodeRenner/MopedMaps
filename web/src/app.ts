@@ -1,7 +1,7 @@
 /** App wiring: data loading, router worker, map layers, panels. */
 
 import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
-import { GRAPH_BASE_URL, PLZ_TABLE_URL } from './config';
+import { GRAPH_BASE_URL, PLZ_TABLE_URL, REROUTE_DEBOUNCE_MS } from './config';
 import { loadArea } from './data/area';
 import { type Manifest, parseManifest } from './data/manifest';
 import { type ChunkStore, IdbStore, MemoryStore } from './data/store';
@@ -9,13 +9,15 @@ import { getLocale, t } from './i18n';
 import { circleBounds, circlePolygon } from './location/circle';
 import { PlzIndex } from './location/plz';
 import { type RouterPort, WorkerRouterPort } from './router/port';
-import type { VehicleProfile } from './router/profile';
+import type { CostWeights, VehicleProfile } from './router/profile';
 import { createAreaPanel } from './ui/areaPanel';
 import { areaErrorKey, downloadMb, routeErrorKey, routeSummaryParams } from './ui/messages';
 import { createProfilePanel } from './ui/profilePanel';
 import { loadProfile, saveProfile } from './ui/profileStore';
 import { RouteLayer } from './ui/routeLayer';
 import { EMPTY, hintKey, type PickerState, tap, wantsRoute } from './ui/routePicker';
+import { loadWeights, riskClass, saveWeights } from './ui/weights';
+import { createWeightsPanel } from './ui/weightsPanel';
 
 async function fetchJson(url: string): Promise<unknown> {
   const r = await fetch(url);
@@ -59,6 +61,8 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
   let routeSeq = 0;
   const storage = safeLocalStorage();
   let profile: VehicleProfile = loadProfile(storage);
+  let weights: CostWeights = loadWeights(storage);
+  let rerouteTimer: ReturnType<typeof setTimeout> | undefined;
 
   map.on('click', (ev) => {
     if (!areaLoaded) return;
@@ -80,13 +84,14 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
       from: picker.start,
       to: picker.target,
       profile,
+      weights,
     });
     if (seq !== routeSeq) return; // a newer tap superseded this request
     if (res.type === 'route') {
       routeLayer.setRoute(res.route.geometry);
-      panel.setStatus(
-        t('route.summary', routeSummaryParams(getLocale(), res.route.distanceM, res.route.timeS)),
-      );
+      const summary = t('route.summary', routeSummaryParams(getLocale(), res.route.distanceM, res.route.timeS));
+      const risk = res.route.riskAvg > 0 ? ` · ${t(`route.risk.${riskClass(res.route.riskAvg)}`)}` : '';
+      panel.setStatus(summary + risk);
     } else if (res.type === 'no-route') {
       panel.setStatus(t(routeErrorKey(res.reason)), true);
     } else if (res.type === 'error') {
@@ -132,7 +137,15 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
     saveProfile(storage, p);
     if (areaLoaded && wantsRoute(picker)) void computeRoute();
   });
-  ui.append(panel.root, profilePanel);
+  const weightsPanel = createWeightsPanel(weights, (w) => {
+    weights = w;
+    saveWeights(storage, w);
+    clearTimeout(rerouteTimer);
+    rerouteTimer = setTimeout(() => {
+      if (areaLoaded && wantsRoute(picker)) void computeRoute();
+    }, REROUTE_DEBOUNCE_MS);
+  });
+  ui.append(panel.root, profilePanel, weightsPanel);
 }
 
 function safeLocalStorage(): Storage | null {

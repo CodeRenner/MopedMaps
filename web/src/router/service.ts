@@ -58,6 +58,7 @@ export class RouterService {
         distanceM: r.distanceM,
         timeS: r.timeS,
         cost: r.cost,
+        riskAvg: r.riskAvg,
         geometry: r.geometry,
         settled: r.settled,
         computeMs: performance.now() - t0,

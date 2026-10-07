@@ -59,7 +59,7 @@ Edges are undirected; direction is governed by the oneway flags.
 | 20  | uint16 | curvature: sum of heading changes in degrees                  |
 | 22  | uint16 | ascent forward in decimetres (0 until roadmap step 6)         |
 | 24  | uint16 | descent forward in decimetres (0 until roadmap step 6)        |
-| 26  | uint8  | risk score (0 = not computed; roadmap step 5)                 |
+| 26  | uint8  | static risk score 1–255 (`docs/risk-model.md`); 0 = not computed (older builds) |
 | 27  | uint8  | reserved                                                      |
 | 28  | uint32 | byte offset of this edge's shape in the geometry section      |
 | 32  | uint16 | number of intermediate shape points                           |

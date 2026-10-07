@@ -2,7 +2,7 @@
 
 import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 import { GRAPH_BASE_URL, PLZ_TABLE_URL, REROUTE_DEBOUNCE_MS } from './config';
-import { loadArea } from './data/area';
+import { AreaError, loadArea } from './data/area';
 import { type Manifest, parseManifest } from './data/manifest';
 import { type ChunkStore, IdbStore, MemoryStore } from './data/store';
 import { getLocale, t } from './i18n';
@@ -23,7 +23,20 @@ import { createWeightsPanel } from './ui/weightsPanel';
 async function fetchJson(url: string): Promise<unknown> {
   const r = await fetch(url);
   if (!r.ok) throw new Error(`HTTP ${r.status} for ${url}`);
+  // Static hosts may answer unknown paths with an HTML page (SPA fallback).
+  const type = r.headers.get('content-type') ?? '';
+  if (!type.includes('json')) throw new Error(`expected JSON from ${url}, got ${type || 'unknown'}`);
   return r.json();
+}
+
+/** Graph manifest; a missing build (404 / HTML fallback) means "no map data yet". */
+async function loadManifest(): Promise<Manifest> {
+  try {
+    return parseManifest(await fetchJson(`${GRAPH_BASE_URL}/manifest.json`));
+  } catch (err) {
+    if (err instanceof TypeError) throw err; // network failure -> "no connection"
+    throw new AreaError('no-tiles', String(err));
+  }
 }
 
 async function openStore(): Promise<ChunkStore> {
@@ -105,7 +118,7 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
   const panel = createAreaPanel(plz, async (code, radiusKm) => {
     panel.setBusy(true);
     try {
-      manifest ??= parseManifest(await fetchJson(`${GRAPH_BASE_URL}/manifest.json`));
+      manifest ??= await loadManifest();
       const area = await loadArea(
         { plz: code, radiusKm },
         {

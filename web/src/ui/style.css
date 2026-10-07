@@ -1,0 +1,123 @@
+html,
+body {
+  margin: 0;
+  height: 100%;
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #f4f4f2;
+}
+#map {
+  position: absolute;
+  inset: 0;
+}
+#ui {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top));
+  left: 12px;
+  right: 60px;
+  max-width: 360px;
+  z-index: 1;
+}
+.panel {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgb(0 0 0 / 0.15);
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+  font-size: 15px;
+}
+.panel .row {
+  display: grid;
+  gap: 4px;
+}
+.panel input[name='plz'] {
+  font-size: 16px; /* >=16px prevents iOS zoom on focus */
+  padding: 8px;
+  border: 1px solid #bbb;
+  border-radius: 6px;
+}
+.panel button {
+  font-size: 16px;
+  padding: 10px;
+  border: 0;
+  border-radius: 6px;
+  background: #2b6cb0;
+  color: #fff;
+}
+.panel button:disabled {
+  opacity: 0.6;
+}
+.panel .status {
+  margin: 0;
+  min-height: 1.2em;
+  color: #333;
+}
+.panel .status.error {
+  color: #b00020;
+}
+#ui {
+  display: grid;
+  gap: 8px;
+}
+.profile summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.profile .presets {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.profile .presets button {
+  flex: 1;
+  background: #e2e8f0;
+  color: #1a202c;
+}
+.profile .presets button[aria-pressed='true'] {
+  background: #2b6cb0;
+  color: #fff;
+}
+.profile input[name='vmax'] {
+  font-size: 16px;
+  padding: 8px;
+  border: 1px solid #bbb;
+  border-radius: 6px;
+}
+.profile fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  gap: 16px;
+}
+.profile .hint {
+  margin: 0;
+  color: #b00020;
+}
+.panel.collapsed > label,
+.panel.collapsed > button[type='submit'] {
+  display: none;
+}
+.status-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.status-row .status {
+  flex: 1;
+}
+.panel button.change {
+  padding: 6px 10px;
+  font-size: 14px;
+  background: #e2e8f0;
+  color: #1a202c;
+}
+@media (max-width: 480px) {
+  .panel {
+    padding: 10px;
+    font-size: 14px;
+  }
+  #ui {
+    right: 52px;
+  }
+}

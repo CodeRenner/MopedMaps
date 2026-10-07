@@ -9,3 +9,6 @@ dist/
 /data/
 *.osm.pbf
 .DS_Store
+
+# Local dev graph tiles (symlink to /data/tiles-*)
+web/public/graph

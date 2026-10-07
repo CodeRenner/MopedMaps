@@ -5,9 +5,9 @@ first, does ONE small runnable increment, then appends an entry below and
 updates "Current state". Newest entries at the bottom.
 
 ## Current state
-- Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 (frontend) — next
-- Next task: step 4 — frontend scaffold (Vite? needs bundler choice; MapLibre GL JS + PMTiles; i18n de first)
-- Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2)
+- Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 (safety score + sliders) — next
+- Next task: step 5 — risk score in the pipeline (fills the reserved edge byte) + sliders a/b/c in the UI
+- Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3)
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
   not installed globally (use a venv for Python tooling).
@@ -38,6 +38,15 @@ updates "Current state". Newest entries at the bottom.
 - [x] Tiles-in-radius computation (circle vs tile rectangles), uses manifest
 - [x] Chunk loader: fetch with retry, IndexedDB cache keyed by build version, re-fetch when evicted (iOS)
 - [x] Wire loader -> worker `load`
+
+## Task backlog (step 4)
+- [x] Vite app shell, MapLibre map (OpenFreeMap style from config), attribution (OSM, GeoNames, basemap)
+- [x] i18n module (de first, en), all UI strings via i18n files
+- [x] PLZ input + radius slider -> loadArea with progress; area circle on map
+- [x] Tap to set start/destination, route request via WorkerRouterPort, draw route + summary
+- [x] Profile settings (vmax presets 25/45 + free input, drive type), persisted locally
+- [x] Mobile UX: collapse area panel after loading (attribution kept fully visible for ODbL compliance)
+- [x] Size budget check (bundle size) and older-iPhone sanity (ES2020, no heavy deps)
 
 ## Log
 ### 2026-10-06 — Iteration 0 (setup)
@@ -274,3 +283,114 @@ updates "Current state". Newest entries at the bottom.
   manifest (local data only). tsc clean; vitest 61 passed; pytest 53 passed.
 - Commit: ccb82d6
 - Next: push `data/plz-chunks`, open PR #3 (auto, per DECISIONS); then step 4.
+
+### 2026-10-07 — Iteration 16b (PR #3 + step 4 decisions)
+- Pushed `data/plz-chunks`, opened https://github.com/CodeRenner/MopedMaps/pull/3
+  (base `router/astar`), automatically per DECISIONS.
+- User decided: basemap = OpenFreeMap first, own PMTiles later; bundler = Vite.
+  Recorded in DECISIONS.md; step 4 backlog added; branch `ui/map-frontend`.
+
+### 2026-10-07 — Iteration 17 (app shell + map)
+- What: Vite 8 (MIT, dev) + maplibre-gl 6.13 (BSD-3). `index.html`,
+  `src/main.ts`, `src/ui/map.ts` (map with OpenFreeMap "liberty" style from
+  config, compact attribution incl. OSM/ODbL + GeoNames/CC BY 4.0,
+  zoom control), `src/ui/attribution.ts`, config: BASEMAP_STYLE_URL,
+  initial view, GRAPH_BASE_URL, PLZ_TABLE_URL. `vite.config.ts` (ES2020,
+  sourcemaps; vitest config). `.claude/launch.json` for the dev server.
+- Licences (production deps): MIT 11, ISC 8, BSD-3 3, BSD-2 2,
+  MIT-or-Apache 1 (+ our own private package). ISC is permissive and
+  MIT-equivalent -> considered compatible.
+- Bundle: JS 1.04 MB / 281 KB gzip (almost all MapLibre), CSS 11 KB gzip.
+  Warning limit raised to 1200 KB with a comment.
+- Tests: tsc clean; vitest 63 passed (new: attribution + "no OSM tile
+  server" compliance test). `vite build` OK.
+- Visual check: NOT done yet — the in-app preview stayed in "starting" /
+  "Policy check in progress" (probably waiting for user approval). Vite
+  itself starts fine when run directly (HTTP 200).
+- Commit: ac73846
+- Next: i18n.
+
+### 2026-10-07 — Iteration 18 (i18n)
+- What: `web/src/i18n/{de,en}.json` (strings for area, route, profile,
+  errors incl. every AreaError / NoRouteReason code) and `i18n/index.ts`
+  (`detectLocale` with German default, `translate` with {param}
+  interpolation and de/key fallback, `formatNumber` via Intl, global `t`).
+  main.ts sets locale, <html lang> and title.
+- Preview: dev server now "running" but the Browser pane denies navigation
+  to localhost:5173 -> recorded as blocker for the user; continuing without
+  visual checks.
+- Tests: tsc clean; vitest 68 passed (key + placeholder parity de/en).
+- Commit: ad03947
+- Next: PLZ panel.
+
+### 2026-10-07 — Iteration 19 (PLZ panel + app wiring)
+- What: `location/circle.ts` (geodesic circle polygon + bounds),
+  `ui/messages.ts` (pure error->i18n key, MB/summary formatting),
+  `ui/areaPanel.ts` (PLZ input with datalist suggestions — accepts PLZ,
+  "PLZ Ort" or a place name —, radius slider 25–100 step 5, status line),
+  `app.ts` (loads plz.json, IndexedDB store with in-memory fallback,
+  router in a module Worker via `WorkerRouterPort`, manifest on demand,
+  `loadArea` with progress, dashed area circle + fitBounds), main.ts boots
+  the app after map load. CSS: 16px inputs (no iOS zoom), safe-area inset.
+- Dev data: `web/public/graph` symlink -> `data/tiles-bremen` (gitignored).
+- Build: worker chunk 6.9 KB; main 1.05 MB / 286 KB gzip.
+- Tests: tsc clean; vitest 72 passed. Visual check still blocked (preview
+  navigation denied).
+- Commit: 22fbbaa
+- Next: route interaction.
+
+### 2026-10-07 — Iteration 20 (tap to route)
+- What: `ui/routePicker.ts` (pure state machine: 1st tap start, 2nd target
+  -> route, 3rd restarts; hint keys), `ui/routeLayer.ts` (green/red markers,
+  route line with white casing), app wiring: clicks only after an area is
+  loaded; stale responses dropped via a sequence counter; summary
+  "x km · y min" or localized no-route reason. Uses DEFAULT_PROFILE until the
+  settings panel exists.
+- Tests: tsc clean; vitest 74 passed. Build 291 KB gzip. Visual check
+  still blocked (preview navigation denied).
+- Commit: 5e3b37c
+- Next: profile settings.
+
+### 2026-10-07 — Iteration 21 (profile settings)
+- What: `ui/profileStore.ts` (pure `parseVmax` accepting "45,5", range
+  6–200; `loadProfile`/`saveProfile` with injected storage, defaults on
+  corrupt/invalid/blocked storage — localStorage is fine here: per-device
+  convenience, not critical data), `ui/profilePanel.ts` (collapsible
+  <details>: preset buttons 25/45 with aria-pressed, free vmax input with
+  localized validation hint, drive radios), app: profile used for routing,
+  saved on change, current route recomputed.
+- Tests: tsc clean; vitest 86 passed. Build 292 KB gzip.
+- Commit: 88f0c90
+- Next: size budget check, then step 4 PR.
+
+### 2026-10-07 — Iteration 21b (first visual check + fix)
+- User started localhost; Browser pane navigation now allowed.
+- Bug found: map stayed blank — "Worker failed to load" from MapLibre.
+  Cause: MapLibre 6 loads `maplibre-gl-worker.mjs` relative to its module;
+  Vite dev pre-bundling relocates it. Fix: `setWorkerUrl(...?url)` in
+  `ui/map.ts` (also emits the worker as its own asset in builds, 508 KB).
+- Verified in the browser (desktop 800x600 + mobile 375x812):
+  map + OpenFreeMap style + attributions OK; PLZ 28195, radius 25 ->
+  "25 km Umkreis geladen · Download ca. 1,1 MB", dashed circle + fitBounds;
+  two taps in Bremen -> route line, "12,6 km · 30 min" (45 km/h);
+  switching to 25 km/h preset rerouted -> "12,4 km · 41 min".
+- UX notes (added to backlog): on phones the expanded panels cover about half
+  the map and the attribution wraps to 3 lines.
+- Data note: local test graph is state Bremen only; Lower Saxony towns in
+  the circle have no graph yet.
+- Tests: vitest 86 passed.
+- Commit: 451e7be
+
+### 2026-10-07 — Iteration 22 (mobile UX, startup, budget) — step 4 complete
+- What: area panel collapses to the status line + "Ändern" button after an
+  area is loaded; compact padding under 480 px; app UI starts on
+  `style.load` (panel visible after ~2 s instead of ~13 s). Attribution
+  left fully expanded on purpose (OSM attribution must stay visible).
+- Verified in browser at 375x812: panel collapse, persisted 25 km/h
+  profile survived reload, area load PLZ 28195 / 75 km ("1,3 MB").
+- `docs/frontend-budget.md`: first load ≈ 606 KB gzip (MapLibre ≈ 95 % of
+  JS; our router worker 3 KB); WebGL2 + module workers -> iOS 15+;
+  offline start not possible yet (basemap style from network) -> step 7.
+- Tests: vitest 86 passed; build OK.
+- Commits: 15b65c3 (+ this log/doc commit)
+- Next: push `ui/map-frontend`, open PR #4; then step 5.

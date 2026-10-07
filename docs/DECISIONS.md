@@ -12,3 +12,5 @@ Record of resolved project decisions. Open questions live in PROGRESS.md.
 | 2026-10-06 | Node.js (dev) | Node 22 LTS tarball in `~/.local/node` (Homebrew not writable for this macOS user); use `export PATH="$HOME/.local/node/bin:$PATH"` | user |
 | 2026-10-07 | Git workflow  | One branch + PR per roadmap step, stacked on the previous step's branch. When a step is complete, push and open the PR automatically (no need to ask). | user |
 | 2026-10-07 | PLZ data      | GeoNames DE postal codes (CC BY 4.0), attribution in UI | user |
+| 2026-10-07 | Basemap       | Start with OpenFreeMap vector style (no key/account), style URL in config; own PMTiles (Protomaps extract, likely on Cloudflare R2 because of Pages' 25 MiB file limit) later for true offline | user |
+| 2026-10-07 | Bundler       | Vite (MIT, dev-only)                                 | user |

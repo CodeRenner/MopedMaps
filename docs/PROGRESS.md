@@ -7,7 +7,7 @@ updates "Current state". Newest entries at the bottom.
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 done (PR #5, branch `safety/risk-score`); 6 done (PR #6, branch `energy/elevation`); 7 done (PR #7, branch `pwa/offline`); 8 (docs, licence, graph-build Action) — next
 - Next task: step 8 — README (EN), LICENSE (MIT), attribution/third-party notices
-- Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5). `pwa/offline` = PR #7 (step 7, stacked on #6)
+- Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5). `pwa/offline` = PR #7 (step 7, stacked on #6). `docs/release` (local, stacked on #7) = step 8
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
   not installed globally (use a venv for Python tooling).
@@ -62,6 +62,13 @@ updates "Current state". Newest entries at the bottom.
 - [x] Ask the browser for persistent storage (navigator.storage.persist) after loading an area; show storage note on iOS
 - [x] Offline test in the browser (server stopped), then PR #7
 - Note: no bulk prefetching of OpenFreeMap tiles (respect their usage policy); full offline basemap comes with own PMTiles later
+
+## Task backlog (step 8)
+- [ ] LICENSE (MIT, decided) + README (EN): what/why, features, architecture, dev setup, data sources & attribution, limitations
+- [ ] THIRD_PARTY / data notices (ODbL, CC BY 4.0 GeoNames, Copernicus DEM, OpenFreeMap/OpenMapTiles)
+- [ ] CI workflow: ruff + pytest (pipeline), tsc + vitest + vite build (web) on PRs
+- [ ] Band-wise Germany build (memory) — prerequisite for the graph Action
+- [ ] Monthly graph-build Action (Geofabrik Germany + GLO-30 tiles) + deploy to Cloudflare Pages — needs user to create CF account/API token secrets (ask when ready)
 
 ## Later / improvements (found during checks)
 - [ ] Snap start/target only to the largest connected component (taps near the data border hit isolated fragments -> "unreachable")
@@ -611,3 +618,7 @@ updates "Current state". Newest entries at the bottom.
   first start online).
 - Commit: 6ef7d55
 - Next: push + PR #7; then step 8.
+
+### 2026-10-07 — Iteration 34b (PR #7)
+- Opened https://github.com/CodeRenner/MopedMaps/pull/7 (base `energy/elevation`).
+  Branch `docs/release` for step 8; backlog added.

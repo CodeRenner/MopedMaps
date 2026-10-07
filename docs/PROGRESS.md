@@ -6,7 +6,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 done (PR #5, branch `safety/risk-score`); 6 (elevation + energy) — next
-- Next task: energy model in router (electric Wh/km by speed+gradient, combustion l/100km), c·energy in cost
+- Next task: UI — energy slider c, summary shows Wh or litres + climb, battery/tank range hint, elevation attribution
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` (local, stacked on #5) = step 6
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
@@ -58,7 +58,7 @@ updates "Current state". Newest entries at the bottom.
 ## Task backlog (step 6)
 - [x] DEM: download GLO-30 tiles (N52/N53 × E008/E009), sampler with bilinear interpolation, tests on synthetic raster
 - [x] Pipeline: ascent/descent per edge (graph-smoothed node heights, see docs/elevation.md) into bytes 22–25; rebuild
-- [ ] Router: energy model — electric Wh/km by speed + gradient, combustion l/100km; c·energy in cost; documented constants
+- [x] Router: energy model — electric Wh/km by speed + gradient, combustion l/100km; c·energy in cost; documented constants
 - [ ] UI: energy slider c, summary shows Wh or litres + range hint; elevation attribution
 - [ ] Browser check, then PR #6
 
@@ -501,3 +501,17 @@ updates "Current state". Newest entries at the bottom.
   encoding, missing DEM); vitest 93 passed.
 - Commit: 255c6ab
 - Next: energy model.
+
+### 2026-10-07 — Iteration 29 (energy model)
+- What: `router/energy.ts` — per-edge wheel energy = lift + max(0, losses −
+  descent release) + stop-and-go at signals; electric: efficiency 0.8, regen
+  30 % (braking + surplus descent); combustion: 12 % efficiency, petrol
+  8900 Wh/l, idle 0.25 l/h at signals. `edgeCost` adds c·wheelWh (1 s/Wh).
+  Routes report `energyWh`, `fuelL`, `ascentM` through the worker protocol.
+  Constants in config, model in `docs/energy-model.md`.
+- Bug caught by tests: first version let a hump's descent cancel its climb
+  on the same edge; now descent only offsets rolling/aero losses.
+- Sanity: flat 45 km/h -> ~26 Wh/km electric, ~1.9 l/100 km combustion.
+- Tests: tsc clean; vitest 100 passed (incl. A* == Dijkstra with c > 0).
+- Commit: 98f7076
+- Next: energy UI.

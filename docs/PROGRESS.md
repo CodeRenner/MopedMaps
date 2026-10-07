@@ -6,7 +6,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 (PLZ + chunk loading + IndexedDB) — starting
-- Next task: PLZ lookup module in web (load plz.json, exact + prefix search), tests
+- Next task: tiles-in-radius computation (circle vs tile rectangles, filtered by manifest)
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` (local, stacked on #2) = step 3 work
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
@@ -34,7 +34,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Task backlog (step 3)
 - [x] PLZ table: pipeline script GeoNames DE.zip -> compact `plz.json`/binary (download approved 2026-10-07)
-- [ ] PLZ lookup module in web (exact + prefix search), tests
+- [x] PLZ lookup module in web (exact + prefix search), tests
 - [ ] Tiles-in-radius computation (circle vs tile rectangles), uses manifest
 - [ ] Chunk loader: fetch with retry, IndexedDB cache keyed by build version, re-fetch when evicted (iOS)
 - [ ] Wire loader -> worker `load`
@@ -217,3 +217,12 @@ updates "Current state". Newest entries at the bottom.
 - Tests: ruff clean; pytest 53 passed.
 - Commit: 963e51c
 - Next: PLZ lookup in web.
+
+### 2026-10-07 — Iteration 13 (PLZ lookup)
+- What: `web/src/location/plz.ts` — `PlzIndex` (validates sorted v1 table;
+  `get` exact; `search` = binary-search digit prefix, or name prefix /
+  contains (>=3 chars) with umlaut/ß/diacritic normalisation, prefix first).
+- Tests: tsc clean; vitest 45 passed (incl. bundled plz.json sanity: >8000
+  entries, attribution, spot checks, all coords inside DE bbox).
+- Commit: 8983b16
+- Next: tiles in radius.

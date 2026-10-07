@@ -4,9 +4,18 @@ import numpy as np
 import pytest
 
 from mopedmaps_pipeline.chunks import split_into_chunks, tile_of
+from mopedmaps_pipeline.dem import Dem
+from mopedmaps_pipeline.elevation import apply_elevation
 from mopedmaps_pipeline.graph import build_graph
 from mopedmaps_pipeline.osm_pbf import read_osm
-from mopedmaps_pipeline.streaming import TileSpool, assemble, junction_ids, prefilter, stream_edges
+from mopedmaps_pipeline.streaming import (
+    TileSpool,
+    assemble,
+    junction_ids,
+    prefilter,
+    stream_edges,
+    stream_heights,
+)
 
 FIX = Path(__file__).parent / "fixtures"
 BREMEN = Path(__file__).resolve().parents[2] / "data" / "bremen-latest.osm.pbf"
@@ -116,3 +125,30 @@ def test_assembled_tiles_byte_identical_on_bremen(tmp_path):
     assert set(got) == set(expected)
     for key, data in expected.items():
         assert got[key] == data, key
+
+
+class _Ramp:
+    def elevation(self, lat, lon):
+        return (lon - 8.0) * 1000.0 + lat * 10
+
+
+def test_streaming_elevation_matches_in_memory(tmp_path):
+    path = FIX / "small.osm"
+    expected = split_into_chunks(apply_elevation(build_graph(read_osm(path)), _Ramp())[0])
+    spool, _, _ = _stream(path, tmp_path)
+    got = {ti.key: ti.data for ti in assemble(spool, heights=stream_heights(spool, _Ramp()))}
+    assert got == expected
+
+
+DEM_DIR = Path(__file__).resolve().parents[2] / "data" / "dem"
+
+
+@pytest.mark.skipif(not (BREMEN.exists() and DEM_DIR.exists()), reason="local data missing")
+def test_streaming_elevation_on_bremen(tmp_path):
+    dem = Dem(DEM_DIR)
+    expected = split_into_chunks(apply_elevation(build_graph(read_osm(BREMEN)), dem)[0])
+    spool, _, _ = _stream(BREMEN, tmp_path)
+    got = {ti.key: ti.data for ti in assemble(spool, heights=stream_heights(spool, dem))}
+    assert got.keys() == expected.keys()
+    for key in expected:
+        assert got[key] == expected[key], key

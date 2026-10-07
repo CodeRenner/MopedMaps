@@ -12,7 +12,7 @@ import pickle
 from array import array
 from collections import OrderedDict
 from collections.abc import Iterator
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import numpy as np
@@ -21,6 +21,7 @@ import osmium
 from mopedmaps_pipeline import config
 from mopedmaps_pipeline import tags as t
 from mopedmaps_pipeline.chunks import TileKey, encode_tile, tile_name, tile_of
+from mopedmaps_pipeline.elevation import ElevationSource, edge_climbs, smooth_heights
 from mopedmaps_pipeline.graph import Edge, split_way
 from mopedmaps_pipeline.osm_pbf import KEEP_KEYS
 
@@ -225,12 +226,31 @@ class _NodeIndex:
         return i
 
 
-def assemble(spool: TileSpool, tile_size: float = config.TILE_SIZE_DEG) -> Iterator[TileInfo]:
-    """Pass 3: yield encoded tiles one by one (bounded memory)."""
+def assemble(
+    spool: TileSpool,
+    tile_size: float = config.TILE_SIZE_DEG,
+    heights: tuple[np.ndarray, np.ndarray] | None = None,
+) -> Iterator[TileInfo]:
+    """Pass 3: yield encoded tiles one by one (bounded memory).
+
+    With `heights` (from `stream_heights`) edges get ascent/descent like the
+    in-memory `apply_elevation`.
+    """
     index = _NodeIndex(spool)
     for key in spool.tiles("nodes"):
         ids, coords = index.get(key)
         edges: list[Edge] = spool.read("edges", key)
+        if heights is not None and edges:
+            up, down = edge_climbs(
+                heights[0],
+                heights[1],
+                np.array([e.from_node for e in edges], dtype=np.int64),
+                np.array([e.to_node for e in edges], dtype=np.int64),
+            )
+            edges = [
+                e if np.isnan(a) else replace(e, ascent_m=float(a), descent_m=float(d))
+                for e, a, d in zip(edges, up, down, strict=True)
+            ]
         # Tile of a node = tile of its coordinates; the edge geometry carries
         # both endpoints, so no global node->tile map is needed.
         endpoint_tile: dict[int, TileKey] = {}
@@ -244,3 +264,39 @@ def assemble(spool: TileSpool, tile_size: float = config.TILE_SIZE_DEG) -> Itera
 
         data = encode_tile(key, tile_size, [coords[int(n)] for n in ids], edges, locate)
         yield TileInfo(key, tile_name(key), data, len(ids), len(edges))
+
+
+# --- Elevation for the streaming build ----------------------------------------------
+
+
+def stream_heights(spool: TileSpool, dem: ElevationSource) -> tuple[np.ndarray, np.ndarray]:
+    """Smoothed junction heights (sorted ids, heights) for the whole spool.
+
+    Holds only numpy arrays: ids/heights per junction and one (from, to) pair
+    per edge — under 1 GB for Germany.
+    """
+    nid_buf = array("q")
+    lat_buf = array("d")
+    lon_buf = array("d")
+    for key in spool.tiles("nodes"):
+        for nid, lat, lon in spool.read("nodes", key):
+            nid_buf.append(nid)
+            lat_buf.append(lat)
+            lon_buf.append(lon)
+    ids, first = np.unique(np.frombuffer(nid_buf, dtype=np.int64), return_index=True)
+    lats = np.frombuffer(lat_buf, dtype=np.float64)[first]
+    lons = np.frombuffer(lon_buf, dtype=np.float64)[first]
+    del nid_buf, lat_buf, lon_buf
+    raw = np.array(
+        [dem.elevation(float(la), float(lo)) for la, lo in zip(lats, lons, strict=True)],
+        dtype=np.float64,
+    )
+    fr_ids = array("q")
+    to_ids = array("q")
+    for key in spool.tiles("edges"):
+        for e in spool.read("edges", key):
+            fr_ids.append(e.from_node)
+            to_ids.append(e.to_node)
+    fr = np.searchsorted(ids, np.frombuffer(fr_ids, dtype=np.int64))
+    to = np.searchsorted(ids, np.frombuffer(to_ids, dtype=np.int64))
+    return ids, smooth_heights(raw, fr, to)

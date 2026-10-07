@@ -1,9 +1,10 @@
 import math
 
+import numpy as np
 import pytest
 
 from mopedmaps_pipeline.chunks import decode_chunk, split_into_chunks
-from mopedmaps_pipeline.elevation import apply_elevation, smooth_node_heights
+from mopedmaps_pipeline.elevation import apply_elevation, smooth_heights
 from mopedmaps_pipeline.graph import build_graph
 from mopedmaps_pipeline.osm_xml import read_osm_xml
 from tests.test_graph import FIXTURE
@@ -22,21 +23,26 @@ class Nowhere:
 
 
 def test_smoothing_removes_noise_but_keeps_trend():
-    # a chain 0-1-2-...-20, linear slope 1 m per node plus alternating ±2 m noise
+    # a chain 0-1-...-20, linear slope 1 m per node plus alternating ±2 m noise
     n = 21
-    nb = {i: [j for j in (i - 1, i + 1) if 0 <= j < n] for i in range(n)}
-    raw = {i: i + (2 if i % 2 else -2) for i in range(n)}
-    raw_up = sum(max(0, raw[i + 1] - raw[i]) for i in range(n - 1))
-    z = smooth_node_heights(raw, nb)
-    up = sum(max(0, z[i + 1] - z[i]) for i in range(n - 1))
+    fr, to = np.arange(n - 1), np.arange(1, n)
+    raw = np.array([i + (2 if i % 2 else -2) for i in range(n)], dtype=float)
+    raw_up = np.maximum(np.diff(raw), 0).sum()
+    z = smooth_heights(raw, fr, to)
+    up = np.maximum(np.diff(z), 0).sum()
     assert raw_up == pytest.approx(50)  # noise inflates climbing
     assert 15 < up < 25  # close to the true 20 m
     assert z[n // 2] == pytest.approx(raw[n // 2] + 2, abs=1.5)
 
 
-def test_isolated_nodes_and_zero_iterations():
-    assert smooth_node_heights({1: 5.0}, {}) == {1: 5.0}
-    assert smooth_node_heights({1: 5.0, 2: 9.0}, {1: [2], 2: [1]}, iterations=0) == {1: 5.0, 2: 9.0}
+def test_unknown_and_isolated_nodes():
+    z = smooth_heights(np.array([5.0, np.nan, 9.0, 1.0]), np.array([0, 1]), np.array([1, 2]))
+    assert np.isnan(z[1])  # unknown stays unknown
+    assert z[0] == 5.0  # only neighbour unknown -> unchanged
+    assert z[3] == 1.0  # isolated
+    assert smooth_heights(
+        np.array([5.0, 9.0]), np.array([0]), np.array([1]), iterations=0
+    ).tolist() == [5.0, 9.0]
 
 
 def test_apply_and_encode_direction():

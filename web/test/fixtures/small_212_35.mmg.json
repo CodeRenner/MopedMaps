@@ -1,0 +1,124 @@
+{
+ "key": [
+  35,
+  212
+ ],
+ "tileSize": 0.25,
+ "nodes": [
+  [
+   53.075,
+   8.8
+  ],
+  [
+   53.075,
+   8.81
+  ],
+  [
+   53.075,
+   8.82
+  ],
+  [
+   53.07,
+   8.81
+  ],
+  [
+   53.07,
+   8.82
+  ]
+ ],
+ "edges": [
+  {
+   "from_idx": 0,
+   "to_tile": [
+    35,
+    212
+   ],
+   "to_idx": 1,
+   "road_class": 6,
+   "flags": 3,
+   "maxspeed_fwd": 30,
+   "maxspeed_bwd": 30,
+   "surface": 1,
+   "lit": true,
+   "cycleway": false,
+   "signals": 0,
+   "length_m": 668.0,
+   "curvature_deg": 0,
+   "ascent_m": 0.0,
+   "descent_m": 0.0,
+   "risk": 0,
+   "shape": []
+  },
+  {
+   "from_idx": 1,
+   "to_tile": [
+    35,
+    212
+   ],
+   "to_idx": 2,
+   "road_class": 6,
+   "flags": 3,
+   "maxspeed_fwd": 30,
+   "maxspeed_bwd": 30,
+   "surface": 1,
+   "lit": true,
+   "cycleway": false,
+   "signals": 0,
+   "length_m": 668.0,
+   "curvature_deg": 0,
+   "ascent_m": 0.0,
+   "descent_m": 0.0,
+   "risk": 0,
+   "shape": []
+  },
+  {
+   "from_idx": 1,
+   "to_tile": [
+    35,
+    212
+   ],
+   "to_idx": 3,
+   "road_class": 2,
+   "flags": 3,
+   "maxspeed_fwd": 70,
+   "maxspeed_bwd": 70,
+   "surface": 0,
+   "lit": null,
+   "cycleway": true,
+   "signals": 1,
+   "length_m": 556.0,
+   "curvature_deg": 0,
+   "ascent_m": 0.0,
+   "descent_m": 0.0,
+   "risk": 0,
+   "shape": []
+  },
+  {
+   "from_idx": 2,
+   "to_tile": [
+    35,
+    212
+   ],
+   "to_idx": 4,
+   "road_class": 10,
+   "flags": 2,
+   "maxspeed_fwd": null,
+   "maxspeed_bwd": null,
+   "surface": 0,
+   "lit": null,
+   "cycleway": false,
+   "signals": 0,
+   "length_m": 908.3,
+   "curvature_deg": 108,
+   "ascent_m": 0.0,
+   "descent_m": 0.0,
+   "risk": 0,
+   "shape": [
+    [
+     53.071,
+     8.815
+    ]
+   ]
+  }
+ ]
+}

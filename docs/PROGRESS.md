@@ -5,9 +5,9 @@ first, does ONE small runnable increment, then appends an entry below and
 updates "Current state". Newest entries at the bottom.
 
 ## Current state
-- Roadmap step: 1 (pipeline) — done except band-wise Germany build; step 2 (router) — starting
-- Next task: scaffold `web/` TypeScript package (vitest) + chunk decoder in TS mirroring chunks.py, tested against a Python-generated fixture
-- Branch: `pipeline/graph-chunks` (PR #1 open against main); loop commits go here
+- Roadmap step: 1 done (except band-wise Germany build); 2 done (local branch `router/astar`, PR pending user OK); 3 (PLZ + chunk loading + IndexedDB) — starting
+- Next task: PLZ lookup data: pipeline script that builds a compact PLZ -> centroid table from GeoNames DE postal codes (CC BY 4.0)
+- Branches: `pipeline/graph-chunks` = PR #1 (step 1, pushed). `router/astar` (local, based on it) = step 2 work
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
   not installed globally (use a venv for Python tooling).
@@ -24,13 +24,20 @@ updates "Current state". Newest entries at the bottom.
 - [ ] Memory-efficient Germany build (band-wise), needed before step 8
 
 ## Task backlog (step 2)
-- [ ] Scaffold `web/` (TypeScript, vitest, no framework), shared config constants
-- [ ] TS chunk decoder mirroring chunks.py; cross-language fixture test
-- [ ] Graph assembly from multiple chunks (global node ids = tile+index)
-- [ ] Vehicle profile + access rules (vmax<60 motorway/motorroad rule as documented config)
-- [ ] Edge cost: time = f(length, min(speed, vmax), curvature/junction/signal penalties)
-- [ ] A* (binary heap, haversine/vmax heuristic) + fixed start/destination tests
-- [ ] Worker wrapper (no DOM in router core)
+- [x] Scaffold `web/` (TypeScript, vitest, no framework), shared config constants
+- [x] TS chunk decoder mirroring chunks.py; cross-language fixture test
+- [x] Graph assembly from multiple chunks (global node ids = tile+index)
+- [x] Vehicle profile + access rules (vmax<60 motorway/motorroad rule as documented config)
+- [x] Edge cost: time = f(length, min(speed, vmax), curvature/junction/signal penalties)
+- [x] A* (binary heap, haversine/vmax heuristic) + fixed start/destination tests
+- [x] Worker wrapper (no DOM in router core)
+
+## Task backlog (step 3)
+- [ ] PLZ table: pipeline script GeoNames DE.zip -> compact `plz.json`/binary (needs download OK — GeoNames, CC BY 4.0, attribution)
+- [ ] PLZ lookup module in web (exact + prefix search), tests
+- [ ] Tiles-in-radius computation (circle vs tile rectangles), uses manifest
+- [ ] Chunk loader: fetch with retry, IndexedDB cache keyed by build version, re-fetch when evicted (iOS)
+- [ ] Wire loader -> worker `load`
 
 ## Log
 ### 2026-10-06 — Iteration 0 (setup)
@@ -124,3 +131,70 @@ updates "Current state". Newest entries at the bottom.
 - Installed Node v22.23.3 (darwin-arm64, SHA-256 verified against nodejs.org
   SHASUMS256.txt). Recorded both in DECISIONS.md. Added step-2 backlog.
 - Next: web/ scaffold + TS chunk decoder.
+
+### 2026-10-06 — Iteration 7 (web scaffold + TS chunk decoder)
+- Branch: new local branch `router/astar` (on top of PR #1 branch) so step 2
+  becomes its own PR.
+- What: `web/` package (TypeScript strict, vitest; deps typescript Apache-2.0,
+  vitest MIT, @types/node MIT — dev only). `src/router/chunk.ts` decoder +
+  enums mirroring the Python side. `pipeline/scripts/make_web_fixtures.py`
+  writes `.mmg` + expected JSON (from the Python decoder) into
+  `web/test/fixtures/`; TS test compares field by field. New fixture
+  `cross_tile.osm`.
+- Tests: tsc clean; vitest 6 passed; ruff clean; pytest 51 passed.
+- Commit: 7722ba0
+- Next: multi-chunk graph assembly.
+
+### 2026-10-06 — Iteration 8 (graph assembly)
+- What: `web/src/router/graph.ts` — `assembleGraph(chunks)`: dense global
+  node ids (per-tile offsets), keeps edges whose to-tile is loaded, builds
+  directed arcs in CSR typed arrays (target, edge index, forward bit);
+  ONEWAY / ONEWAY_REVERSE decide arc existence. `nearestNode` (linear scan
+  over connected nodes; spatial index later if needed).
+- Note: access per vehicle (moped/mofa, motorway rule) is NOT applied at
+  assembly; it is applied per query in the cost function so profile changes
+  need no rebuild.
+- Tests: tsc clean; vitest 11 passed.
+- Commit: c865c41
+- Next: profile + cost model.
+
+### 2026-10-06 — Iteration 9 (profile, access, cost)
+- What: `web/src/config/index.ts` (vmax presets 25/45, radius 25–100 default
+  75, MOFA_MAX_VMAX 25, MOTORWAY_MIN_VMAX 60, default speeds by class,
+  surface factors, penalties) and `web/src/router/profile.ts` (`canUse`,
+  `speedKmh`, `travelTimeS`, `edgeCost`). Model documented in
+  `docs/routing-model.md`.
+- Design notes: urban/rural unknown in graph -> per-class defaults; listed as
+  known gap. Cost = a*time for now; b*risk / c*energy hooks for steps 5/6.
+- Tests: tsc clean; vitest 19 passed.
+- Commit: 794fffc
+- Next: A*.
+
+### 2026-10-06 — Iteration 10 (A* router)
+- What: `web/src/router/astar.ts` (`findRoute`: A* with lazy-deletion binary
+  heap `heap.ts`, heuristic = haversine / vmax × time weight, admissible;
+  returns nodes, arcs, cost, time, distance, full polyline incl. reversed
+  shapes, settled count; `heuristic: false` = Dijkstra reference), `geo.ts`.
+- Tests: synthetic square (signals avoided, motorway only for vmax>=60),
+  pipeline fixture (Mofa-frei cycleway only for vmax 25; reversed geometry),
+  Bremen fixed pairs (skipped automatically when `data/tiles-bremen` is
+  absent, e.g. in CI): Hbf->Vegesack 19.9 km / 44.4 min (17 ms),
+  Hbf->Uni 5.5 km / 14.7 min, Neustadt->Hemelingen 7.4 km / 17.9 min; no
+  motorway/motorroad edges for the 45 km/h moped; A* cost == Dijkstra cost
+  with fewer settled nodes.
+- Fix during iteration: avoided `Array.prototype.at` (ES2022) to keep the
+  ES2020 target for older iPhones.
+- Tests: tsc clean; vitest 30 passed.
+- Commit: 992b828
+- Next: worker wrapper.
+
+### 2026-10-06 — Iteration 11 (worker wrapper) — step 2 complete
+- What: `protocol.ts` (typed request/response union: load, route, no-route
+  with reason, error), `service.ts` (`RouterService`: assembles graph from
+  ArrayBuffers, snaps start/target within `MAX_SNAP_DISTANCE_M` = 1000 m,
+  validates profile, returns geometry + timings; never throws across the
+  boundary), `worker.ts` (thin `onmessage` adapter). Config constant added.
+- Tests: tsc clean; vitest 34 passed.
+- Commit: ae75e69
+- Next: roadmap step 3 (PLZ + chunk loading). Step 2 PR: asking user
+  whether to push `router/astar` and open PR #2 (base: PR #1 branch).

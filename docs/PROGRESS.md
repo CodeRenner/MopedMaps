@@ -10,7 +10,7 @@ updates "Current state". Newest entries at the bottom.
   - `feature/elevation-profile`: node heights in chunks (format v2) + route climb from profile with hysteresis
   - `feature/route-chart`: line chart speed + elevation over distance
   - `feature/range`: battery/tank capacity + real consumption calibration, range/reserve display
-- Next task: `feature/route-chart` (SVG line chart speed + elevation over distance), branched from `feature/elevation-profile`
+- Next task: route chart view (SVG, collapsible, readout, i18n) on `feature/route-chart` (branched from `feature/elevation-profile`, PR #11 open)
 - Germany graph (v1) live on mopedmaps.pages.dev since 2026-10-07 (run 37621466950)
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5). `pwa/offline` = PR #7 (step 7, stacked on #6). `docs/release` = PR #8 (step 8, stacked on #7)
 - Blockers / questions for the user (asked 2026-10-07, not blocking current work):
@@ -96,7 +96,8 @@ updates "Current state". Newest entries at the bottom.
 - [x] Format v2: per-node height (int16, decimetres, INT16_MIN = unknown) written by both builds; TS + Python decoders read v1 and v2; spec updated
 - [x] Router returns route profile (cumulative distance, node heights, per-edge speed); climb in summary from profile with hysteresis (config)
 - [x] Rebuild Bremen tiles + fixtures; check of climb on flat routes -> PR
-- [ ] Route chart: SVG line chart, x = distance, y = speed (km/h) + elevation (m), collapsible panel, touch/hover readout, de/en -> PR
+- [x] Route chart data model (pure): speed steps, downsampled elevation, ticks, readout, SVG paths
+- [ ] Route chart view: SVG line chart, x = distance, y = speed (km/h) + elevation (m), collapsible panel, touch/hover readout, de/en -> PR
 - [ ] Profile: battery capacity (Wh) / tank size (l), optional real consumption (Wh/km or l/100 km) -> model calibration factor
 - [ ] Route summary: share of battery/tank used, remaining range estimate, warning below reserve (config) -> PR
 
@@ -921,3 +922,12 @@ next monthly/manual build after `feature/elevation-profile` is merged; the clien
 - Tests: tsc clean; vitest 124 passed.
 - Commit: 00075f4; branch pushed, PR opened for `feature/elevation-profile`.
 - Next: `feature/route-chart`.
+
+### Iteration 54 — route chart data model (2026-10-07)
+- What: branch `feature/route-chart` (from `feature/elevation-profile`). New pure module `web/src/chart/model.ts`:
+  speed as merged step line, elevation from known node heights downsampled by distance buckets keeping
+  min/max (`ROUTE_CHART_MAX_POINTS = 300`), 1/2/5 nice ticks, `valueAt` readout (step/interpolated), SVG path.
+- Why: keep chart logic testable without DOM; the view only maps points to pixels.
+- Tests: tsc clean; vitest 130 passed (new test/chartModel.test.ts, 6 tests).
+- Commit: bf8283f
+- Next: SVG view `ui/routeChart.ts` in a collapsible panel with touch/hover readout, de/en strings.

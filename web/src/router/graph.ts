@@ -13,6 +13,8 @@ export interface Graph {
   nodeCount: number;
   lat: Float64Array;
   lon: Float64Array;
+  /** Node height in metres, NaN if unknown (v1 chunks or no DEM). */
+  height: Float64Array;
   edges: ChunkEdge[];
   /** Global from/to node id per edge (parallel to `edges`). */
   edgeFrom: Uint32Array;
@@ -39,11 +41,14 @@ export function assembleGraph(chunks: readonly Chunk[]): Graph {
   }
   const lat = new Float64Array(nodeCount);
   const lon = new Float64Array(nodeCount);
+  const height = new Float64Array(nodeCount).fill(Number.NaN);
   for (const c of chunks) {
     const base = offset.get(keyStr(c.key)) ?? 0;
     c.nodes.forEach(([la, lo], i) => {
       lat[base + i] = la;
       lon[base + i] = lo;
+      const h = c.heights[i];
+      if (h !== null && h !== undefined) height[base + i] = h;
     });
   }
 
@@ -92,6 +97,7 @@ export function assembleGraph(chunks: readonly Chunk[]): Graph {
     nodeCount,
     lat,
     lon,
+    height,
     edges,
     edgeFrom: Uint32Array.from(from),
     edgeTo: Uint32Array.from(to),

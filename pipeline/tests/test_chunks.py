@@ -93,3 +93,29 @@ def test_cross_tile_edge_points_to_neighbour(tmp_path):
 def test_decode_rejects_bad_magic():
     with pytest.raises(ValueError):
         decode_chunk(b"XXXX" + bytes(28))
+
+
+def test_node_heights_roundtrip_v2():
+    from mopedmaps_pipeline.elevation import apply_elevation
+
+    class Ramp:
+        def sample_many(self, lats, lons):
+            import numpy as np
+
+            return (np.asarray(lons) - 8.8) * 1000.0
+
+    g, _ = apply_elevation(build_graph(read_osm_xml(FIXTURE)), Ramp())
+    c = decode_chunk(split_into_chunks(g)[(35, 212)])
+    assert len(c.heights) == len(c.nodes)
+    for (lat, lon), h in zip(c.nodes, c.heights, strict=True):
+        assert h is not None
+        assert abs(h - g.heights[next(n for n, p in g.nodes.items() if p == (lat, lon))]) <= 0.05
+
+
+def test_heights_unknown_without_dem_and_v1_still_decodes():
+    c = decode_chunk(split_into_chunks(build_graph(read_osm_xml(FIXTURE)))[(35, 212)])
+    assert c.heights == [None] * len(c.nodes)
+    v1 = Path(__file__).resolve().parents[2] / "web" / "test" / "fixtures" / "v1_small_212_35.mmg"
+    old = decode_chunk(v1.read_bytes())
+    assert len(old.nodes) == len(c.nodes) and old.heights == [None] * len(old.nodes)
+    assert [e.length_m for e in old.edges] == [e.length_m for e in c.edges]

@@ -1,4 +1,4 @@
-# Graph chunk format (`.mmg`, version 1)
+# Graph chunk format (`.mmg`, version 2)
 
 The routing graph is split on a fixed lat/lon grid (`TILE_SIZE_DEG`, default
 0.25°, see `pipeline/src/mopedmaps_pipeline/config.py`). Each tile is one file.
@@ -15,7 +15,7 @@ Reference encoder/decoder: `pipeline/src/mopedmaps_pipeline/chunks.py`.
 
 ```
 Header   32 bytes
-Nodes    node_count × 8 bytes
+Nodes    node_count × 10 bytes (v1: × 8 bytes)
 Edges    edge_count × 36 bytes
 Geometry geom_bytes bytes (varint stream)
 ```
@@ -24,7 +24,7 @@ Geometry geom_bytes bytes (varint stream)
 | Off | Type    | Field                                       |
 |-----|---------|---------------------------------------------|
 | 0   | char[4] | magic `"MMG1"`                              |
-| 4   | uint16  | version (= 1)                               |
+| 4   | uint16  | version (2; readers also accept 1)          |
 | 6   | uint16  | reserved (0)                                |
 | 8   | int32   | ix (lon tile index)                         |
 | 12  | int32   | iy (lat tile index)                         |
@@ -33,11 +33,16 @@ Geometry geom_bytes bytes (varint stream)
 | 24  | uint32  | edge_count                                  |
 | 28  | uint32  | geom_bytes                                  |
 
-### Node (8 bytes)
+### Node (v2: 10 bytes, v1: 8 bytes)
 | Off | Type  | Field              |
 |-----|-------|--------------------|
 | 0   | int32 | lat × 1e7          |
 | 4   | int32 | lon × 1e7          |
+| 8   | int16 | v2 only: smoothed height in decimetres (`docs/elevation.md`); −32768 = unknown (built without DEM) |
+
+Version history: v1 (2026-10-06) nodes without height; v2 (2026-10-07) adds
+the node height so clients can draw elevation profiles and compute route
+climb from the profile. Decoders accept both.
 
 ### Edge (36 bytes)
 Edges are undirected; direction is governed by the oneway flags.

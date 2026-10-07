@@ -26,6 +26,7 @@ function square(): Chunk {
   return {
     key: [0, 0], tileSize: 0.25,
     nodes: [[0.0, 0.0], [0.0, 0.01], [0.01, 0.0], [0.01, 0.01]],
+    heights: [null, null, null, null],
     edges: [
       e(0, 1, 1112), e(1, 3, 1112),
       e(0, 2, 1112, { signals: 3 }), e(2, 3, 1112),

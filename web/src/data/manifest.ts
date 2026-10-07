@@ -23,7 +23,7 @@ export interface Manifest {
 
 export function parseManifest(json: unknown): Manifest {
   const m = json as Manifest;
-  if (!m || m.format !== 'mmg' || m.version !== 1 || typeof m.tiles !== 'object') {
+  if (!m || m.format !== 'mmg' || (m.version !== 1 && m.version !== 2) || typeof m.tiles !== 'object') {
     throw new Error('unsupported manifest');
   }
   if (!(m.tile_size_deg > 0)) throw new Error('manifest: bad tile size');

@@ -7,7 +7,7 @@ and energy are computed by the router from the runtime vehicle profile.
 
 from collections import Counter
 from collections.abc import Callable, Iterator, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from mopedmaps_pipeline import tags as t
 from mopedmaps_pipeline.geo import bearing_deg, haversine_m, turn_deg
@@ -38,6 +38,7 @@ class Edge:
 class Graph:
     nodes: dict[int, tuple[float, float]]  # junction id -> (lat, lon)
     edges: list[Edge]
+    heights: dict[int, float] = field(default_factory=dict)  # smoothed metres, if DEM used
 
 
 def _routable(data: OsmData) -> list[tuple[Way, t.AccessFlag]]:

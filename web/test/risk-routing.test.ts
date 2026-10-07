@@ -22,6 +22,7 @@ function choice(): Chunk {
   return {
     key: [0, 0], tileSize: 0.25,
     nodes: [[0, 0], [0, 0.02], [0.005, 0.01]],
+    heights: [null, null, null],
     edges: [
       e(0, 1, 2224, { roadClass: RoadClass.PRIMARY, maxspeedFwd: 70, maxspeedBwd: 70, risk: 180 }),
       e(0, 2, 1300, { maxspeedFwd: 30, maxspeedBwd: 30, risk: 35 }),

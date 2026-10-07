@@ -29,6 +29,8 @@ describe('decodeChunk matches the Python reference decoder', () => {
       closeTo(chunk.key, want.key);
       expect(chunk.tileSize).toBe(want.tileSize);
       closeTo(chunk.nodes, want.nodes);
+      if (want.heights) expect(chunk.heights).toEqual(want.heights);
+      else expect(chunk.heights.every((h) => h === null)).toBe(true); // v1 fixture
       expect(chunk.edges.length).toBe(want.edges.length);
       chunk.edges.forEach((e, i) => {
         for (const [k, val] of Object.entries(want.edges[i] as Record<string, unknown>)) {
@@ -48,5 +50,15 @@ describe('tiles', () => {
 
   it('rejects bad magic', () => {
     expect(() => decodeChunk(new Uint8Array(32))).toThrow(/unsupported/);
+  });
+});
+
+describe('format versions', () => {
+  it('decodes v1 (no heights) and v2 with heights', () => {
+    const v1 = decodeChunk(readFileSync(join(DIR, 'v1_small_212_35.mmg')));
+    const v2 = decodeChunk(readFileSync(join(DIR, 'small_dem_212_35.mmg')));
+    expect(v1.heights.every((h) => h === null)).toBe(true);
+    expect(v2.heights.every((h) => typeof h === 'number')).toBe(true);
+    expect(v2.nodes).toEqual(v1.nodes);
   });
 });

@@ -1,9 +1,0 @@
-Metadata-Version: 2.4
-Name: mopedmaps-pipeline
-Version: 0.1.0
-Summary: OSM -> tiled routing graph for the MopedMaps PWA
-License-Expression: MIT
-Requires-Python: >=3.11
-Provides-Extra: dev
-Requires-Dist: pytest; extra == "dev"
-Requires-Dist: ruff; extra == "dev"

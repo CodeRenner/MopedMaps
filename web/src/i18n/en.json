@@ -41,5 +41,12 @@
   "route.energy.electricWh": "↑ {climb} m · {wh} Wh",
   "route.energy.electricKwh": "↑ {climb} m · {kwh} kWh",
   "route.energy.combustion": "↑ {climb} m · {litres} l",
-  "map.offlineBasemap": "Basemap unavailable offline – route and area still work."
+  "map.offlineBasemap": "Basemap unavailable offline – route and area still work.",
+  "chart.title": "Elevation & speed",
+  "chart.legend": "km/h (left, blue) · elevation in m (right, green) · distance in km",
+  "chart.legendSpeed": "km/h over distance in km",
+  "chart.noHeights": "no elevation data in these tiles",
+  "chart.hint": "Tap or hover over the chart for values.",
+  "chart.readout": "{km} km · {kmh} km/h · {m} m",
+  "chart.readoutNoHeight": "{km} km · {kmh} km/h"
 }

@@ -41,5 +41,12 @@
   "route.energy.electricWh": "↑ {climb} m · {wh} Wh",
   "route.energy.electricKwh": "↑ {climb} m · {kwh} kWh",
   "route.energy.combustion": "↑ {climb} m · {litres} l",
-  "map.offlineBasemap": "Kartenhintergrund offline nicht verfügbar – Route und Umkreis funktionieren trotzdem."
+  "map.offlineBasemap": "Kartenhintergrund offline nicht verfügbar – Route und Umkreis funktionieren trotzdem.",
+  "chart.title": "Höhe & Geschwindigkeit",
+  "chart.legend": "km/h (links, blau) · Höhe in m (rechts, grün) · Strecke in km",
+  "chart.legendSpeed": "km/h über Strecke in km",
+  "chart.noHeights": "keine Höhendaten in diesen Kacheln",
+  "chart.hint": "Tippe oder fahre über das Diagramm für Werte.",
+  "chart.readout": "{km} km · {kmh} km/h · {m} m",
+  "chart.readoutNoHeight": "{km} km · {kmh} km/h"
 }

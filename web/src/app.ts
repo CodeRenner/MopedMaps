@@ -14,6 +14,7 @@ import { createAreaPanel } from './ui/areaPanel';
 import { requestPersistence } from './ui/basemap';
 import { areaErrorKey, downloadMb, energySummary, routeErrorKey, routeSummaryParams } from './ui/messages';
 import { createProfilePanel } from './ui/profilePanel';
+import { createRouteChart } from './ui/routeChart';
 import { loadProfile, saveProfile } from './ui/profileStore';
 import { RouteLayer } from './ui/routeLayer';
 import { EMPTY, hintKey, type PickerState, tap, wantsRoute } from './ui/routePicker';
@@ -71,6 +72,7 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
   let manifest: Manifest | null = null;
   let areaLoaded = false;
   const routeLayer = new RouteLayer(map);
+  const chart = createRouteChart();
   let picker: PickerState = EMPTY;
   let routeSeq = 0;
   const storage = safeLocalStorage();
@@ -87,6 +89,7 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
 
   async function computeRoute(): Promise<void> {
     routeLayer.setRoute(null);
+    chart.setProfile(null);
     if (!wantsRoute(picker)) {
       panel.setStatus(t(hintKey(picker)));
       return;
@@ -103,6 +106,7 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
     if (seq !== routeSeq) return; // a newer tap superseded this request
     if (res.type === 'route') {
       routeLayer.setRoute(res.route.geometry);
+      chart.setProfile(res.route.profile);
       const summary = t('route.summary', routeSummaryParams(getLocale(), res.route.distanceM, res.route.timeS));
       const r = res.route;
       const risk = r.riskAvg > 0 ? ` · ${t(`route.risk.${riskClass(r.riskAvg)}`)}` : '';
@@ -138,6 +142,7 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
       picker = EMPTY;
       routeLayer.setPoints(picker);
       routeLayer.setRoute(null);
+      chart.setProfile(null);
       panel.setStatus(
         `${t('area.loaded', { label: area.label, km: area.radiusKm })} · ${t('area.downloadHint', {
           mb: downloadMb(getLocale(), area.downloadGzipBytes),
@@ -163,7 +168,7 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
       if (areaLoaded && wantsRoute(picker)) void computeRoute();
     }, REROUTE_DEBOUNCE_MS);
   });
-  ui.append(panel.root, profilePanel, weightsPanel);
+  ui.append(panel.root, chart.root, profilePanel, weightsPanel);
 }
 
 function safeLocalStorage(): Storage | null {

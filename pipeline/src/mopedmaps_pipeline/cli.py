@@ -3,6 +3,7 @@
 import argparse
 import gzip
 import json
+import resource
 import sys
 import tempfile
 import time
@@ -62,6 +63,7 @@ def write_tiles(
             "gzip_bytes": total_gz,
             "max_tile_bytes": max((t["bytes"] for t in meta.values()), default=0),
             **{f"{k}_s": round(v, 1) for k, v in timings.items()},
+            "peak_rss_mb": peak_rss_mb(),
             **extra,
         },
         "tiles": dict(sorted(meta.items())),
@@ -134,15 +136,29 @@ def build_streaming(
         )  # fmt: skip
 
 
+def peak_rss_mb() -> int:
+    """Peak resident memory of this process so far (macOS: bytes, Linux: KiB)."""
+    rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    return round(rss / 1e6) if sys.platform == "darwin" else round(rss / 1024)
+
+
 class _Clock:
+    """Per-phase wall time and peak memory, reported in the manifest."""
+
     def __init__(self) -> None:
         self.t = time.monotonic()
         self.laps: dict[str, float] = {}
+        self.peak_mb: dict[str, int] = {}
 
     def lap(self, name: str) -> None:
         now = time.monotonic()
         self.laps[name] = now - self.t
+        self.peak_mb[name] = peak_rss_mb()
         self.t = now
+        print(
+            f"[build] {name}: {self.laps[name]:.1f} s, peak {self.peak_mb[name]} MB",
+            file=sys.stderr,
+        )
 
 
 def _verify(out: Path) -> None:

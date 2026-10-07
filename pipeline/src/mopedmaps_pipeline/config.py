@@ -63,3 +63,47 @@ ZONE_SPEEDS_KMH: Final[dict[str, int]] = {
     "DE:zone:30": 30,
     "DE:bicycle_road": 30,
 }
+
+# --- Risk score (roadmap step 5) ----------------------------------------------
+# Static, vehicle-independent risk per edge, stored as 0..255 (see
+# docs/risk-model.md). Points are summed from RISK_BASE and clamped. The
+# router uses risk as "points per km" so long risky roads cost more.
+RISK_BASE: Final[int] = 50
+# (min speed limit km/h, points); first matching row from the top wins.
+RISK_SPEED_POINTS: Final[tuple[tuple[int, int], ...]] = (
+    (90, 60),
+    (70, 40),
+    (60, 25),
+    (40, 0),
+    (0, -15),  # <= 30 km/h streets are calmer
+)
+RISK_CLASS_POINTS: Final[dict[str, int]] = {
+    "TRUNK": 25,
+    "PRIMARY": 15,
+    "SECONDARY": 10,
+    "TERTIARY": 5,
+    "UNCLASSIFIED": 5,
+    "RESIDENTIAL": -10,
+    "LIVING_STREET": -20,
+    "SERVICE": 0,
+    "TRACK": 10,
+    "CYCLEWAY": -15,
+    "PATH": 0,
+    "MOTORWAY": 40,
+}
+# Fast roads without any cycle infrastructure (no escape space).
+RISK_NO_CYCLEWAY_MIN_SPEED_KMH: Final[int] = 70
+RISK_NO_CYCLEWAY_POINTS: Final[int] = 30
+RISK_UNLIT_POINTS: Final[int] = 15
+RISK_LIT_UNKNOWN_POINTS: Final[int] = 5
+RISK_SURFACE_POINTS: Final[dict[str, int]] = {
+    "UNKNOWN": 0,
+    "PAVED": 0,
+    "COBBLE": 15,
+    "COMPACTED": 20,
+    "UNPAVED": 40,
+}
+RISK_POINTS_PER_SIGNAL_PER_KM: Final[float] = 5.0
+# Short edges mean dense junctions; points per junction per km, capped.
+RISK_POINTS_PER_JUNCTION_PER_KM: Final[float] = 3.0
+RISK_JUNCTION_POINTS_CAP: Final[int] = 30

@@ -3,8 +3,8 @@
  *
  * Heuristic: straight-line distance / vmax, times the time weight. It is
  * admissible because every edge is at least as long as its chord, speed never
- * exceeds vmax and all penalties are >= 0. Risk/energy terms (steps 5/6) must
- * stay >= 0 to keep it admissible.
+ * exceeds vmax and all penalties are >= 0. The risk term is >= 0 and simply
+ * not estimated (stays admissible); energy (step 6) must also stay >= 0.
  */
 
 import type { Graph } from './graph';
@@ -14,6 +14,7 @@ import {
   type CostWeights,
   DEFAULT_WEIGHTS,
   edgeCost,
+  edgeRisk,
   travelTimeS,
   type VehicleProfile,
 } from './profile';
@@ -26,6 +27,8 @@ export interface Route {
   cost: number;
   timeS: number;
   distanceM: number;
+  /** Length-weighted mean risk score of the route (0 if not computed). */
+  riskAvg: number;
   /** Full polyline [lat, lon] including edge shape points. */
   geometry: [number, number][];
   /** Nodes settled during search (performance metric). */
@@ -102,6 +105,7 @@ function buildRoute(
   const geometry: [number, number][] = [[g.lat[start]!, g.lon[start]!]];
   let timeS = 0;
   let distanceM = 0;
+  let riskSum = 0;
   for (const a of arcs) {
     const e = g.edges[g.arcEdge[a]!]!;
     const fwd = g.arcForward[a] === 1;
@@ -110,6 +114,8 @@ function buildRoute(
     nodes.push(v);
     timeS += travelTimeS(e, fwd, profile);
     distanceM += e.lengthM;
+    riskSum += edgeRisk(e);
   }
-  return { nodes, arcs, cost, timeS, distanceM, geometry, settled };
+  const riskAvg = distanceM > 0 ? riskSum / (distanceM / 1000) : 0;
+  return { nodes, arcs, cost, timeS, distanceM, riskAvg, geometry, settled };
 }

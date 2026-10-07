@@ -21,6 +21,7 @@ export interface RouteResult {
   distanceM: number;
   timeS: number;
   cost: number;
+  riskAvg: number;
   geometry: LatLon[];
   settled: number;
   computeMs: number;

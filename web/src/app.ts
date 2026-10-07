@@ -11,6 +11,7 @@ import { PlzIndex } from './location/plz';
 import { type RouterPort, WorkerRouterPort } from './router/port';
 import type { CostWeights, VehicleProfile } from './router/profile';
 import { createAreaPanel } from './ui/areaPanel';
+import { requestPersistence } from './ui/basemap';
 import { areaErrorKey, downloadMb, energySummary, routeErrorKey, routeSummaryParams } from './ui/messages';
 import { createProfilePanel } from './ui/profilePanel';
 import { loadProfile, saveProfile } from './ui/profileStore';
@@ -118,6 +119,8 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
       );
       showArea(map, area.centre[0], area.centre[1], area.radiusKm);
       areaLoaded = true;
+      // Keep downloaded graph chunks from being evicted (best effort, iOS may still clear).
+      void requestPersistence(navigator.storage);
       panel.setCollapsed(true);
       picker = EMPTY;
       routeLayer.setPoints(picker);

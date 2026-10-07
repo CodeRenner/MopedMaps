@@ -5,9 +5,9 @@ first, does ONE small runnable increment, then appends an entry below and
 updates "Current state". Newest entries at the bottom.
 
 ## Current state
-- Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 done (PR #5, branch `safety/risk-score`); 6 done (PR #6, branch `energy/elevation`); 7 (PWA offline + installability) — next
-- Next task: step 7 — PWA: web manifest + icons, service worker caching app shell + plz.json, offline basemap fallback
-- Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5)
+- Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 done (PR #5, branch `safety/risk-score`); 6 done (PR #6, branch `energy/elevation`); 7 done (PR #7, branch `pwa/offline`); 8 (docs, licence, graph-build Action) — next
+- Next task: step 8 — README (EN), LICENSE (MIT), attribution/third-party notices
+- Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5). `pwa/offline` = PR #7 (step 7, stacked on #6)
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
   not installed globally (use a venv for Python tooling).
@@ -54,6 +54,14 @@ updates "Current state". Newest entries at the bottom.
 - [x] Router: cost = a·time + b·risk·length + c·energy (risk per km), heuristic stays admissible; tests
 - [x] UI: sliders a/b (c later in step 6), instant reroute; route summary shows risk indicator
 - [x] Browser check, then PR #5
+
+## Task backlog (step 7)
+- [x] Web app manifest (name, icons, theme, standalone, start_url), apple-touch-icon + iOS meta tags, generated icons (no third-party artwork)
+- [x] Service worker (hand-written, no extra deps): precache app shell (hashed Vite assets via build manifest) + plz.json; network-first for graph manifest
+- [x] Offline start: if the basemap style cannot load, fall back to a minimal local style (background + route/area layers only) so routing still works with cached graph chunks
+- [x] Ask the browser for persistent storage (navigator.storage.persist) after loading an area; show storage note on iOS
+- [x] Offline test in the browser (server stopped), then PR #7
+- Note: no bulk prefetching of OpenFreeMap tiles (respect their usage policy); full offline basemap comes with own PMTiles later
 
 ## Later / improvements (found during checks)
 - [ ] Snap start/target only to the largest connected component (taps near the data border hit isolated fragments -> "unreachable")
@@ -539,3 +547,67 @@ updates "Current state". Newest entries at the bottom.
 - Tests: tsc clean; vitest 103 passed.
 - Commit: b7d89b9
 - Next: push + PR #6, then step 7.
+
+### 2026-10-07 — Iteration 30b (PR #6)
+- Opened https://github.com/CodeRenner/MopedMaps/pull/6 (base `safety/risk-score`).
+  Branch `pwa/offline` for step 7; backlog added.
+
+### 2026-10-07 — Iteration 31 (manifest + icons)
+- What: `web/scripts/make_icons.py` renders own icon artwork (blue tile,
+  white route, green/red dots) with numpy + zlib PNG writer, 4x
+  supersampling -> 180 (apple-touch), 192, 512, 512 maskable (safe zone);
+  `icon.svg` favicon. `public/manifest.webmanifest` (de, standalone,
+  start_url/scope "./", theme #2b6cb0). index.html: manifest, icons, iOS
+  web-app meta tags, description.
+- Browser: manifest + all 4 icons served (200, correct types).
+- Hiccup: a ruff failure aborted the `&&` chain before icon.svg was
+  written; caught by the new manifest test.
+- Tests: vitest 106 passed (manifest fields, icon files exist with declared
+  PNG sizes, index.html links).
+- Commit: 25306c7
+- Next: service worker.
+
+### 2026-10-07 — Iteration 32 (service worker)
+- What: `src/sw/policy.ts` (pure strategy per URL + FNV-1a cache version
+  hash), `src/sw/sw.ts` (install precache, activate cleans old shells,
+  fetch: precache / network-first graph manifest / stale-while-revalidate
+  for OpenFreeMap styles+sprites+fonts / passthrough for graph chunks and
+  basemap tiles). `vite.config.ts`: sw as separate entry emitted as
+  `sw.js` (self-contained, 1 KB gzip); plugin prepends
+  `self.__PRECACHE_MANIFEST__=[...]` (hashed assets + public files).
+  Registered in production builds only. `web-preview` launch config.
+- Bugs found and fixed while testing:
+  1. placeholder array got constant-folded by the minifier -> switched to a
+     prepended global;
+  2. cache version was derived from list length -> FNV hash (test added);
+  3. offline, JS/CSS failed: host sends `Vary: Origin` and `crossorigin`
+     module requests carry Origin -> `ignoreVary: true` on all matches.
+- Verified with `vite preview` + stopping the server: app starts from the
+  SW cache, area loads from IndexedDB + cached graph manifest, route
+  computed ("12,5 km · 29 min · hohes Risiko · ↑ 49 m · 0,32 l").
+- Tests: vitest 111 passed (strategy table, cache-version hash).
+- Commit: e240655
+- Next: fallback style for first-visit-offline, persistent storage.
+
+### 2026-10-07 — Iteration 33 (fallback style + persistence)
+- What: `ui/basemap.ts` — `fallbackStyle()` (style v8, background only, no
+  sources/glyphs/sprite; validated with the official style-spec validator in
+  tests) and `requestPersistence()` (never throws; handles unsupported /
+  already persisted / denied). main.ts switches to the fallback on a
+  map error before the style loaded, or after `BASEMAP_TIMEOUT_MS` (8 s),
+  and shows a localized note. app.ts requests persistence after the first
+  area load.
+- Browser check: style URL temporarily pointed at an unreachable host ->
+  fallback within ~1 s, note shown, area circle + route + summary work,
+  OSM/GeoNames/Copernicus attribution still visible. Config reverted.
+- Tests: tsc clean; vitest 113 passed; build OK.
+- Commit: 04ee773
+- Next: offline docs, then PR #7.
+
+### 2026-10-07 — Iteration 34 (offline docs) — step 7 complete
+- What: `docs/offline.md` — install steps (iOS/Android), what is stored
+  where and works offline, update/versioning behaviour, known limitations
+  (iOS eviction, no background GPS, no full offline basemap yet, radius,
+  first start online).
+- Commit: 6ef7d55
+- Next: push + PR #7; then step 8.

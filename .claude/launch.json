@@ -4,8 +4,27 @@
     {
       "name": "web-dev",
       "runtimeExecutable": "/Users/ai/.local/node/bin/node",
-      "runtimeArgs": ["/Users/ai/Desktop/Projects/MopedMaps/web/node_modules/vite/bin/vite.js", "/Users/ai/Desktop/Projects/MopedMaps/web", "--port", "5173", "--strictPort"],
+      "runtimeArgs": [
+        "/Users/ai/Desktop/Projects/MopedMaps/web/node_modules/vite/bin/vite.js",
+        "/Users/ai/Desktop/Projects/MopedMaps/web",
+        "--port",
+        "5173",
+        "--strictPort"
+      ],
       "port": 5173
+    },
+    {
+      "name": "web-preview",
+      "runtimeExecutable": "/Users/ai/.local/node/bin/node",
+      "runtimeArgs": [
+        "/Users/ai/Desktop/Projects/MopedMaps/web/node_modules/vite/bin/vite.js",
+        "preview",
+        "/Users/ai/Desktop/Projects/MopedMaps/web",
+        "--port",
+        "4173",
+        "--strictPort"
+      ],
+      "port": 4173
     }
   ]
 }

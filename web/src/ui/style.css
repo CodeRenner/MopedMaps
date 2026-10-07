@@ -134,3 +134,16 @@ body {
   font-size: 13px;
   color: #555;
 }
+.offline-note {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: calc(48px + env(safe-area-inset-bottom));
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fffbea;
+  color: #5f4b00;
+  font-size: 14px;
+  box-shadow: 0 1px 6px rgb(0 0 0 / 0.15);
+}

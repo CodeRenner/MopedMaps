@@ -10,7 +10,7 @@ updates "Current state". Newest entries at the bottom.
   - `feature/elevation-profile`: node heights in chunks (format v2) + route climb from profile with hysteresis
   - `feature/route-chart`: line chart speed + elevation over distance
   - `feature/range`: battery/tank capacity + real consumption calibration, range/reserve display
-- Step 9 features done (PRs #11 elevation-profile, #12 route-chart, range PR stacked on #12). Waiting on the user: review/merge bottom-up, then a manual "Graph build" for v2 tiles.
+- Step 9 merged (PRs #11, #12, #13, 2026-10-07). Open: "Graph build" run for v2 tiles (node heights) on the live site.
 - Next task (if continuing): items from "Later / improvements" (snap to largest component, risk tuning)
 - Germany graph (v1) live on mopedmaps.pages.dev since 2026-10-07 (run 37621466950)
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5). `pwa/offline` = PR #7 (step 7, stacked on #6). `docs/release` = PR #8 (step 8, stacked on #7)
@@ -981,3 +981,8 @@ next monthly/manual build after `feature/elevation-profile` is merged; the clien
 - Tests: tsc clean; vitest 144 passed; vite build ok.
 - Commit: e9ea138; branch pushed, PR opened (stacked on `feature/route-chart` / PR #12).
 - Next: user review/merge of #11 -> #12 -> range PR; then Graph build for v2 tiles.
+
+### Note — step 9 merged (2026-10-07)
+PRs #11 (elevation profile), #12 (route chart), #13 (range) merged into main in that order (each retargeted to main
+before its base was merged; branches deleted afterwards). CI green; Deploy run 37655082851 succeeded, live bundle
+contains the chart and range strings. Live tiles are still format v1 until the next "Graph build" run.

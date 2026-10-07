@@ -6,7 +6,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 done (PR #5, branch `safety/risk-score`); 6 done (PR #6, branch `energy/elevation`); 7 done (PR #7, branch `pwa/offline`); 8 (docs, licence, graph-build Action) — next
-- Next task: graph-build GitHub Action (monthly + manual: OSM + DEM download, streaming build, upload tiles artifact, deploy app + tiles to Cloudflare Pages `mopedmaps`)
+- Next task: graph-build workflow (.github/workflows/graph-build.yml) + app deploy workflow using the latest tiles artifact
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5). `pwa/offline` = PR #7 (step 7, stacked on #6). `docs/release` (local, stacked on #7) = step 8
 - Blockers / questions for the user (asked 2026-10-07, not blocking current work):
   - ~~Cloudflare secrets~~ done 2026-10-07 (both present in repo secrets)
@@ -84,6 +84,7 @@ updates "Current state". Newest entries at the bottom.
   - [x] Faster edge pass: node index in RAM (`flex_mem`, ~1 GB) instead of on-disk sparse_file_array (pass was I/O-bound, CPU 32 %)
   - [x] Compact binary spool rows instead of pickled Edge objects (Bremen 14 -> 9.4 MB)
   - [x] `--delete-source` to free 4.5 GB after the pre-filter (e.g. Niedersachsen or Hessen): time, peak RAM, disk
+- [x] DEM fetch tool for the Action (`dem-fetch`)
 - [ ] Monthly graph-build Action (Geofabrik Germany + GLO-30 tiles) + deploy to Cloudflare Pages — needs user to create CF account/API token secrets (ask when ready)
 
 ## Later / improvements (found during checks)
@@ -816,3 +817,14 @@ updates "Current state". Newest entries at the bottom.
   844 tiles byte-identical to the first run. Duplicate output deleted.
 - User decided: one Cloudflare Pages project for app + tiles (app deploys
   reuse the last graph build's tiles via a GitHub artifact). DECISIONS.md.
+
+### 2026-10-07 — Iteration 47 (DEM fetch)
+- What: `dem.tiles_for_bbox`, `tile_url`, `fetch_tiles(tiles, out, fetch)`
+  (urllib, skips present files, treats S3 403/404 as "sea tile", atomic
+  `.part` rename); CLI `python -m mopedmaps_pipeline dem-fetch OUT [--bbox S W
+  N E]`, default Germany 47..55 N x 5..16 E (88 tiles).
+- Checked against S3: N54/E005 (North Sea) -> 404, N53/E008 -> 200; local run
+  reports the 4 Bremen-area tiles as present.
+- Tests: pytest DEM 7 passed (bbox/URL, fake fetcher with present/sea/new).
+- Commit: 31cb84d
+- Next: workflows.

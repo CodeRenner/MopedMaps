@@ -6,7 +6,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 done (PR #5, branch `safety/risk-score`); 6 done (PR #6, branch `energy/elevation`); 7 (PWA offline + installability) — next
-- Next task: service worker (precache app shell from Vite build manifest + plz.json; network-first graph manifest)
+- Next task: offline fallback style when the basemap style was never cached; persistent storage request
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5). `pwa/offline` (local, stacked on #6) = step 7
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
@@ -57,7 +57,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Task backlog (step 7)
 - [x] Web app manifest (name, icons, theme, standalone, start_url), apple-touch-icon + iOS meta tags, generated icons (no third-party artwork)
-- [ ] Service worker (hand-written, no extra deps): precache app shell (hashed Vite assets via build manifest) + plz.json; network-first for graph manifest
+- [x] Service worker (hand-written, no extra deps): precache app shell (hashed Vite assets via build manifest) + plz.json; network-first for graph manifest
 - [ ] Offline start: if the basemap style cannot load, fall back to a minimal local style (background + route/area layers only) so routing still works with cached graph chunks
 - [ ] Ask the browser for persistent storage (navigator.storage.persist) after loading an area; show storage note on iOS
 - [ ] Offline test in the browser (devtools offline), then PR #7
@@ -566,3 +566,25 @@ updates "Current state". Newest entries at the bottom.
   PNG sizes, index.html links).
 - Commit: 25306c7
 - Next: service worker.
+
+### 2026-10-07 — Iteration 32 (service worker)
+- What: `src/sw/policy.ts` (pure strategy per URL + FNV-1a cache version
+  hash), `src/sw/sw.ts` (install precache, activate cleans old shells,
+  fetch: precache / network-first graph manifest / stale-while-revalidate
+  for OpenFreeMap styles+sprites+fonts / passthrough for graph chunks and
+  basemap tiles). `vite.config.ts`: sw as separate entry emitted as
+  `sw.js` (self-contained, 1 KB gzip); plugin prepends
+  `self.__PRECACHE_MANIFEST__=[...]` (hashed assets + public files).
+  Registered in production builds only. `web-preview` launch config.
+- Bugs found and fixed while testing:
+  1. placeholder array got constant-folded by the minifier -> switched to a
+     prepended global;
+  2. cache version was derived from list length -> FNV hash (test added);
+  3. offline, JS/CSS failed: host sends `Vary: Origin` and `crossorigin`
+     module requests carry Origin -> `ignoreVary: true` on all matches.
+- Verified with `vite preview` + stopping the server: app starts from the
+  SW cache, area loads from IndexedDB + cached graph manifest, route
+  computed ("12,5 km · 29 min · hohes Risiko · ↑ 49 m · 0,32 l").
+- Tests: vitest 111 passed (strategy table, cache-version hash).
+- Commit: e240655
+- Next: fallback style for first-visit-offline, persistent storage.

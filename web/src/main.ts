@@ -18,3 +18,10 @@ if (mapEl && uiEl) {
   if (map.isStyleLoaded()) start();
   else map.once('style.load', start);
 }
+
+// Offline support: only in production builds (dev server serves unbundled modules).
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch((err) => console.warn('SW registration failed', err));
+  });
+}

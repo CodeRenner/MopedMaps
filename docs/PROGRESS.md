@@ -6,9 +6,13 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 done (PR #5, branch `safety/risk-score`); 6 done (PR #6, branch `energy/elevation`); 7 done (PR #7, branch `pwa/offline`); 8 (docs, licence, graph-build Action) — next
-- Next task: band-wise Germany build (bounded memory) — prerequisite for the monthly graph Action
+- Next task: streaming build pass 1 — global junction set (pyosmium ways only, numpy), equal to build_graph's junctions on fixtures
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5). `pwa/offline` = PR #7 (step 7, stacked on #6). `docs/release` (local, stacked on #7) = step 8
-- Blockers / questions for the user: none
+- Blockers / questions for the user (asked 2026-10-07, not blocking current work):
+  - Cloudflare account + API token (Pages: Edit) + account ID as GitHub secrets CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID
+  - Pages project name (e.g. `mopedmaps`); host app + graph tiles together on Cloudflare Pages?
+  - LICENSE holder name ("MopedMaps contributors" for now)
+  - Review/merge PRs #1–#7 (stacked, bottom-up)
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
   not installed globally (use a venv for Python tooling).
   Node 22 in ~/.local/node — prefix commands with `export PATH="$HOME/.local/node/bin:$PATH"`
@@ -67,7 +71,12 @@ updates "Current state". Newest entries at the bottom.
 - [x] LICENSE (MIT, decided) + README (EN): what/why, features, architecture, dev setup, data sources & attribution, limitations
 - [x] THIRD_PARTY / data notices (DATA_SOURCES.md) (ODbL, CC BY 4.0 GeoNames, Copernicus DEM, OpenFreeMap/OpenMapTiles)
 - [x] CI workflow: ruff + pytest (pipeline), tsc + vitest + vite build (web) on PRs
-- [ ] Band-wise Germany build (memory) — prerequisite for the graph Action
+- [ ] Streaming Germany build (decided 2026-10-07):
+  - [ ] Pass 1: routable way refs -> sorted junction id array (numpy), test == build_graph junctions
+  - [ ] Pass 2: ways with on-disk locations -> split at junctions -> edge rows into per-tile temp files + junction (id, lat, lon, tile) list
+  - [ ] Assemble tiles from temp files (local indices by sorted id per tile), identical output to current build on Bremen
+  - [ ] Elevation in streaming mode (node heights + smoothing with neighbour lookups per tile band)
+  - [ ] Measure on a mid-size state (e.g. Niedersachsen or Hessen): time, peak RAM, disk
 - [ ] Monthly graph-build Action (Geofabrik Germany + GLO-30 tiles) + deploy to Cloudflare Pages — needs user to create CF account/API token secrets (ask when ready)
 
 ## Later / improvements (found during checks)
@@ -646,3 +655,10 @@ updates "Current state". Newest entries at the bottom.
   Guarded the reads; clean export now 107 passed / 6 skipped.
 - Commit: 65afe1e
 - Next: band-wise Germany build.
+
+### 2026-10-07 — Iteration 36b (questions + Germany build decision)
+- Listed what the user needs to provide (Cloudflare account/token/account ID
+  as GitHub secrets, project name, licence holder, PR merges) -> blockers
+  section; none blocks current work.
+- Asked before the larger pipeline change: user chose the two-pass streaming
+  pipeline (recorded in DECISIONS.md); backlog broken down.

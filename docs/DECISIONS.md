@@ -17,3 +17,4 @@ Record of resolved project decisions. Open questions live in PROGRESS.md.
 | 2026-10-07 | Elevation     | Copernicus DEM GLO-30 (AWS open data bucket `copernicus-dem-30m`), attribution in UI and docs | user |
 | 2026-10-07 | Raster lib    | tifffile + numpy (BSD), no GDAL                      | user |
 | 2026-10-07 | Germany build | Two-pass streaming pipeline (global junction set, then edges streamed into per-tile files; on-disk node location index) so it fits a free GitHub runner | user |
+| 2026-10-07 | Deploy layout | One Cloudflare Pages project (`mopedmaps`) for app + graph tiles; app deploys reuse the tiles of the last graph build (stored as a GitHub artifact) | user |

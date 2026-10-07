@@ -46,3 +46,7 @@ Follow-ups for the GitHub Action (runner: 7 GB RAM, ~14 GB free disk):
 - Compact binary spool rows instead of pickled `Edge` objects.
 - Delete the source PBF right after the pre-filter (disk: 4.5 GB source +
   0.85 GB filtered + ≥4 GB spool + 0.9 GB tiles ≈ 11–13 GB otherwise).
+
+### Re-run with the node index in RAM (`--node-index mem`, default)
+Edge pass 78.0 → 23.5 min; total 103 → 54 min; peak RAM 1.58 → 1.80 GB;
+output byte-identical (844 tiles). The pre-filter is now the longest phase.

@@ -36,5 +36,9 @@
   "weights.hint": "Mehr Sicherheit meidet schnelle, unbeleuchtete Straßen ohne Radweg – die Route wird oft etwas länger.",
   "route.risk.low": "geringes Risiko",
   "route.risk.medium": "mittleres Risiko",
-  "route.risk.high": "hohes Risiko"
+  "route.risk.high": "hohes Risiko",
+  "weights.energy": "Gewicht Energie: {value}",
+  "route.energy.electricWh": "↑ {climb} m · {wh} Wh",
+  "route.energy.electricKwh": "↑ {climb} m · {kwh} kWh",
+  "route.energy.combustion": "↑ {climb} m · {litres} l"
 }

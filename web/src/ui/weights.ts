@@ -3,6 +3,7 @@
 import {
   RISK_CLASS_LOW_MAX,
   RISK_CLASS_MEDIUM_MAX,
+  WEIGHT_ENERGY_RANGE,
   WEIGHT_RISK_RANGE,
   WEIGHT_TIME_RANGE,
 } from '../config';
@@ -14,7 +15,7 @@ export const WEIGHTS_STORAGE_KEY = 'mopedmaps.weights.v1';
 export const DEFAULT_UI_WEIGHTS: CostWeights = {
   time: WEIGHT_TIME_RANGE.default,
   risk: WEIGHT_RISK_RANGE.default,
-  energy: 0,
+  energy: WEIGHT_ENERGY_RANGE.default,
 };
 
 const clamp = (v: unknown, r: { min: number; max: number }, fallback: number): number =>
@@ -24,7 +25,7 @@ export function normalizeWeights(w: Partial<CostWeights>): CostWeights {
   return {
     time: clamp(w.time, WEIGHT_TIME_RANGE, DEFAULT_UI_WEIGHTS.time),
     risk: clamp(w.risk, WEIGHT_RISK_RANGE, DEFAULT_UI_WEIGHTS.risk),
-    energy: 0, // step 6
+    energy: clamp(w.energy, WEIGHT_ENERGY_RANGE, DEFAULT_UI_WEIGHTS.energy),
   };
 }
 

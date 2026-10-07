@@ -11,7 +11,7 @@ import { PlzIndex } from './location/plz';
 import { type RouterPort, WorkerRouterPort } from './router/port';
 import type { CostWeights, VehicleProfile } from './router/profile';
 import { createAreaPanel } from './ui/areaPanel';
-import { areaErrorKey, downloadMb, routeErrorKey, routeSummaryParams } from './ui/messages';
+import { areaErrorKey, downloadMb, energySummary, routeErrorKey, routeSummaryParams } from './ui/messages';
 import { createProfilePanel } from './ui/profilePanel';
 import { loadProfile, saveProfile } from './ui/profileStore';
 import { RouteLayer } from './ui/routeLayer';
@@ -90,8 +90,10 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
     if (res.type === 'route') {
       routeLayer.setRoute(res.route.geometry);
       const summary = t('route.summary', routeSummaryParams(getLocale(), res.route.distanceM, res.route.timeS));
-      const risk = res.route.riskAvg > 0 ? ` · ${t(`route.risk.${riskClass(res.route.riskAvg)}`)}` : '';
-      panel.setStatus(summary + risk);
+      const r = res.route;
+      const risk = r.riskAvg > 0 ? ` · ${t(`route.risk.${riskClass(r.riskAvg)}`)}` : '';
+      const en = energySummary(getLocale(), profile.drive, r.energyWh, r.fuelL, r.ascentM);
+      panel.setStatus(`${summary}${risk} · ${t(en.key, en.params)}`);
     } else if (res.type === 'no-route') {
       panel.setStatus(t(routeErrorKey(res.reason)), true);
     } else if (res.type === 'error') {

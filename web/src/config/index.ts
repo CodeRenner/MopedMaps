@@ -93,6 +93,7 @@ export const PLZ_TABLE_URL = './data/plz.json';
 /** Slider ranges for cost = a·time + b·risk·km (+ c·energy in step 6). */
 export const WEIGHT_TIME_RANGE = { min: 0.2, max: 2, step: 0.1, default: 1 } as const;
 export const WEIGHT_RISK_RANGE = { min: 0, max: 3, step: 0.25, default: 0.5 } as const;
+export const WEIGHT_ENERGY_RANGE = { min: 0, max: 3, step: 0.25, default: 0 } as const;
 /** Route risk classification by length-weighted mean risk score. */
 export const RISK_CLASS_LOW_MAX = 60;
 export const RISK_CLASS_MEDIUM_MAX = 90;

@@ -29,5 +29,12 @@
   "profile.drive.combustion": "Verbrenner",
   "profile.invalidVmax": "Bitte einen Wert zwischen {min} und {max} km/h eingeben.",
   "info.limitations": "Routen nur innerhalb des geladenen Umkreises. Keine Verkehrsdaten.",
-  "area.change": "Ändern"
+  "area.change": "Ändern",
+  "weights.title": "Routenwahl",
+  "weights.time": "Gewicht Zeit: {value}",
+  "weights.risk": "Gewicht Sicherheit: {value}",
+  "weights.hint": "Mehr Sicherheit meidet schnelle, unbeleuchtete Straßen ohne Radweg – die Route wird oft etwas länger.",
+  "route.risk.low": "geringes Risiko",
+  "route.risk.medium": "mittleres Risiko",
+  "route.risk.high": "hohes Risiko"
 }

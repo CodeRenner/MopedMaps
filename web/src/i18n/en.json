@@ -29,5 +29,12 @@
   "profile.drive.combustion": "Combustion",
   "profile.invalidVmax": "Please enter a value between {min} and {max} km/h.",
   "info.limitations": "Routes only within the loaded radius. No traffic data.",
-  "area.change": "Change"
+  "area.change": "Change",
+  "weights.title": "Route preference",
+  "weights.time": "Time weight: {value}",
+  "weights.risk": "Safety weight: {value}",
+  "weights.hint": "More safety avoids fast, unlit roads without cycle lanes – routes often get a bit longer.",
+  "route.risk.low": "low risk",
+  "route.risk.medium": "medium risk",
+  "route.risk.high": "high risk"
 }

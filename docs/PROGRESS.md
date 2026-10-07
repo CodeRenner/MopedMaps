@@ -6,7 +6,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 (safety score + sliders) — next
-- Next task: write risk into the chunk's reserved byte; regenerate web fixtures + Bremen tiles
+- Next task: router cost a·time + b·risk·km (admissible heuristic), tests
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` (local, stacked on #4) = step 5
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
@@ -50,7 +50,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Task backlog (step 5)
 - [x] Risk model doc + constants (pipeline config): fast rural roads w/o cycleway, no lighting, bad surface, many junctions/signals; bonus for 30/50 side streets
-- [ ] Pipeline: compute per-edge risk (0–255) into the reserved byte; tests; rebuild Bremen + web fixtures
+- [x] Pipeline: compute per-edge risk (0–255) into the reserved byte; tests; rebuild Bremen + web fixtures
 - [ ] Router: cost = a·time + b·risk·length + c·energy (risk per km), heuristic stays admissible; tests
 - [ ] UI: sliders a/b (c later in step 6), instant reroute; route summary shows risk indicator
 - [ ] Browser check, then PR #5
@@ -416,3 +416,15 @@ updates "Current state". Newest entries at the bottom.
   constants cover every enum member).
 - Commit: ec69558
 - Next: encode risk into chunks.
+
+### 2026-10-07 — Iteration 24 (risk in chunks)
+- What: `split_into_chunks` writes `max(1, risk_score(e))` into byte 26
+  (format stays v1; 0 still means "not computed"). Spec updated.
+  Regenerated web fixtures and local Bremen tiles.
+- Bremen distribution (59,515 edges): min 24, p10 55, median 70, p90 95,
+  max 255. Tuning note: junction density (capped +30) dominates on short
+  urban edges — revisit after seeing routes with b > 0.
+- Size: Bremen gzip 1.346 -> 1.391 MB (+3 %, risk byte less compressible).
+- Tests: pytest 62 passed; vitest 86 passed.
+- Commit: 3f8466e
+- Next: risk in router cost.

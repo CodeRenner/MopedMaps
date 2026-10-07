@@ -6,7 +6,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 done (PR #5, branch `safety/risk-score`); 6 (elevation + energy) — next
-- Next task: ascent/descent per edge (sample every ~30 m, smooth DSM noise), write bytes 22–25, rebuild
+- Next task: energy model in router (electric Wh/km by speed+gradient, combustion l/100km), c·energy in cost
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` (local, stacked on #5) = step 6
 - Blockers / questions for the user: none
 - Environment notes: python3 3.12 available; node/npm, ruff, pytest, osmium
@@ -57,7 +57,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Task backlog (step 6)
 - [x] DEM: download GLO-30 tiles (N52/N53 × E008/E009), sampler with bilinear interpolation, tests on synthetic raster
-- [ ] Pipeline: ascent/descent per edge (sample along geometry every ~30 m; smoothing needed: GLO-30 is a DSM incl. buildings/trees; ignore small wiggles via hysteresis threshold) into bytes 22–25; rebuild
+- [x] Pipeline: ascent/descent per edge (graph-smoothed node heights, see docs/elevation.md) into bytes 22–25; rebuild
 - [ ] Router: energy model — electric Wh/km by speed + gradient, combustion l/100km; c·energy in cost; documented constants
 - [ ] UI: energy slider c, summary shows Wh or litres + range hint; elevation attribution
 - [ ] Browser check, then PR #6
@@ -484,3 +484,20 @@ updates "Current state". Newest entries at the bottom.
   encoder, synthetic GeoTIFF bilinear/clamp/NaN, real-tile plausibility).
 - Commit: d844275
 - Next: ascent/descent per edge.
+
+### 2026-10-07 — Iteration 28 (ascent/descent)
+- What: `elevation.py` — DEM sampled at junction nodes, Laplacian smoothing
+  over the graph (10×, α 0.5; constants in config), per-edge ascent/descent
+  from smoothed end heights; `Edge` gained `ascent_m`/`descent_m`; chunks
+  write them to bytes 22–25 (dm); CLI `--dem DIR`, manifest reports
+  `elevation_s` and `edges_without_elevation`.
+- Calibration (Bremen, documented in docs/elevation.md): first tried a 30 m
+  profile + median + hysteresis (9.3 m/km — noise lives *between* edges),
+  pixel-minimum (negative heights at the Weser), then node smoothing:
+  1.94 m/km, heights 0–42 m, grade p99 1.6 %, max 3.3 %. 0.8 s for Bremen.
+- Rebuilt Bremen tiles with `--dem data/dem` (gzip 1.45 MB), regenerated web
+  fixtures (built without DEM -> zeros).
+- Tests: pytest 69 passed (smoothing keeps trend / removes noise, direction,
+  encoding, missing DEM); vitest 93 passed.
+- Commit: 255c6ab
+- Next: energy model.

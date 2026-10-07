@@ -894,3 +894,9 @@ updates "Current state". Newest entries at the bottom.
 - Local Bremen tiles rebuilt as v2 with DEM.
 - Commit: cfce526
 - Next: route profile + climb hysteresis.
+
+### Note — Germany graph live (2026-10-07)
+GitHub graph-build run 37621466950 (`europe/germany`, deploy=true) succeeded: build + deploy jobs green.
+https://mopedmaps.pages.dev now serves 844 tiles (14.2 M nodes, 16.8 M edges, 511 MB gzip, format v1);
+spot checks: Bremen `212_35` and Munich `192_45` return 200. v2 tiles (node heights) follow with the
+next monthly/manual build after `feature/elevation-profile` is merged; the client reads both.

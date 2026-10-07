@@ -6,7 +6,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 (frontend) — next
-- Next task: profile settings panel (vmax presets 25/45 + free input, drive), persisted in localStorage; reroute on change
+- Next task: size budget + older-iPhone sanity check (last item of step 4), then push + PR #4
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` (local, stacked on #3) = step 4
 - Blockers / questions for the user:
   - In-app browser preview: tab stays in "Policy check in progress" and navigation to http://localhost:5173 is denied — needs the user to allow it in the Browser pane (visual checks skipped until then)
@@ -45,7 +45,7 @@ updates "Current state". Newest entries at the bottom.
 - [x] i18n module (de first, en), all UI strings via i18n files
 - [x] PLZ input + radius slider -> loadArea with progress; area circle on map
 - [x] Tap to set start/destination, route request via WorkerRouterPort, draw route + summary
-- [ ] Profile settings (vmax presets 25/45 + free input, drive type), persisted locally
+- [x] Profile settings (vmax presets 25/45 + free input, drive type), persisted locally
 - [ ] Size budget check (bundle size) and older-iPhone sanity (ES2020, no heavy deps)
 
 ## Log
@@ -350,3 +350,15 @@ updates "Current state". Newest entries at the bottom.
   still blocked (preview navigation denied).
 - Commit: 5e3b37c
 - Next: profile settings.
+
+### 2026-10-07 — Iteration 21 (profile settings)
+- What: `ui/profileStore.ts` (pure `parseVmax` accepting "45,5", range
+  6–200; `loadProfile`/`saveProfile` with injected storage, defaults on
+  corrupt/invalid/blocked storage — localStorage is fine here: per-device
+  convenience, not critical data), `ui/profilePanel.ts` (collapsible
+  <details>: preset buttons 25/45 with aria-pressed, free vmax input with
+  localized validation hint, drive radios), app: profile used for routing,
+  saved on change, current route recomputed.
+- Tests: tsc clean; vitest 86 passed. Build 292 KB gzip.
+- Commit: 88f0c90
+- Next: size budget check, then step 4 PR.

@@ -9,9 +9,11 @@ import { getLocale, t } from './i18n';
 import { circleBounds, circlePolygon } from './location/circle';
 import { PlzIndex } from './location/plz';
 import { type RouterPort, WorkerRouterPort } from './router/port';
-import { DEFAULT_PROFILE } from './router/profile';
+import type { VehicleProfile } from './router/profile';
 import { createAreaPanel } from './ui/areaPanel';
 import { areaErrorKey, downloadMb, routeErrorKey, routeSummaryParams } from './ui/messages';
+import { createProfilePanel } from './ui/profilePanel';
+import { loadProfile, saveProfile } from './ui/profileStore';
 import { RouteLayer } from './ui/routeLayer';
 import { EMPTY, hintKey, type PickerState, tap, wantsRoute } from './ui/routePicker';
 
@@ -55,11 +57,17 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
   const routeLayer = new RouteLayer(map);
   let picker: PickerState = EMPTY;
   let routeSeq = 0;
+  const storage = safeLocalStorage();
+  let profile: VehicleProfile = loadProfile(storage);
 
-  map.on('click', async (ev) => {
+  map.on('click', (ev) => {
     if (!areaLoaded) return;
     picker = tap(picker, [ev.lngLat.lat, ev.lngLat.lng]);
     routeLayer.setPoints(picker);
+    void computeRoute();
+  });
+
+  async function computeRoute(): Promise<void> {
     routeLayer.setRoute(null);
     if (!wantsRoute(picker)) {
       panel.setStatus(t(hintKey(picker)));
@@ -71,7 +79,7 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
       type: 'route',
       from: picker.start,
       to: picker.target,
-      profile: DEFAULT_PROFILE,
+      profile,
     });
     if (seq !== routeSeq) return; // a newer tap superseded this request
     if (res.type === 'route') {
@@ -84,7 +92,7 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
     } else if (res.type === 'error') {
       panel.setStatus(res.message, true);
     }
-  });
+  }
 
   const panel = createAreaPanel(plz, async (code, radiusKm) => {
     panel.setBusy(true);
@@ -118,5 +126,18 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
       panel.setBusy(false);
     }
   });
-  ui.append(panel.root);
+  const profilePanel = createProfilePanel(profile, (p) => {
+    profile = p;
+    saveProfile(storage, p);
+    if (areaLoaded && wantsRoute(picker)) void computeRoute();
+  });
+  ui.append(panel.root, profilePanel);
+}
+
+function safeLocalStorage(): Storage | null {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
 }

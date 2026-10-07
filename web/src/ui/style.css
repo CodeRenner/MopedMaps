@@ -55,3 +55,42 @@ body {
 .panel .status.error {
   color: #b00020;
 }
+#ui {
+  display: grid;
+  gap: 8px;
+}
+.profile summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.profile .presets {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.profile .presets button {
+  flex: 1;
+  background: #e2e8f0;
+  color: #1a202c;
+}
+.profile .presets button[aria-pressed='true'] {
+  background: #2b6cb0;
+  color: #fff;
+}
+.profile input[name='vmax'] {
+  font-size: 16px;
+  padding: 8px;
+  border: 1px solid #bbb;
+  border-radius: 6px;
+}
+.profile fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  gap: 16px;
+}
+.profile .hint {
+  margin: 0;
+  color: #b00020;
+}

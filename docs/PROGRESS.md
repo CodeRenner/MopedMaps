@@ -6,7 +6,7 @@ updates "Current state". Newest entries at the bottom.
 
 ## Current state
 - Roadmap step: 1 done (except band-wise Germany build); 2 done (PR #2, branch `router/astar`); 3 done (PR #3, branch `data/plz-chunks`); 4 done (PR #4, branch `ui/map-frontend`); 5 done (PR #5, branch `safety/risk-score`); 6 done (PR #6, branch `energy/elevation`); 7 done (PR #7, branch `pwa/offline`); 8 (docs, licence, graph-build Action) — next
-- Next task: graph-build workflow (.github/workflows/graph-build.yml) + app deploy workflow using the latest tiles artifact
+- Next task: step 8 wrap-up — push `docs/release`, open PR #8; first real runs of the workflows happen after merge to main (manual graph build with region europe/germany/bremen as smoke test)
 - Branches: `pipeline/graph-chunks` = PR #1 (step 1). `router/astar` = PR #2 (step 2, stacked on #1). `data/plz-chunks` = PR #3 (step 3, stacked on #2). `ui/map-frontend` = PR #4 (step 4, stacked on #3). `safety/risk-score` = PR #5 (step 5, stacked on #4). `energy/elevation` = PR #6 (step 6, stacked on #5). `pwa/offline` = PR #7 (step 7, stacked on #6). `docs/release` (local, stacked on #7) = step 8
 - Blockers / questions for the user (asked 2026-10-07, not blocking current work):
   - ~~Cloudflare secrets~~ done 2026-10-07 (both present in repo secrets)
@@ -85,7 +85,7 @@ updates "Current state". Newest entries at the bottom.
   - [x] Compact binary spool rows instead of pickled Edge objects (Bremen 14 -> 9.4 MB)
   - [x] `--delete-source` to free 4.5 GB after the pre-filter (e.g. Niedersachsen or Hessen): time, peak RAM, disk
 - [x] DEM fetch tool for the Action (`dem-fetch`)
-- [ ] Monthly graph-build Action (Geofabrik Germany + GLO-30 tiles) + deploy to Cloudflare Pages — needs user to create CF account/API token secrets (ask when ready)
+- [x] Monthly graph-build Action + Cloudflare Pages deploy workflow (secrets present)
 
 ## Later / improvements (found during checks)
 - [ ] Snap start/target only to the largest connected component (taps near the data border hit isolated fragments -> "unreachable")
@@ -828,3 +828,21 @@ updates "Current state". Newest entries at the bottom.
 - Tests: pytest DEM 7 passed (bbox/URL, fake fetcher with present/sea/new).
 - Commit: 31cb84d
 - Next: workflows.
+
+### 2026-10-07 — Iteration 48 (workflows)
+- What: `.github/workflows/graph-build.yml` (cron 3rd of month 02:00 UTC +
+  manual with `region` / `deploy` inputs; frees runner disk, pip cache, DEM
+  tiles cached via actions/cache, `dem-fetch`, Geofabrik download, streaming
+  build with `--dem --delete-source --verify`, uploads `graph-tiles`
+  artifact (90 days), then calls deploy) and `.github/workflows/deploy.yml`
+  (push to main on web/**, manual, or workflow_call with `graph-run-id`;
+  builds the app, downloads the tiles artifact of the given or latest
+  successful graph build (warns and deploys without data if none yet),
+  `wrangler@4 pages project create || true` + `pages deploy` to `mopedmaps`).
+  `web/public/_headers`: no-cache for sw.js/index.html/graph manifest, 1 day
+  for tiles, immutable for hashed assets. README deployment section.
+- Validation: actionlint clean (all 3 workflows); `_headers` present in
+  dist; vitest 113 passed. Workflows only run once on GitHub (after merge
+  to main / manual dispatch) — not executed yet.
+- Commit: 76777f3
+- Next: push + PR #8 (step 8).

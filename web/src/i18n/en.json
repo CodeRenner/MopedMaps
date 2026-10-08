@@ -109,5 +109,16 @@
   "voice.meters": "{n} meters",
   "voice.km": "{n} kilometers",
   "voice.on": "Voice guidance on",
-  "voice.off": "Voice guidance off"
+  "voice.off": "Voice guidance off",
+  "welcome.title": "Welcome to MopedMaps",
+  "welcome.safety": "Traffic rules and signs on site always take precedence. Do not operate the app while riding.",
+  "welcome.noWarranty": "Routes, speed limits, closures and range are based on open data (OpenStreetMap and others) and may be wrong or outdated – no warranty.",
+  "welcome.privacy": "No account, no tracking: settings, destinations and map data stay on your device.",
+  "welcome.ios.install": "iPhone: install it via “Share → Add to Home Screen” – then it also works offline.",
+  "welcome.ios.screen": "iPhone: while navigating the screen must stay on and the app in the foreground (no background GPS).",
+  "welcome.ios.voice": "iPhone: turn off the silent switch for voice guidance.",
+  "welcome.android.install": "Android: use “Install app” in the browser menu – then it also works offline.",
+  "welcome.android.battery": "Android: keep the screen on while navigating; battery saver can slow down location updates.",
+  "welcome.desktop.plan": "On a computer the app is good for planning; use your phone to navigate.",
+  "welcome.accept": "Got it"
 }

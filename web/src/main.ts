@@ -1,6 +1,7 @@
 import { registerServiceWorker } from './sw/update';
 import './ui/style.css';
 import { startApp } from './app';
+import { detectPlatform, showWelcomeIfNeeded } from './ui/welcome';
 import { detectLocale, setLocale, t } from './i18n';
 import { BASEMAP_TIMEOUT_MS } from './config';
 import { fallbackStyle } from './ui/basemap';
@@ -13,6 +14,15 @@ document.title = t('app.title');
 
 const mapEl = document.getElementById('map');
 const uiEl = document.getElementById('ui');
+
+// One-time notice (safety + device tips); the map keeps loading behind it.
+let welcomeStorage: Storage | null = null;
+try {
+  welcomeStorage = window.localStorage;
+} catch {
+  welcomeStorage = null;
+}
+void showWelcomeIfNeeded(welcomeStorage, detectPlatform(navigator.userAgent, navigator.maxTouchPoints));
 if (mapEl && uiEl) {
   const map = createMap(mapEl);
   // 'style.load' fires as soon as the style is ready (our layers need it);

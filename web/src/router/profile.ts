@@ -25,9 +25,30 @@ export interface CostWeights {
   energy: number; // c
 }
 
-/** Risk contribution of an edge in "risk points" (score × km). 0 if not computed. */
-export function edgeRisk(e: ChunkEdge): number {
-  return e.risk * (e.lengthM / 1000);
+/**
+ * Vehicle-dependent risk points per km (docs/risk-model.md): speed
+ * differential to vmax weighted by road class, minus the static class points
+ * on calm (<= 30 km/h) main roads.
+ */
+export function runtimeRiskPerKm(e: ChunkEdge, forward: boolean, p: VehicleProfile): number {
+  const raw = forward ? e.maxspeedFwd : e.maxspeedBwd;
+  const limit = raw ?? cfg.DEFAULT_SPEED_BY_CLASS_KMH[e.roadClass] ?? 50;
+  const diff = Math.max(0, limit - p.vmaxKmh);
+  const km = Math.max(e.lengthM, 1) / 1000;
+  const signalRefund = (cfg.RISK_SIGNAL_REFUND_POINTS * e.signals) / km;
+  const factor =
+    limit <= cfg.RISK_DIFF_URBAN_MAX_KMH
+      ? cfg.RISK_DIFF_URBAN_FACTOR
+      : (cfg.RISK_DIFF_CLASS_FACTOR[e.roadClass] ?? cfg.RISK_DIFF_DEFAULT_FACTOR);
+  const base = diff * factor - signalRefund;
+  if (limit <= cfg.RISK_CALM_MAIN_ROAD_MAX_KMH) return base - (cfg.RISK_CLASS_POINTS_BY_CLASS[e.roadClass] ?? 0);
+  return base + (cfg.RISK_MAIN_ROAD_POINTS[e.roadClass] ?? 0);
+}
+
+/** Risk contribution of an edge in "risk points" (score per km × km), >= 0. 0 if not computed. */
+export function edgeRisk(e: ChunkEdge, forward = true, p?: VehicleProfile): number {
+  const perKm = p && e.risk > 0 ? e.risk + runtimeRiskPerKm(e, forward, p) : e.risk;
+  return Math.max(0, perKm) * (e.lengthM / 1000);
 }
 
 export const DEFAULT_PROFILE: VehicleProfile = { vmaxKmh: cfg.DEFAULT_VMAX_KMH, drive: 'combustion' };
@@ -64,7 +85,7 @@ export function travelTimeS(e: ChunkEdge, forward: boolean, p: VehicleProfile): 
   return (
     e.lengthM / v +
     e.signals * cfg.SIGNAL_PENALTY_S +
-    cfg.JUNCTION_PENALTY_S +
+    (cfg.JUNCTION_PENALTY_BY_CLASS_S[e.roadClass] ?? cfg.JUNCTION_PENALTY_S) +
     e.curvatureDeg * cfg.CURVATURE_PENALTY_S_PER_DEG
   );
 }
@@ -80,5 +101,5 @@ export function edgeCost(
   let time = travelTimeS(e, forward, p);
   if ((e.flags & AccessFlag.DESTINATION) !== 0) time += cfg.DESTINATION_PENALTY_S;
   const energy = w.energy > 0 ? edgeEnergy(e, forward, p).wheelWh * cfg.ENERGY_COST_S_PER_WH : 0;
-  return w.time * time + w.risk * edgeRisk(e) + w.energy * energy;
+  return w.time * time + w.risk * edgeRisk(e, forward, p) + w.energy * energy;
 }

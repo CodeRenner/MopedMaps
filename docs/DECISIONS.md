@@ -18,3 +18,10 @@ Record of resolved project decisions. Open questions live in PROGRESS.md.
 | 2026-10-07 | Raster lib    | tifffile + numpy (BSD), no GDAL                      | user |
 | 2026-10-07 | Germany build | Two-pass streaming pipeline (global junction set, then edges streamed into per-tile files; on-disk node location index) so it fits a free GitHub runner | user |
 | 2026-10-07 | Deploy layout | One Cloudflare Pages project (`mopedmaps`) for app + graph tiles; app deploys reuse the tiles of the last graph build (stored as a GitHub artifact) | user |
+
+## Farm/forest tracks (2026-10-08)
+Decision (user): `highway=track` only when signposted open for mopeds
+(`motor_vehicle`/`moped`/`mofa` = yes|designated|permissive|destination). Reason: most German field tracks
+carry "Verbot für Kfz, landwirtschaftlicher Verkehr frei", often missing in OSM; routes went over km of
+unpaved tracks. Time-dependent limits (`maxspeed:conditional`, e.g. Habsburgerstraße 30 at night) stay
+ignored: the router has no time of day; the base `maxspeed` is used.

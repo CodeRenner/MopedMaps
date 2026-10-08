@@ -68,8 +68,22 @@ def test_cycleway_moped_yes_opens_both():
     assert AccessFlag.MOPED in f and AccessFlag.MOFA in f
 
 
+def test_track_only_when_signposted_open():
+    assert access_flags({"highway": "track"}) == AccessFlag.NONE
+    assert access_flags({"highway": "track", "access": "yes"}) == AccessFlag.NONE
+    assert access_flags({"highway": "track", "motor_vehicle": "yes"}) & AccessFlag.MOPED
+    assert access_flags({"highway": "track", "mofa": "yes"}) == AccessFlag.MOFA
+
+
 def test_motor_vehicle_no():
     assert access_flags({"highway": "track", "motor_vehicle": "agricultural"}) == AccessFlag.NONE
+    # semicolon lists ("landwirtschaftlicher Verkehr frei")
+    farm = {"highway": "track", "motor_vehicle": "agricultural;forestry"}
+    assert access_flags(farm) == AccessFlag.NONE
+    spaced = {"highway": "track", "vehicle": "forestry; agricultural"}
+    assert access_flags(spaced) == AccessFlag.NONE
+    dest = {"highway": "service", "motor_vehicle": "destination;delivery"}
+    assert access_flags(dest) & AccessFlag.DESTINATION
 
 
 def test_moped_overrides_motor_vehicle():

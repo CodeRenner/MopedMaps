@@ -161,10 +161,15 @@ def _resolve(tags: Tags, hierarchy: tuple[str, ...], default: bool) -> tuple[boo
     """
     allowed, dest = default, False
     for key in hierarchy:
-        v = tags.get(key)
-        if v in _ALLOWED:
-            allowed, dest = True, v == "destination"
-        elif v in _DENIED:
+        raw = tags.get(key)
+        if raw is None:
+            continue
+        # Lists like "agricultural;forestry" (German "landwirtschaftlicher Verkehr
+        # frei"): denied when every listed class is denied, allowed if any is open.
+        values = {v.strip() for v in raw.split(";")}
+        if values & _ALLOWED:
+            allowed, dest = True, values & _ALLOWED == {"destination"}
+        elif values <= _DENIED:
             allowed, dest = False, False
     return allowed, dest
 

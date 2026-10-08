@@ -132,7 +132,7 @@ function buildRoute(
     nodes.push(v);
     timeS += travelTimeS(e, fwd, profile);
     distanceM += e.lengthM;
-    riskSum += edgeRisk(e);
+    riskSum += edgeRisk(e, fwd, profile);
     const en = edgeEnergy(e, fwd, profile);
     energyWh += en.sourceWh;
     fuelL += en.fuelL;

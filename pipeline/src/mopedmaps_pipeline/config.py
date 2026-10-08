@@ -44,8 +44,11 @@ ROUTABLE_HIGHWAYS: Final[frozenset[str]] = frozenset(
 )
 
 # Classes excluded unless an explicit moped/mofa permission tag is present.
+# Tracks too (user decision 2026-10-08): farm/forest tracks are usually closed
+# to mopeds by a sign that OSM often lacks; only use them when signposted open
+# (motor_vehicle/moped/mofa = yes|designated|permissive|destination).
 EXPLICIT_PERMISSION_HIGHWAYS: Final[frozenset[str]] = frozenset(
-    {"cycleway", "footway", "path", "pedestrian", "bridleway"}
+    {"cycleway", "footway", "path", "pedestrian", "bridleway", "track"}
 )
 
 # --- Default speed limits (km/h) for unknown maxspeed -----------------------

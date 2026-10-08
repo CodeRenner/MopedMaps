@@ -26,8 +26,42 @@ without cycleway, 1 km → 50+60+15+30+15+3 = 173.
 `cost = a·time_s + b·risk·length_km + c·energy` — risk acts as points per km
 so long risky stretches add up. With b = 0 the route is the fastest one.
 
+## Runtime adjustments (router, depends on the vehicle)
+`web/src/router/profile.ts` → `runtimeRiskPerKm`, constants in
+`web/src/config` (`RISK_DIFF_*`, `RISK_MAIN_ROAD_POINTS`, `RISK_CALM_*`,
+`RISK_SIGNAL_REFUND_POINTS`). Added to the stored score per km; the edge total
+never goes below 0. Edges without a stored score (risk 0) stay 0.
+
+| Term | Points per km |
+|------|---------------|
+| Speed differential `max(0, limit − vmax)` | × 4 trunk, × 3.5 primary, × 2.5 secondary, × 2 tertiary/unclassified, × 1.5 other — but only × 0.3 when the limit is ≤ 50 (urban) |
+| Bundesstraße surcharge (limit > 30) | trunk +50, primary +40 |
+| Calm main road (limit ≤ 30) | class points removed: trunk −25, primary −15, secondary −10 |
+| Signal refund | −5 per signal (cancels the pipeline's signal points; the wait is in the time cost) |
+
+Examples for a 45 km/h moped: trunk at 60 → +110/km; tertiary Landstraße at
+100 → +110/km; urban road at 50 → +1.5/km; primary at 30 → −15/km. A 25 km/h
+mofa on a 100 km/h Landstraße gets +150/km.
+
+Time penalties changed together with this (config): 5 s per signal node (OSM
+maps one signalised junction with several nodes) and junction penalties by
+class — 0.5 s on trunk/primary/secondary (right of way), 1 s tertiary, 2 s on
+smaller streets.
+
+## Calibration (Freiburg, 2026-10-08)
+Local Germany tiles, 45 km/h electric, routes checked with street names
+against a local rider's choices:
+- Tennenbacher/Stefan-Meier-Str. → Tiengener Str./Basler Landstraße: rider
+  prefers Eschholzstraße → Markgrafenstraße → Uffhauser Straße over the
+  B3/B31 corridor with the 60 km/h Guildfordallee. Before: the B3 stayed in up
+  to b = 1.5 and only left at 3; now the rider's route from b = 1.
+- Same start → Elsässer Str./Wirthstraße: rider's route via Neunlinden-/
+  Hartmannstraße; before it switched to residential rat-runs at b = 1, now it
+  stays up to b = 1.
+- Known data issue: OSM tags most of Habsburgerstraße (B3 north) as 50 km/h,
+  the rider reports 30.
+
 ## Not modelled yet
-- Speed differential to the user's vehicle (25 km/h mofa on a 100 km/h road
-  is worse than a 45 km/h moped). Can be added at runtime from vmax and the
-  stored limit without changing the format.
 - Accident statistics, traffic volume (no live data by design).
+- Signal direction (`traffic_signals:direction`) and merging signal nodes of
+  one junction in the pipeline; would allow a realistic per-junction wait.

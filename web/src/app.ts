@@ -1,7 +1,7 @@
 /** App wiring: data loading, router worker, map layers, panels. */
 
 import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
-import { GRAPH_BASE_URL, PLZ_TABLE_URL, REROUTE_DEBOUNCE_MS } from './config';
+import { CLOSURES_URL, GRAPH_BASE_URL, PLZ_TABLE_URL, REROUTE_DEBOUNCE_MS } from './config';
 import { AreaError, loadArea } from './data/area';
 import { type Manifest, parseManifest } from './data/manifest';
 import { type ChunkStore, IdbStore, MemoryStore } from './data/store';
@@ -19,8 +19,10 @@ import { createRouteChart } from './ui/routeChart';
 import { loadEnergySettings, loadProfile, saveEnergySettings, saveProfile } from './ui/profileStore';
 import { RouteLayer } from './ui/routeLayer';
 import { loadLastArea, saveLastArea } from './ui/areaStore';
+import { showClosures } from './ui/closuresLayer';
 import { createRouteControls } from './ui/routeControls';
 import { createNavigation } from './nav/navigation';
+import { type Closure, isActive } from './router/closures';
 import type { LatLon, RouteResult } from './router/protocol';
 import { EMPTY, hintKey, type PickerState, reverse, tap, wantsRoute } from './ui/routePicker';
 import { speedBands } from './ui/speedBands';
@@ -192,6 +194,7 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
       );
       showArea(map, area.centre[0], area.centre[1], area.radiusKm);
       areaLoaded = true;
+      void loadClosures();
       saveLastArea(storage, { plz: code, radiusKm: area.radiusKm });
       // Keep downloaded graph chunks from being evicted (best effort, iOS may still clear).
       void requestPersistence(navigator.storage);
@@ -214,6 +217,23 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
       panel.setBusy(false);
     }
   };
+  // Daily road closures (closures.json, built by the deploy workflow). Optional:
+  // offline or missing -> route without them.
+  async function loadClosures(): Promise<void> {
+    try {
+      const res = await fetch(CLOSURES_URL);
+      if (!res.ok) return;
+      const doc = (await res.json()) as { closures?: Closure[] };
+      const now = new Date();
+      const active = (doc.closures ?? []).filter((c) => isActive(c, now));
+      await router.request({ type: 'closures', closures: active, now: now.getTime() });
+      showClosures(map, active);
+      if (wantsRoute(picker)) void computeRoute();
+    } catch {
+      // network/parse error: keep routing without closures
+    }
+  }
+
   const panel = createAreaPanel(plz, (code, radiusKm) => void loadAreaFor(code, radiusKm));
   const profilePanel = createProfilePanel(profile, (p) => {
     profile = p;

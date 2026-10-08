@@ -5,6 +5,7 @@
 
 import { MAX_SNAP_DISTANCE_M } from '../config';
 import { findRoute } from './astar';
+import { applyClosures, type Closure } from './closures';
 import { decodeChunk } from './chunk';
 import { haversineM } from './geo';
 import { assembleGraph, type Graph, nearestNode } from './graph';
@@ -13,12 +14,16 @@ import { validateProfile } from './profile';
 
 export class RouterService {
   private graph: Graph | null = null;
+  private closures: { list: Closure[]; now: number } | null = null;
 
   handle(req: RouterRequest): RouterResponse {
     try {
       switch (req.type) {
         case 'load':
           return this.load(req.id, req.chunks);
+        case 'closures':
+          this.closures = { list: req.closures, now: req.now };
+          return { type: 'closures', id: req.id, matched: this.applyClosures() };
         case 'route':
           return this.route(req);
       }
@@ -30,7 +35,15 @@ export class RouterService {
   /** Replace the graph with the given chunk set. */
   private load(id: number, buffers: ArrayBuffer[]): RouterResponse {
     this.graph = assembleGraph(buffers.map((b) => decodeChunk(b)));
+    this.applyClosures(); // keep known closures across area changes
     return { type: 'loaded', id, nodeCount: this.graph.nodeCount, edgeCount: this.graph.edges.length };
+  }
+
+  private applyClosures(): string[] {
+    if (!this.graph || !this.closures) return [];
+    const state = applyClosures(this.graph, this.closures.list, new Date(this.closures.now));
+    this.graph.closures = state;
+    return state.matched;
   }
 
   private snap(p: LatLon): number {

@@ -46,9 +46,10 @@ export function createWeightsPanel(initial: CostWeights, onChange: (w: CostWeigh
   root.append(hint);
 
   // Safety in detail: − (×0.5), 0 (×1), + (×2) per factor.
-  const prefs = document.createElement('fieldset');
+  // Collapsible inside "Routenwahl" (closed by default, keeps the panel short).
+  const prefs = document.createElement('details');
   prefs.className = 'risk-prefs';
-  const legend = document.createElement('legend');
+  const legend = document.createElement('summary');
   legend.textContent = t('prefs.title');
   prefs.append(legend);
   const choices: [string, number][] = [

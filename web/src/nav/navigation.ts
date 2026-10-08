@@ -7,12 +7,15 @@
 
 import { type Map as MapLibreMap, Marker } from 'maplibre-gl';
 import { NAV_ZOOM } from '../config';
-import { getLocale, t } from '../i18n';
+import { formatNumber, getLocale, t } from '../i18n';
 import { keepAboveAttribution } from '../ui/aboveAttribution';
+import type { KeyValueStorage } from '../ui/profileStore';
 import type { LatLon, RouteResult } from '../router/protocol';
 import { etaClock, navDistance, TURN_ARROW } from './format';
 import { type Maneuver, maneuvers, nextManeuver } from './maneuvers';
 import { buildTrack, type Fix, locate, OffRouteDetector, type RouteTrack } from './progress';
+import { loadVoiceOn, saveVoiceOn, speak, speechAvailable, stopSpeaking } from './speech';
+import { Announcer, type Speech } from './voice';
 
 export interface NavigationDeps {
   map: MapLibreMap;
@@ -22,6 +25,8 @@ export interface NavigationDeps {
   showRoute(r: RouteResult, from: LatLon): void;
   /** Called after navigation ended (button or error). */
   onExit(): void;
+  /** Where the voice on/off setting is stored. */
+  storage: KeyValueStorage | null;
 }
 
 export interface Navigation {
@@ -41,7 +46,7 @@ export function createNavigation(deps: NavigationDeps): Navigation {
   const bottom = document.createElement('div');
   bottom.className = 'nav-bottom';
   bottom.innerHTML =
-    '<span class="nav-limit" hidden></span><span class="nav-summary"></span><button type="button" class="nav-stop">✕</button>';
+    '<span class="nav-limit" hidden></span><span class="nav-summary"></span><button type="button" class="nav-voice"></button><button type="button" class="nav-stop">✕</button>';
   const recenter = document.createElement('button');
   recenter.type = 'button';
   recenter.className = 'nav-recenter';
@@ -52,6 +57,34 @@ export function createNavigation(deps: NavigationDeps): Navigation {
   const limitBadge = bottom.querySelector<HTMLElement>('.nav-limit')!;
   const summary = bottom.querySelector<HTMLElement>('.nav-summary')!;
   const stopBtn = bottom.querySelector<HTMLButtonElement>('.nav-stop')!;
+  const voiceBtn = bottom.querySelector<HTMLButtonElement>('.nav-voice')!;
+  let voiceOn = loadVoiceOn(deps.storage);
+  const announcer = new Announcer();
+  const renderVoice = () => {
+    voiceBtn.hidden = !speechAvailable();
+    voiceBtn.textContent = voiceOn ? '🔊' : '🔇';
+    voiceBtn.setAttribute('aria-label', t(voiceOn ? 'voice.on' : 'voice.off'));
+    voiceBtn.setAttribute('aria-pressed', String(voiceOn));
+  };
+  renderVoice();
+  voiceBtn.addEventListener('click', () => {
+    voiceOn = !voiceOn;
+    saveVoiceOn(deps.storage, voiceOn);
+    renderVoice();
+    if (!voiceOn) stopSpeaking();
+  });
+  const say = (s: Speech) => {
+    if (!voiceOn) return;
+    const loc = getLocale();
+    const turn = 'turn' in s ? t(`nav.turn.${s.turn}`) : '';
+    const dist =
+      'dist' in s
+        ? s.dist < 1000
+          ? t('voice.meters', { n: s.dist })
+          : t('voice.km', { n: formatNumber(loc, s.dist / 1000, 1) })
+        : '';
+    speak(t(s.key, { dist, turn }));
+  };
   stopBtn.setAttribute('aria-label', t('nav.stop'));
   recenter.setAttribute('aria-label', t('nav.recenter'));
   for (const el of [top, bottom, recenter]) {
@@ -113,7 +146,7 @@ export function createNavigation(deps: NavigationDeps): Navigation {
     else m.easeTo({ ...target, duration: 600, essential: true });
   };
 
-  const render = (fix: Fix) => {
+  const render = (fix: Fix, speedMps = 0) => {
     if (!track || !route) return;
     const p = locate(track, fix, alongM);
     alongM = p.alongM;
@@ -126,6 +159,9 @@ export function createNavigation(deps: NavigationDeps): Navigation {
       arrow.textContent = TURN_ARROW[m.kind] ?? '↑';
       text.textContent = t('nav.next', { dist: navDistance(loc, m.atM - p.alongM), turn: t(`nav.turn.${m.kind}`) });
     }
+    const m = nextManeuver(turns, p.alongM);
+    const speech = announcer.update(m, m.atM - p.alongM, speedMps, p.arrived);
+    if (speech) say(speech);
     const remainingS = route.timeS * p.remainingTimeShare;
     summary.textContent = t('nav.summary', {
       dist: navDistance(loc, p.remainingM),
@@ -147,6 +183,8 @@ export function createNavigation(deps: NavigationDeps): Navigation {
       if (r && active) {
         setRoute(r);
         deps.showRoute(r, [fix.lat, fix.lon]);
+        announcer.reset();
+        say({ key: 'voice.rerouted' });
       }
     } finally {
       rerouting = false;
@@ -165,7 +203,7 @@ export function createNavigation(deps: NavigationDeps): Navigation {
     }
     lastFix = fix;
     dot.setLngLat([fix.lon, fix.lat]).addTo(deps.map);
-    render(fix);
+    render(fix, pos.coords.speed ?? 0);
     follow(fix);
   };
 
@@ -210,6 +248,10 @@ export function createNavigation(deps: NavigationDeps): Navigation {
       limitBadge.hidden = true;
       void requestWakeLock();
       document.addEventListener('visibilitychange', onVisible);
+      // Speak once inside the tap that started navigation: iOS only allows speech after a user gesture.
+      renderVoice();
+      announcer.restart();
+      say({ key: 'voice.start' });
       watchId = navigator.geolocation?.watchPosition(onFix, onError, {
         enableHighAccuracy: true,
         maximumAge: 1000,
@@ -225,6 +267,7 @@ export function createNavigation(deps: NavigationDeps): Navigation {
       void wake?.release().catch(() => undefined);
       wake = null;
       document.removeEventListener('visibilitychange', onVisible);
+      stopSpeaking();
       document.body.classList.remove('nav-mode');
       top.hidden = bottom.hidden = recenter.hidden = true;
       dot.remove();

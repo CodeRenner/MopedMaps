@@ -256,3 +256,11 @@ export const TURN_LEFT_S = [2, 6, 12] as const;
 export const TURN_UTURN_S = 60;
 /** Risk points per left turn (normal/sharp) — crossing oncoming traffic on a moped. */
 export const TURN_LEFT_RISK_POINTS = 2;
+
+// --- Voice guidance (navigation) -----------------------------------------------
+/** First announcement of a turn at this distance (m) — or earlier when fast (VOICE_EARLY_S of travel). */
+export const VOICE_EARLY_M = 300;
+export const VOICE_EARLY_S = 20;
+/** "Now" announcement at this distance (m) — or VOICE_NOW_S of travel when fast. */
+export const VOICE_NOW_M = 40;
+export const VOICE_NOW_S = 4;

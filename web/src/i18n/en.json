@@ -100,5 +100,14 @@
   "places.clear.work": "Remove work",
   "places.empty": "No recent destinations yet.",
   "places.saveHint": "＋ saves the current destination as home or work.",
-  "places.goHint": "Tap: route from the current start (or your location) there."
+  "places.goHint": "Tap: route from the current start (or your location) there.",
+  "voice.start": "Navigation started.",
+  "voice.early": "In {dist}, {turn}.",
+  "voice.now": "Now {turn}.",
+  "voice.arrived": "You have arrived.",
+  "voice.rerouted": "New route.",
+  "voice.meters": "{n} meters",
+  "voice.km": "{n} kilometers",
+  "voice.on": "Voice guidance on",
+  "voice.off": "Voice guidance off"
 }

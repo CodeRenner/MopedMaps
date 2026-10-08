@@ -17,7 +17,12 @@ destination, then ▶. Stop with ✕ in the bottom bar.
 - **Screen:** the Screen Wake Lock API keeps the display on (iOS 16.4+, Chrome); it is re-requested
   when the app returns to the foreground.
 
+- **Voice guidance** (`web/src/nav/voice.ts`, `speech.ts`): device speech synthesis, offline. Per turn an
+  early announcement ("In 300 Metern links abbiegen", earlier when fast: 20 s of travel) and "Jetzt …" shortly
+  before (40 m or 4 s); arrival and reroutes once. 🔊/🔇 in the bottom bar, stored per device. The first
+  announcement is spoken inside the ▶ tap because iOS only allows speech after a user gesture.
+
 ## Limitations
 - iOS: no background GPS for web apps; the screen must stay on and the app in the foreground.
-- No voice output yet, no lane guidance, no street names.
+- No lane guidance, no street names in instructions (the graph has none).
 - Rerouting needs the destination inside the loaded area.

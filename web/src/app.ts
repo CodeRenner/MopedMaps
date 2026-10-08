@@ -156,6 +156,7 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
       routeLayer.setRoute(r.geometry, speedBands(r.geometry, r.profile));
     },
     onExit: () => updateControls(),
+    storage,
   });
   const controls = createRouteControls({
     onLocate() {

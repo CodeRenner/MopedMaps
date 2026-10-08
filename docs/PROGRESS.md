@@ -1100,3 +1100,10 @@ route (Eschholz -> Markgrafen -> Uffhauser) at b = 1.
 - Live tiles, safety 1.5: turns KKH->Rennweg 16 -> 14 with "+", Hbf->Waldkirch 14 -> 12; calibration routes
   unchanged. Performance: ~45 ms instead of ~25 ms per route in the Freiburg area.
 - Tests: vitest 178 passed (new turns.test.ts: angles, crossing, abknickende Vorfahrt, bend, zig-zag vs main road).
+
+### Note — traffic volume live (2026-10-08)
+Graph build 37789231077 succeeded: 5,628 BW counting stations read; 11.45 M edges (before 16.8 M — farm tracks now
+excluded), 335 MB gzip. Its deploy job shipped the app of the dispatch commit again, so Deploy was re-run on main
+(70f5c57). DTV coverage Freiburg–Emmendingen by length: primary 72 %, trunk 62 %, secondary 65 %, tertiary 51 %,
+unclassified 0 % (as expected). Calibration suite on the new tiles unchanged (R1, R2, Kandel <-> KKH).
+Follow-up idea: let the graph build's deploy check out `main` to avoid shipping an old app.

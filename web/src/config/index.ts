@@ -63,9 +63,13 @@ export const SURFACE_SPEED_FACTOR: Record<number, number> = {
 };
 
 // --- Time penalties (seconds) ------------------------------------------------
-/** Average wait per traffic signal. */
-export const SIGNAL_PENALTY_S = 10;
-/** Per junction passed (every edge ends at a junction). */
+/**
+ * Average wait per traffic-signal node. OSM usually maps one signalised
+ * junction with several nodes (per direction, pedestrian lights), so this is
+ * about half the real average wait (calibrated on Freiburg, docs/risk-model.md).
+ */
+export const SIGNAL_PENALTY_S = 5;
+/** Per junction passed (every edge ends at a junction); default for classes not in JUNCTION_PENALTY_BY_CLASS_S. */
 export const JUNCTION_PENALTY_S = 2;
 /** Per degree of accumulated curvature along an edge. */
 export const CURVATURE_PENALTY_S_PER_DEG = 0.02;
@@ -116,8 +120,8 @@ export const ELECTRIC_REGEN_SHARE = 0.3;
 export const COMBUSTION_EFFICIENCY = 0.12;
 export const PETROL_WH_PER_L = 8900;
 export const COMBUSTION_IDLE_L_PER_H = 0.25;
-/** Assumed wait per traffic signal for idle fuel (s); matches SIGNAL_PENALTY_S. */
-export const IDLE_S_PER_SIGNAL = 10;
+/** Assumed wait per traffic-signal node for idle fuel (s); matches SIGNAL_PENALTY_S. */
+export const IDLE_S_PER_SIGNAL = 5;
 /** Routing cost per Wh of wheel energy, in seconds (cost = ... + c·energy). */
 export const ENERGY_COST_S_PER_WH = 1;
 /** Switch to the built-in fallback style if the basemap style hasn't loaded by then (ms). */
@@ -135,3 +139,45 @@ export const RANGE_CALIBRATION_MIN = 0.3;
 export const RANGE_CALIBRATION_MAX = 3;
 /** Default reserve: warn when less than this share of battery/tank is left after the trip. */
 export const RANGE_RESERVE_SHARE = 0.15;
+
+// --- Speed differential risk (runtime, depends on vmax), docs/risk-model.md ---
+/**
+ * Extra risk points per km for each km/h the limit exceeds the vehicle's vmax
+ * (being overtaken). Weighted by road class: Bundesstraßen (trunk/primary)
+ * most, Landstraßen (secondary/tertiary/unclassified) less. Roads with a limit
+ * <= RISK_DIFF_URBAN_MAX_KMH (typically urban) only get the urban factor.
+ */
+export const RISK_DIFF_URBAN_MAX_KMH = 50;
+export const RISK_DIFF_URBAN_FACTOR = 0.3;
+export const RISK_DIFF_CLASS_FACTOR: Record<number, number> = {
+  1: 4, // trunk
+  2: 3.5, // primary
+  3: 2.5, // secondary
+  4: 2, // tertiary
+  5: 2, // unclassified
+};
+export const RISK_DIFF_DEFAULT_FACTOR = 1.5;
+/**
+ * 30 km/h main roads (e.g. a B3 through town) are calm and have right of way;
+ * the static class points (trunk +25, primary +15, secondary +10) are removed
+ * at runtime for limits <= this value.
+ */
+export const RISK_CALM_MAIN_ROAD_MAX_KMH = 30;
+export const RISK_CLASS_POINTS_BY_CLASS: Record<number, number> = { 1: 25, 2: 15, 3: 10 };
+/**
+ * Junction penalty per edge by road class: on main roads (trunk..tertiary) you
+ * usually have right of way; residential/unclassified streets often have
+ * right-before-left. Classes not listed use JUNCTION_PENALTY_S.
+ */
+export const JUNCTION_PENALTY_BY_CLASS_S: Record<number, number> = { 1: 0.5, 2: 0.5, 3: 0.5, 4: 1, 5: 2, 6: 2, 7: 2 };
+/**
+ * Bundesstraßen (trunk/primary) carry heavy through traffic even at 50 km/h:
+ * extra risk points per km for limits above RISK_CALM_MAIN_ROAD_MAX_KMH.
+ */
+export const RISK_MAIN_ROAD_POINTS: Record<number, number> = { 1: 50, 2: 40 };
+/**
+ * The pipeline adds 5 risk points per traffic signal (per km of the edge).
+ * Signalised junctions are not riskier for a moped than unsignalised ones,
+ * and the wait is already in the time cost, so the router refunds them.
+ */
+export const RISK_SIGNAL_REFUND_POINTS = 5;

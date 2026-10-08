@@ -65,7 +65,10 @@ describe('speed and time', () => {
     const plain = travelTimeS(edge({ maxspeedFwd: 36 }), true, MOPED); // 10 m/s -> 100 s
     expect(plain).toBeCloseTo(100 + 2);
     const busy = travelTimeS(edge({ maxspeedFwd: 36, signals: 2, curvatureDeg: 100 }), true, MOPED);
-    expect(busy).toBeCloseTo(100 + 2 + 20 + 2);
+    expect(busy).toBeCloseTo(100 + 2 + 2 * 5 + 2);
+    // right of way on main roads: smaller junction penalty than in side streets
+    const main = travelTimeS(edge({ maxspeedFwd: 36, roadClass: RoadClass.PRIMARY }), true, MOPED);
+    expect(main).toBeCloseTo(100 + 0.5);
   });
 
   it('edge cost is infinite when not allowed and penalises destination roads', () => {

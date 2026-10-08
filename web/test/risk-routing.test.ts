@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { findRoute } from '../src/router/astar';
 import { AccessFlag, type Chunk, type ChunkEdge, decodeChunk, RoadClass, Surface } from '../src/router/chunk';
 import { assembleGraph, nearestNode } from '../src/router/graph';
-import { edgeCost, edgeRisk, type VehicleProfile } from '../src/router/profile';
+import { edgeCost, edgeRisk, runtimeRiskPerKm, type VehicleProfile } from '../src/router/profile';
 
 const MOPED: VehicleProfile = { vmaxKmh: 45, drive: 'combustion' };
 
@@ -34,9 +34,11 @@ function choice(): Chunk {
 describe('risk in cost', () => {
   it('edgeRisk is score × km and adds b·risk to the cost', () => {
     const edge = e(0, 1, 2000, { risk: 50 });
-    expect(edgeRisk(edge)).toBe(100);
+    expect(edgeRisk(edge)).toBe(100); // static score only
+    const withVehicle = edgeRisk(edge, true, MOPED); // + 5 km/h over vmax at the urban factor
+    expect(withVehicle).toBeCloseTo((50 + 5 * 0.3) * 2);
     const base = edgeCost(edge, true, MOPED, { time: 1, risk: 0, energy: 0 });
-    expect(edgeCost(edge, true, MOPED, { time: 1, risk: 2, energy: 0 })).toBeCloseTo(base + 200);
+    expect(edgeCost(edge, true, MOPED, { time: 1, risk: 2, energy: 0 })).toBeCloseTo(base + 2 * withVehicle);
   });
 
   it('b = 0 picks the fast risky road, b > 0 the calm detour', () => {
@@ -45,9 +47,35 @@ describe('risk in cost', () => {
     const safe = findRoute(g, 0, 1, MOPED, { time: 1, risk: 1, energy: 0 })!;
     expect(fast.nodes).toEqual([0, 1]);
     expect(safe.nodes).toEqual([0, 2, 1]);
-    expect(fast.riskAvg).toBeCloseTo(180);
+    // static 180 + 25 km/h over vmax on a Bundesstraße (×3.5) + Bundesstraße surcharge 40
+    expect(fast.riskAvg).toBeCloseTo(180 + 25 * 3.5 + 40);
     expect(safe.riskAvg).toBeCloseTo(35);
     expect(safe.timeS).toBeGreaterThan(fast.timeS);
+  });
+
+  it('runtime risk: speed differential by road class, calm 30 main roads, signal refund', () => {
+    const MOFA: VehicleProfile = { vmaxKmh: 25, drive: 'electric' };
+    const FAST: VehicleProfile = { vmaxKmh: 100, drive: 'combustion' };
+    const road = (cls: number, limit: number, over: Partial<ChunkEdge> = {}) =>
+      e(0, 1, 1000, { roadClass: cls, maxspeedFwd: limit, maxspeedBwd: limit, ...over });
+    // 60 km/h: Bundesstraße > Landstraße, both above an urban 50 road
+    const trunk60 = runtimeRiskPerKm(road(RoadClass.TRUNK, 60), true, MOPED);
+    const tertiary60 = runtimeRiskPerKm(road(RoadClass.TERTIARY, 60), true, MOPED);
+    const urban50 = runtimeRiskPerKm(road(RoadClass.RESIDENTIAL, 50), true, MOPED);
+    expect(trunk60).toBe(15 * 4 + 50);
+    expect(tertiary60).toBe(15 * 2);
+    expect(urban50).toBeCloseTo(5 * 0.3);
+    // a slower vehicle gets more, a vehicle as fast as the limit none from the differential
+    expect(runtimeRiskPerKm(road(RoadClass.TERTIARY, 100), true, MOFA)).toBe(75 * 2);
+    expect(runtimeRiskPerKm(road(RoadClass.TERTIARY, 100), true, FAST)).toBe(0);
+    // 30 km/h main road: static class points are removed
+    expect(runtimeRiskPerKm(road(RoadClass.PRIMARY, 30), true, MOPED)).toBe(-15);
+    // signals: static points refunded (5 per signal per km)
+    expect(runtimeRiskPerKm(road(RoadClass.RESIDENTIAL, 30, { signals: 2 }), true, MOPED)).toBe(-10);
+    // never negative in total
+    expect(edgeRisk(e(0, 1, 1000, { risk: 5, roadClass: RoadClass.PRIMARY, maxspeedFwd: 30 }), true, MOPED)).toBe(0);
+    // unknown risk (old tiles without scores) stays 0
+    expect(edgeRisk(road(RoadClass.TRUNK, 100, { risk: 0 }), true, MOPED)).toBe(0);
   });
 
   it('A* equals Dijkstra with risk weight', () => {

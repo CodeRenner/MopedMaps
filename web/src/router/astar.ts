@@ -23,6 +23,7 @@ import {
   type VehicleProfile,
 } from './profile';
 import { climbWithHysteresis, hasFullHeights, type RouteProfile } from './routeProfile';
+import { turnCost } from './turns';
 
 export interface Route {
   /** Global node ids from start to target. */
@@ -58,67 +59,89 @@ export function findRoute(
 ): Route | null {
   const n = g.nodeCount;
   if (start < 0 || target < 0 || start >= n || target >= n) return null;
-  const gScore = new Float64Array(n).fill(Infinity);
-  const viaArc = new Int32Array(n).fill(-1);
-  const closed = new Uint8Array(n);
+  if (start === target) return buildRoute(g, start, [], 0, profile, 0);
+  // Edge-based search: the state is the arc just driven, so turns between
+  // consecutive arcs can be priced (turns.ts). Arc costs are cached.
+  const m = g.arcTarget.length;
+  const gScore = new Float64Array(m).fill(Infinity);
+  const prevArc = new Int32Array(m).fill(-1);
+  const closed = new Uint8Array(m);
+  const arcCostCache = new Float64Array(m).fill(Number.NaN);
   const tLat = g.lat[target]!;
   const tLon = g.lon[target]!;
   // heuristic=false turns A* into Dijkstra (used as a test reference).
   const hFactor = opts.heuristic === false ? 0 : weights.time / (profile.vmaxKmh / 3.6);
   const h = (v: number) => haversineM(g.lat[v]!, g.lon[v]!, tLat, tLon) * hFactor;
+  const cs = g.closures;
+  const turnFactor = weights.prefs?.junctions ?? 1;
+
+  const arcCost = (a: number): number => {
+    const cached = arcCostCache[a]!;
+    if (!Number.isNaN(cached)) return cached;
+    const ei = g.arcEdge[a]!;
+    const fwd = g.arcForward[a] === 1;
+    let c: number;
+    if (cs && (fwd ? cs.closedFwd[ei] : cs.closedBwd[ei])) c = Infinity; // road closed
+    else {
+      c = edgeCost(g.edges[ei]!, fwd, profile, weights);
+      if (c !== Infinity && cs?.avoid[ei]) c += weights.time * CLOSURE_AVOID_PENALTY_S;
+    }
+    arcCostCache[a] = c;
+    return c;
+  };
+  const turn = (inArc: number, outArc: number): number => {
+    const t = turnCost(g, inArc, outArc);
+    return turnFactor * (weights.time * t.timeS + weights.risk * t.riskPts);
+  };
 
   const open = new MinHeap();
-  gScore[start] = 0;
-  open.push(h(start), start);
+  for (let a = g.arcStart[start]!; a < g.arcStart[start + 1]!; a++) {
+    const c = arcCost(a);
+    if (c === Infinity) continue;
+    gScore[a] = c;
+    open.push(c + h(g.arcTarget[a]!), a);
+  }
   let settled = 0;
+  let reached = -1;
 
   while (open.size > 0) {
-    const u = open.pop();
-    if (closed[u]) continue; // stale heap entry
-    closed[u] = 1;
+    const a = open.pop();
+    if (closed[a]) continue; // stale heap entry
+    closed[a] = 1;
     settled++;
-    if (u === target) break;
-    const gu = gScore[u]!;
-    for (let a = g.arcStart[u]!; a < g.arcStart[u + 1]!; a++) {
-      const v = g.arcTarget[a]!;
-      if (closed[v]) continue;
-      const ei = g.arcEdge[a]!;
-      const fwd = g.arcForward[a] === 1;
-      const cs = g.closures;
-      if (cs && (fwd ? cs.closedFwd[ei] : cs.closedBwd[ei])) continue; // road closed
-      let c = edgeCost(g.edges[ei]!, fwd, profile, weights);
+    const v = g.arcTarget[a]!;
+    if (v === target) {
+      reached = a;
+      break;
+    }
+    const ga = gScore[a]!;
+    for (let b = g.arcStart[v]!; b < g.arcStart[v + 1]!; b++) {
+      if (closed[b]) continue;
+      const c = arcCost(b);
       if (c === Infinity) continue;
-      if (cs?.avoid[ei]) c += weights.time * CLOSURE_AVOID_PENALTY_S;
-      const gv = gu + c;
-      if (gv < gScore[v]!) {
-        gScore[v] = gv;
-        viaArc[v] = a;
-        open.push(gv + h(v), v);
+      const gb = ga + c + turn(a, b);
+      if (gb < gScore[b]!) {
+        gScore[b] = gb;
+        prevArc[b] = a;
+        open.push(gb + h(g.arcTarget[b]!), b);
       }
     }
   }
-  if (!closed[target]) return null;
-  return buildRoute(g, start, target, viaArc, gScore[target]!, profile, settled);
+  if (reached < 0) return null;
+  const arcs: number[] = [];
+  for (let a = reached; a >= 0; a = prevArc[a]!) arcs.push(a);
+  arcs.reverse();
+  return buildRoute(g, start, arcs, gScore[reached]!, profile, settled);
 }
 
 function buildRoute(
   g: Graph,
   start: number,
-  target: number,
-  viaArc: Int32Array,
+  arcs: number[],
   cost: number,
   profile: VehicleProfile,
   settled: number,
 ): Route {
-  const arcs: number[] = [];
-  for (let v = target; v !== start; ) {
-    const a = viaArc[v]!;
-    arcs.push(a);
-    const e = g.arcEdge[a]!;
-    v = g.arcForward[a] === 1 ? g.edgeFrom[e]! : g.edgeTo[e]!;
-  }
-  arcs.reverse();
-
   const nodes = [start];
   const geometry: [number, number][] = [[g.lat[start]!, g.lon[start]!]];
   let timeS = 0;
@@ -133,7 +156,9 @@ function buildRoute(
   const speeds: number[] = [];
   const limits: number[] = [];
   const geomIndex = [0];
-  for (const a of arcs) {
+  for (let k = 0; k < arcs.length; k++) {
+    const a = arcs[k]!;
+    if (k > 0) timeS += turnCost(g, arcs[k - 1]!, a).timeS; // realistic turn time (unscaled)
     const e = g.edges[g.arcEdge[a]!]!;
     const fwd = g.arcForward[a] === 1;
     const v = g.arcTarget[a]!;

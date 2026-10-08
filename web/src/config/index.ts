@@ -243,5 +243,16 @@ export const RISK_PREF_FACTORS = { minus: 0.5, neutral: 1, plus: 2 } as const;
 export const RISK_SURFACE_POINTS: Record<number, number> = { 0: 0, 1: 0, 2: 15, 3: 20, 4: 40 };
 export const RISK_UNLIT_POINTS = 15;
 export const RISK_LIT_UNKNOWN_POINTS = 5;
-export const RISK_POINTS_PER_JUNCTION_PER_KM = 3;
-export const RISK_JUNCTION_POINTS_CAP = 30;
+
+// --- Turn costs (docs/routing-model.md "Turns") ----------------------------------
+/** Turns below this angle are "straight" (renamings, slight bends): free. */
+export const TURN_FREE_MAX_DEG = 35;
+/** Heading measured over this distance before/after a junction (m), so short shape wiggles don't count. */
+export const TURN_BEARING_DISTANCE_M = 20;
+/** Time cost (s) by turn: [slight 35–60°, normal 60–135°, sharp > 135°]; left crosses oncoming traffic. */
+export const TURN_RIGHT_S = [1, 3, 8] as const;
+export const TURN_LEFT_S = [2, 6, 12] as const;
+/** Turning back on the same road (U-turn), only used at dead ends. */
+export const TURN_UTURN_S = 60;
+/** Risk points per left turn (normal/sharp) — crossing oncoming traffic on a moped. */
+export const TURN_LEFT_RISK_POINTS = 2;

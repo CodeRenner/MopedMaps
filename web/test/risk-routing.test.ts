@@ -144,7 +144,7 @@ describe('personal risk preferences', () => {
     e(0, 1, 1000, { roadClass: cls, maxspeedFwd: limit, maxspeedBwd: limit, ...over });
   const N = { fast: 1, traffic: 1, junctions: 1, surface: 1, lighting: 1 };
 
-  it('scales each factor: fast roads, traffic, junctions, surface, lighting', () => {
+  it('scales each factor: fast roads, traffic, surface, lighting', () => {
     const trunk60 = road(RoadClass.TRUNK, 60);
     expect(runtimeRiskPerKm(trunk60, true, MOPED, { ...N, fast: 2 })).toBe(2 * (15 * 4 + 50));
     expect(runtimeRiskPerKm(trunk60, true, MOPED, { ...N, fast: 0.5 })).toBe(0.5 * (15 * 4 + 50));
@@ -154,8 +154,10 @@ describe('personal risk preferences', () => {
     expect(runtimeRiskPerKm(cobbles, true, MOPED, { ...N, surface: 2 }) - runtimeRiskPerKm(cobbles, true, MOPED)).toBe(15);
     const dark = road(RoadClass.RESIDENTIAL, 30, { lit: false });
     expect(runtimeRiskPerKm(dark, true, MOPED, { ...N, lighting: 0.5 }) - runtimeRiskPerKm(dark, true, MOPED)).toBe(-7.5);
-    const short = e(0, 1, 50, { maxspeedFwd: 30, maxspeedBwd: 30 }); // dense junctions: capped 30 points
-    expect(runtimeRiskPerKm(short, true, MOPED, { ...N, junctions: 2 }) - runtimeRiskPerKm(short, true, MOPED)).toBe(30);
+    // "Abbiegen" no longer touches the per-edge risk (main roads with many side streets are not penalised);
+    // it scales the turn costs instead (turns.test.ts)
+    const short = e(0, 1, 50, { maxspeedFwd: 30, maxspeedBwd: 30 });
+    expect(runtimeRiskPerKm(short, true, MOPED, { ...N, junctions: 2 })).toBe(runtimeRiskPerKm(short, true, MOPED));
   });
 
   it('"+ fast roads" leaves the risky road at a lower safety weight', () => {

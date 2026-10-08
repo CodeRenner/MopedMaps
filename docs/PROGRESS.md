@@ -1089,3 +1089,14 @@ route (Eschholz -> Markgrafen -> Uffhauser) at b = 1.
   Fix: residential speed factor 0.8 (`CLASS_SPEED_FACTOR`). Suite (live tiles): K both directions via Zähringer
   Straße from b = 1; R1 unchanged; R2 now stays on main roads up to b = 1.5.
 - Tests: vitest 173 passed (test helpers use a neutral class; residential factor asserted).
+
+### Iteration 67 — real turn costs (2026-10-08)
+- User report: "+ Kreuzungen & Abbiegen" made routes leave main roads for side streets with *more* turns. Cause:
+  the setting scaled junction density (main roads with many side streets have many short edges) — backwards;
+  turns were not modelled at all (node-based A*).
+- Fix: edge-based A* (state = arc) with turn costs (`router/turns.ts`): straight/slight bends, bends without
+  alternatives and following a bending main road are free; right/left turns cost by sharpness, left adds risk.
+  The "Abbiegen" setting scales only these. Headings per arc computed at graph assembly.
+- Live tiles, safety 1.5: turns KKH->Rennweg 16 -> 14 with "+", Hbf->Waldkirch 14 -> 12; calibration routes
+  unchanged. Performance: ~45 ms instead of ~25 ms per route in the Freiburg area.
+- Tests: vitest 178 passed (new turns.test.ts: angles, crossing, abknickende Vorfahrt, bend, zig-zag vs main road).

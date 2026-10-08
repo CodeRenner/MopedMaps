@@ -7,8 +7,10 @@
  * dropped: routes are limited to the loaded area by design.
  */
 
+import { TURN_BEARING_DISTANCE_M } from '../config';
 import { AccessFlag, type Chunk, type ChunkEdge, type TileKey } from './chunk';
 import type { ClosureState } from './closures';
+import { haversineM } from './geo';
 
 export interface Graph {
   nodeCount: number;
@@ -26,6 +28,9 @@ export interface Graph {
   arcEdge: Uint32Array;
   /** 1 if the arc runs along the edge (from -> to), 0 if against it. */
   arcForward: Uint8Array;
+  /** Heading (degrees from north) when leaving the arc's source / arriving at its target. */
+  arcOutBearing: Float32Array;
+  arcInBearing: Float32Array;
   /** Active road closures (closures.ts), if any were applied. */
   closures?: ClosureState;
 }
@@ -96,6 +101,18 @@ export function assembleGraph(chunks: readonly Chunk[]): Graph {
     if (bwdOk(e)) push(to[i]!, from[i]!, i, 0);
   });
 
+  // 4. Headings at both ends of every arc (for turn costs).
+  const arcOutBearing = new Float32Array(arcCount);
+  const arcInBearing = new Float32Array(arcCount);
+  for (let a = 0; a < arcCount; a++) {
+    const i = arcEdge[a]!;
+    const e = edges[i]!;
+    const pts: [number, number][] = [[lat[from[i]!]!, lon[from[i]!]!], ...e.shape, [lat[to[i]!]!, lon[to[i]!]!]];
+    if (arcForward[a] === 0) pts.reverse();
+    arcOutBearing[a] = headingAlong(pts, 1);
+    arcInBearing[a] = headingAlong(pts, -1);
+  }
+
   return {
     nodeCount,
     lat,
@@ -108,6 +125,8 @@ export function assembleGraph(chunks: readonly Chunk[]): Graph {
     arcTarget,
     arcEdge,
     arcForward,
+    arcOutBearing,
+    arcInBearing,
   };
 }
 
@@ -138,3 +157,21 @@ export function nearestNode(g: Graph, lat: number, lon: number): number {
   return best;
 }
 
+
+/**
+ * Heading over the first (dir 1) or last (dir -1) TURN_BEARING_DISTANCE_M of
+ * a polyline, as degrees from north in the direction of travel.
+ */
+function headingAlong(pts: [number, number][], dir: 1 | -1): number {
+  const i0 = dir === 1 ? 0 : pts.length - 1;
+  let j = i0;
+  while (j + dir >= 0 && j + dir < pts.length) {
+    j += dir;
+    if (haversineM(pts[i0]![0], pts[i0]![1], pts[j]![0], pts[j]![1]) >= TURN_BEARING_DISTANCE_M) break;
+  }
+  const [a, b] = dir === 1 ? [pts[i0]!, pts[j]!] : [pts[j]!, pts[i0]!];
+  const r = Math.PI / 180;
+  const y = Math.sin((b[1] - a[1]) * r) * Math.cos(b[0] * r);
+  const x = Math.cos(a[0] * r) * Math.sin(b[0] * r) - Math.sin(a[0] * r) * Math.cos(b[0] * r) * Math.cos((b[1] - a[1]) * r);
+  return ((Math.atan2(y, x) / r) + 360) % 360;
+}

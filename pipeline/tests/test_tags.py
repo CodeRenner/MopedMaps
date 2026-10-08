@@ -70,6 +70,13 @@ def test_cycleway_moped_yes_opens_both():
 
 def test_motor_vehicle_no():
     assert access_flags({"highway": "track", "motor_vehicle": "agricultural"}) == AccessFlag.NONE
+    # semicolon lists ("landwirtschaftlicher Verkehr frei")
+    farm = {"highway": "track", "motor_vehicle": "agricultural;forestry"}
+    assert access_flags(farm) == AccessFlag.NONE
+    spaced = {"highway": "track", "vehicle": "forestry; agricultural"}
+    assert access_flags(spaced) == AccessFlag.NONE
+    dest = {"highway": "service", "motor_vehicle": "destination;delivery"}
+    assert access_flags(dest) & AccessFlag.DESTINATION
 
 
 def test_moped_overrides_motor_vehicle():

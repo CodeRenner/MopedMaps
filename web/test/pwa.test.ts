@@ -44,3 +44,12 @@ describe('web app manifest', () => {
     expect(pngSize(join(PUB, 'icons', 'apple-touch-icon.png'))).toEqual([180, 180]);
   });
 });
+
+describe('app update', async () => {
+  const { reloadDecision } = await import('../src/sw/update');
+  it('reloads once a new version took over, but not on first install or mid-navigation', () => {
+    expect(reloadDecision(false, false)).toBe('no');
+    expect(reloadDecision(true, false)).toBe('now');
+    expect(reloadDecision(true, true)).toBe('later');
+  });
+});

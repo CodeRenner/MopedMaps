@@ -62,6 +62,22 @@ against a local rider's choices:
 - Known data issue: OSM tags most of Habsburgerstraße (B3 north) as 50 km/h,
   the rider reports 30.
 
+### Personal preferences (−/0/+)
+"Routenwahl → Sicherheit im Detail" lets the rider scale single factors with
+− (× 0.5), 0 (× 1) or + (× 2), stored with the weights (`mopedmaps.weights.v1`):
+
+| Setting | Scales |
+|---------|--------|
+| Schnelle Straßen | speed differential and Bundesstraße surcharge |
+| Verkehrsaufkommen | DTV points |
+| Kreuzungen & Abbiegen | junction-density points (static score) and, in the cost, the signal/junction waits |
+| Schlechte Oberfläche | surface points (cobbles 15, compacted 20, unpaved 40) |
+| Unbeleuchtet | lighting points (unlit 15, unknown 5) |
+
+Static components are rescaled at runtime from the raw edge attributes (the
+constants mirror `pipeline/config.py`). The reported route risk (risk class in
+the summary) always uses neutral settings so it stays comparable.
+
 ### Traffic volume source
 Baden-Württemberg counting stations (Verkehrsministerium BW, dl-de/by-2-0,
 5,600 points on A/B/L/K roads, DTV 2024). The pipeline gives each edge the

@@ -79,5 +79,15 @@
   "nav.rerouting": "Neue Route …",
   "nav.noGps": "Standort nicht verfügbar – bitte Ortung erlauben.",
   "nav.waitingGps": "Warte auf GPS …",
-  "nav.limit": "Tempolimit {kmh} km/h"
+  "nav.limit": "Tempolimit {kmh} km/h",
+  "prefs.title": "Sicherheit im Detail",
+  "prefs.fast": "Schnelle Straßen",
+  "prefs.traffic": "Verkehrsaufkommen",
+  "prefs.junctions": "Kreuzungen & Abbiegen",
+  "prefs.surface": "Schlechte Oberfläche",
+  "prefs.lighting": "Unbeleuchtet",
+  "prefs.level.minus": "weniger wichtig (×0,5)",
+  "prefs.level.neutral": "normal (×1)",
+  "prefs.level.plus": "wichtiger (×2)",
+  "prefs.hint": "− halbiert, + verdoppelt den Einfluss. Wirkt zusammen mit dem Gewicht Sicherheit."
 }

@@ -1,8 +1,9 @@
-/** Sliders for the cost weights a (time) and b (risk). */
+/** Sliders for the cost weights (time, safety, energy) and −/0/+ per safety factor. */
 
-import { WEIGHT_ENERGY_RANGE, WEIGHT_RISK_RANGE, WEIGHT_TIME_RANGE } from '../config';
+import { RISK_PREF_FACTORS, WEIGHT_ENERGY_RANGE, WEIGHT_RISK_RANGE, WEIGHT_TIME_RANGE } from '../config';
 import { formatNumber, getLocale, t } from '../i18n';
-import type { CostWeights } from '../router/profile';
+import { type CostWeights, NEUTRAL_PREFS } from '../router/profile';
+import { RISK_PREF_KEYS } from './weights';
 
 type Range = { min: number; max: number; step: number };
 
@@ -14,7 +15,7 @@ export function createWeightsPanel(initial: CostWeights, onChange: (w: CostWeigh
   summary.textContent = t('weights.title');
   root.append(summary);
 
-  const slider = (key: keyof CostWeights, range: Range, labelKey: string) => {
+  const slider = (key: 'time' | 'risk' | 'energy', range: Range, labelKey: string) => {
     const label = document.createElement('label');
     label.className = 'row';
     const span = document.createElement('span');
@@ -43,5 +44,52 @@ export function createWeightsPanel(initial: CostWeights, onChange: (w: CostWeigh
   hint.className = 'hint-muted';
   hint.textContent = t('weights.hint');
   root.append(hint);
+
+  // Safety in detail: − (×0.5), 0 (×1), + (×2) per factor.
+  const prefs = document.createElement('fieldset');
+  prefs.className = 'risk-prefs';
+  const legend = document.createElement('legend');
+  legend.textContent = t('prefs.title');
+  prefs.append(legend);
+  const choices: [string, number][] = [
+    ['−', RISK_PREF_FACTORS.minus],
+    ['0', RISK_PREF_FACTORS.neutral],
+    ['+', RISK_PREF_FACTORS.plus],
+  ];
+  for (const key of RISK_PREF_KEYS) {
+    const row = document.createElement('div');
+    row.className = 'pref-row';
+    const name = document.createElement('span');
+    name.textContent = t(`prefs.${key}`);
+    const group = document.createElement('div');
+    group.className = 'pref-choice';
+    group.setAttribute('role', 'group');
+    group.setAttribute('aria-label', t(`prefs.${key}`));
+    const buttons = choices.map(([label, factor]) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      b.setAttribute('aria-label', t(`prefs.level.${label === '−' ? 'minus' : label === '+' ? 'plus' : 'neutral'}`));
+      b.addEventListener('click', () => {
+        w = { ...w, prefs: { ...(w.prefs ?? NEUTRAL_PREFS), [key]: factor } };
+        render();
+        onChange(w);
+      });
+      group.append(b);
+      return [b, factor] as const;
+    });
+    const render = () => {
+      const current = (w.prefs ?? NEUTRAL_PREFS)[key];
+      for (const [b, f] of buttons) b.setAttribute('aria-pressed', String(f === current));
+    };
+    render();
+    row.append(name, group);
+    prefs.append(row);
+  }
+  const prefsHint = document.createElement('p');
+  prefsHint.className = 'hint-muted';
+  prefsHint.textContent = t('prefs.hint');
+  prefs.append(prefsHint);
+  root.append(prefs);
   return root;
 }

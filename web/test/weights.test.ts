@@ -1,7 +1,8 @@
 import { appAttributions } from '../src/ui/attribution';
 import { energySummary } from '../src/ui/messages';
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_UI_WEIGHTS, loadWeights, normalizeWeights, riskClass, saveWeights, WEIGHTS_STORAGE_KEY } from '../src/ui/weights';
+import { NEUTRAL_PREFS } from '../src/router/profile';
+import { DEFAULT_UI_WEIGHTS, normalizePrefs, loadWeights, normalizeWeights, riskClass, saveWeights, WEIGHTS_STORAGE_KEY } from '../src/ui/weights';
 
 const mem = () => {
   const m = new Map<string, string>();
@@ -10,7 +11,7 @@ const mem = () => {
 
 describe('weights', () => {
   it('clamps to slider ranges and keeps energy at 0', () => {
-    expect(normalizeWeights({ time: 99, risk: -1, energy: 5 })).toEqual({ time: 2, risk: 0, energy: 3 });
+    expect(normalizeWeights({ time: 99, risk: -1, energy: 5 })).toEqual({ time: 2, risk: 0, energy: 3, prefs: NEUTRAL_PREFS });
     expect(normalizeWeights({})).toEqual(DEFAULT_UI_WEIGHTS);
     expect(normalizeWeights({ time: Number.NaN })).toEqual(DEFAULT_UI_WEIGHTS);
   });
@@ -18,7 +19,7 @@ describe('weights', () => {
   it('round-trips and survives corrupt storage', () => {
     const s = mem();
     saveWeights(s, { time: 1.5, risk: 2, energy: 0 });
-    expect(loadWeights(s)).toEqual({ time: 1.5, risk: 2, energy: 0 });
+    expect(loadWeights(s)).toEqual({ time: 1.5, risk: 2, energy: 0, prefs: NEUTRAL_PREFS });
     s.m.set(WEIGHTS_STORAGE_KEY, 'nope');
     expect(loadWeights(s)).toEqual(DEFAULT_UI_WEIGHTS);
     expect(loadWeights(null)).toEqual(DEFAULT_UI_WEIGHTS);
@@ -47,5 +48,17 @@ describe('energy UI helpers', () => {
 
   it('attributes the elevation source', () => {
     expect(appAttributions().join(' ')).toMatch(/Copernicus DEM GLO-30/);
+  });
+});
+
+describe('risk preferences', () => {
+  it('keeps only −/0/+ factors and survives storage', () => {
+    expect(normalizePrefs({ fast: 2, traffic: 0.5, junctions: 7, surface: 'x' })).toEqual({
+      fast: 2, traffic: 0.5, junctions: 1, surface: 1, lighting: 1,
+    });
+    const s = mem();
+    saveWeights(s, normalizeWeights({ time: 1, risk: 1, energy: 0, prefs: { ...NEUTRAL_PREFS, fast: 2 } }));
+    expect(loadWeights(s).prefs).toEqual({ ...NEUTRAL_PREFS, fast: 2 });
+    expect(loadWeights(mem()).prefs).toEqual(NEUTRAL_PREFS); // old/missing -> neutral
   });
 });

@@ -1070,3 +1070,12 @@ route (Eschholz -> Markgrafen -> Uffhauser) at b = 1.
   (falls back to the B3 corridor). Browser: closures drawn, attribution shown.
 - Tests: pytest (new test_closures.py), vitest 166 passed (closures matching/routing, SW policy), actionlint ok.
 - Next: user review/merge (#19 traffic volume, closures PR); graph build for DTV.
+
+### Iteration 65 — personal safety preferences (2026-10-08)
+- What: branch `feature/risk-prefs`. `CostWeights.prefs` (fast, traffic, junctions, surface, lighting; 0.5/1/2);
+  `runtimeRiskPerKm` scales the speed/Bundesstraße, DTV and static junction/surface/lighting parts; junction factor
+  also scales signal/junction waits in the cost. UI "Sicherheit im Detail" with −/0/+ per factor, stored with the
+  weights; reported risk stays neutral. Docs: risk-model.md.
+- Also: PR #21 auto-update (user's phone kept the old app after deploy).
+- Tests: vitest (prefs storage, each factor, routing flip with "+ fast roads"), tsc clean.
+- Next: merge; check graph build (DTV) in Freiburg.

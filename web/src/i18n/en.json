@@ -79,5 +79,15 @@
   "nav.rerouting": "Rerouting …",
   "nav.noGps": "Location unavailable – please allow location access.",
   "nav.waitingGps": "Waiting for GPS …",
-  "nav.limit": "Speed limit {kmh} km/h"
+  "nav.limit": "Speed limit {kmh} km/h",
+  "prefs.title": "Safety in detail",
+  "prefs.fast": "Fast roads",
+  "prefs.traffic": "Traffic volume",
+  "prefs.junctions": "Junctions & turns",
+  "prefs.surface": "Poor surface",
+  "prefs.lighting": "Unlit",
+  "prefs.level.minus": "less important (×0.5)",
+  "prefs.level.neutral": "normal (×1)",
+  "prefs.level.plus": "more important (×2)",
+  "prefs.hint": "− halves, + doubles the influence. Works together with the safety weight."
 }

@@ -138,3 +138,33 @@ describe('traffic volume risk', async () => {
     expect(findRoute(g, 0, 1, MOPED, { time: 1, risk: 1, energy: 0 })!.nodes).toEqual([0, 2, 1]);
   });
 });
+
+describe('personal risk preferences', () => {
+  const road = (cls: number, limit: number, over: Partial<ChunkEdge> = {}) =>
+    e(0, 1, 1000, { roadClass: cls, maxspeedFwd: limit, maxspeedBwd: limit, ...over });
+  const N = { fast: 1, traffic: 1, junctions: 1, surface: 1, lighting: 1 };
+
+  it('scales each factor: fast roads, traffic, junctions, surface, lighting', () => {
+    const trunk60 = road(RoadClass.TRUNK, 60);
+    expect(runtimeRiskPerKm(trunk60, true, MOPED, { ...N, fast: 2 })).toBe(2 * (15 * 4 + 50));
+    expect(runtimeRiskPerKm(trunk60, true, MOPED, { ...N, fast: 0.5 })).toBe(0.5 * (15 * 4 + 50));
+    const busy = road(RoadClass.SECONDARY, 50, { dtv: 20000 }); // urban: 45 × 0.5, diff 5 × 0.3
+    expect(runtimeRiskPerKm(busy, true, MOPED, { ...N, traffic: 2 }) - runtimeRiskPerKm(busy, true, MOPED)).toBeCloseTo(22.5);
+    const cobbles = road(RoadClass.RESIDENTIAL, 30, { surface: Surface.COBBLE });
+    expect(runtimeRiskPerKm(cobbles, true, MOPED, { ...N, surface: 2 }) - runtimeRiskPerKm(cobbles, true, MOPED)).toBe(15);
+    const dark = road(RoadClass.RESIDENTIAL, 30, { lit: false });
+    expect(runtimeRiskPerKm(dark, true, MOPED, { ...N, lighting: 0.5 }) - runtimeRiskPerKm(dark, true, MOPED)).toBe(-7.5);
+    const short = e(0, 1, 50, { maxspeedFwd: 30, maxspeedBwd: 30 }); // dense junctions: capped 30 points
+    expect(runtimeRiskPerKm(short, true, MOPED, { ...N, junctions: 2 }) - runtimeRiskPerKm(short, true, MOPED)).toBe(30);
+  });
+
+  it('"+ fast roads" leaves the risky road at a lower safety weight', () => {
+    const g = assembleGraph([choice()]);
+    const w = { time: 1, risk: 0.2, energy: 0 };
+    expect(findRoute(g, 0, 1, MOPED, w)!.nodes).toEqual([0, 1]);
+    expect(findRoute(g, 0, 1, MOPED, { ...w, prefs: { ...N, fast: 2 } })!.nodes).toEqual([0, 2, 1]);
+    // the reported risk stays neutral (comparable between settings)
+    const neutral = findRoute(g, 0, 1, MOPED, w)!;
+    expect(neutral.riskAvg).toBeCloseTo(180 + 25 * 3.5 + 40);
+  });
+});

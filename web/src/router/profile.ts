@@ -19,10 +19,28 @@ export interface VehicleProfile {
   drive: Drive;
 }
 
+/** Personal emphasis per risk factor: 0.5 (−), 1 (0) or 2 (+). */
+export interface RiskPrefs {
+  /** Fast roads: speed differential to vmax and the Bundesstraße surcharge. */
+  fast: number;
+  /** Traffic volume (official counts). */
+  traffic: number;
+  /** Junction density, signal and junction waits. */
+  junctions: number;
+  /** Cobbles, gravel, unpaved. */
+  surface: number;
+  /** Unlit roads. */
+  lighting: number;
+}
+
+export const NEUTRAL_PREFS: RiskPrefs = { fast: 1, traffic: 1, junctions: 1, surface: 1, lighting: 1 };
+
 export interface CostWeights {
   time: number; // a
   risk: number; // b
   energy: number; // c
+  /** Optional per-factor emphasis inside the risk term (default all 1). */
+  prefs?: RiskPrefs;
 }
 
 /**
@@ -30,7 +48,12 @@ export interface CostWeights {
  * differential to vmax weighted by road class, minus the static class points
  * on calm (<= 30 km/h) main roads.
  */
-export function runtimeRiskPerKm(e: ChunkEdge, forward: boolean, p: VehicleProfile): number {
+export function runtimeRiskPerKm(
+  e: ChunkEdge,
+  forward: boolean,
+  p: VehicleProfile,
+  prefs: RiskPrefs = NEUTRAL_PREFS,
+): number {
   const limit = limitKmh(e, forward);
   const diff = Math.max(0, limit - p.vmaxKmh);
   const km = Math.max(e.lengthM, 1) / 1000;
@@ -39,9 +62,23 @@ export function runtimeRiskPerKm(e: ChunkEdge, forward: boolean, p: VehicleProfi
     limit <= cfg.RISK_DIFF_URBAN_MAX_KMH
       ? cfg.RISK_DIFF_URBAN_FACTOR
       : (cfg.RISK_DIFF_CLASS_FACTOR[e.roadClass] ?? cfg.RISK_DIFF_DEFAULT_FACTOR);
-  const base = diff * factor - signalRefund + dtvRiskPerKm(e.dtv ?? 0, limit);
-  if (limit <= cfg.RISK_CALM_MAIN_ROAD_MAX_KMH) return base - (cfg.RISK_CLASS_POINTS_BY_CLASS[e.roadClass] ?? 0);
-  return base + (cfg.RISK_MAIN_ROAD_POINTS[e.roadClass] ?? 0);
+  const calm = limit <= cfg.RISK_CALM_MAIN_ROAD_MAX_KMH;
+  const fast = diff * factor + (calm ? 0 : (cfg.RISK_MAIN_ROAD_POINTS[e.roadClass] ?? 0));
+  let pts =
+    fast * prefs.fast -
+    signalRefund +
+    dtvRiskPerKm(e.dtv ?? 0, limit) * prefs.traffic -
+    (calm ? (cfg.RISK_CLASS_POINTS_BY_CLASS[e.roadClass] ?? 0) : 0);
+  // Rescale static score components the vehicle doesn't change (pipeline risk.py).
+  if (prefs.junctions !== 1) {
+    pts += (prefs.junctions - 1) * Math.min(cfg.RISK_JUNCTION_POINTS_CAP, cfg.RISK_POINTS_PER_JUNCTION_PER_KM / km);
+  }
+  if (prefs.surface !== 1) pts += (prefs.surface - 1) * (cfg.RISK_SURFACE_POINTS[e.surface] ?? 0);
+  if (prefs.lighting !== 1) {
+    const lit = e.lit === false ? cfg.RISK_UNLIT_POINTS : e.lit === null ? cfg.RISK_LIT_UNKNOWN_POINTS : 0;
+    pts += (prefs.lighting - 1) * lit;
+  }
+  return pts;
 }
 
 /** Risk points per km from the traffic volume (0 if unknown or on calm <= 30 km/h roads). */
@@ -63,8 +100,8 @@ export function dtvRiskPerKm(dtv: number, limit: number): number {
 }
 
 /** Risk contribution of an edge in "risk points" (score per km × km), >= 0. 0 if not computed. */
-export function edgeRisk(e: ChunkEdge, forward = true, p?: VehicleProfile): number {
-  const perKm = p && e.risk > 0 ? e.risk + runtimeRiskPerKm(e, forward, p) : e.risk;
+export function edgeRisk(e: ChunkEdge, forward = true, p?: VehicleProfile, prefs?: RiskPrefs): number {
+  const perKm = p && e.risk > 0 ? e.risk + runtimeRiskPerKm(e, forward, p, prefs) : e.risk;
   return Math.max(0, perKm) * (e.lengthM / 1000);
 }
 
@@ -121,6 +158,12 @@ export function edgeCost(
   if (!canUse(e, p)) return Infinity;
   let time = travelTimeS(e, forward, p);
   if ((e.flags & AccessFlag.DESTINATION) !== 0) time += cfg.DESTINATION_PENALTY_S;
+  const prefs = w.prefs;
+  // "Kreuzungen" also scales the junction/signal waits in the cost (not in the shown travel time).
+  if (prefs && prefs.junctions !== 1) {
+    const waits = e.signals * cfg.SIGNAL_PENALTY_S + (cfg.JUNCTION_PENALTY_BY_CLASS_S[e.roadClass] ?? cfg.JUNCTION_PENALTY_S);
+    time += (prefs.junctions - 1) * waits;
+  }
   const energy = w.energy > 0 ? edgeEnergy(e, forward, p).wheelWh * cfg.ENERGY_COST_S_PER_WH : 0;
-  return w.time * time + w.risk * edgeRisk(e, forward, p) + w.energy * energy;
+  return w.time * time + w.risk * edgeRisk(e, forward, p, prefs) + w.energy * energy;
 }

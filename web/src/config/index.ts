@@ -228,3 +228,13 @@ export const CLOSURE_AVOID_SHARE = 0.6;
 /** Extra cost (s) for edges in an "avoid" area: used only if there is no reasonable detour. */
 export const CLOSURE_AVOID_PENALTY_S = 600;
 export const CLOSURES_URL = './closures.json';
+
+// --- Personal safety preferences (−/0/+ per factor, docs/risk-model.md) --------
+/** Factor per setting: − halves, 0 keeps, + doubles the factor's risk points. */
+export const RISK_PREF_FACTORS = { minus: 0.5, neutral: 1, plus: 2 } as const;
+/** Mirrors of pipeline risk constants (config.py) so single factors can be rescaled at runtime. */
+export const RISK_SURFACE_POINTS: Record<number, number> = { 0: 0, 1: 0, 2: 15, 3: 20, 4: 40 };
+export const RISK_UNLIT_POINTS = 15;
+export const RISK_LIT_UNKNOWN_POINTS = 5;
+export const RISK_POINTS_PER_JUNCTION_PER_KM = 3;
+export const RISK_JUNCTION_POINTS_CAP = 30;

@@ -322,3 +322,35 @@ body.nav-mode .route-controls {
   border: 3px solid #fff;
   box-shadow: 0 0 0 6px rgb(43 108 176 / 0.25);
 }
+.risk-prefs {
+  border: 0;
+  padding: 0;
+  margin: 6px 0 0;
+  display: grid;
+  gap: 6px;
+}
+.risk-prefs legend {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.pref-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.pref-choice {
+  display: flex;
+  gap: 4px;
+}
+.panel .pref-choice button {
+  width: 36px;
+  padding: 6px 0;
+  font-size: 16px;
+  background: #e2e8f0;
+  color: #1a202c;
+}
+.panel .pref-choice button[aria-pressed='true'] {
+  background: #2b6cb0;
+  color: #fff;
+}

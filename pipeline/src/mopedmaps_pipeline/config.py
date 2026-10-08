@@ -119,3 +119,10 @@ RISK_JUNCTION_POINTS_CAP: Final[int] = 30
 # Bremen result: 1.95 m/km, heights 0..42 m (plausible for flat Bremen).
 ELEVATION_SMOOTHING_ITERATIONS: Final[int] = 10
 ELEVATION_SMOOTHING_ALPHA: Final[float] = 0.5
+
+# --- Traffic volume (DTV) ------------------------------------------------------
+# An edge takes the DTV of the nearest counting station on the same road
+# (same `ref`) within this distance; farther stations are ignored (unknown).
+TRAFFIC_MAX_DISTANCE_M: Final[float] = 8000.0
+# Stored per edge in units of this many vehicles/day (uint16, 0 = unknown).
+TRAFFIC_DTV_UNIT: Final[int] = 10

@@ -23,6 +23,7 @@ from mopedmaps_pipeline.chunks import (
     tile_name,
 )
 from mopedmaps_pipeline.graph import build_graph
+from mopedmaps_pipeline.traffic import TrafficIndex, load_bw_csv
 
 
 def write_tiles(
@@ -72,8 +73,20 @@ def write_tiles(
     return manifest
 
 
+def _traffic(path: Path | None) -> TrafficIndex | None:
+    if path is None:
+        return None
+    index = load_bw_csv(path)
+    print(f"traffic: {len(index)} counting stations from {path.name}", file=sys.stderr)
+    return index
+
+
 def build(
-    src: Path, out: Path, tile_size: float = config.TILE_SIZE_DEG, dem_dir: Path | None = None
+    src: Path,
+    out: Path,
+    tile_size: float = config.TILE_SIZE_DEG,
+    dem_dir: Path | None = None,
+    traffic_csv: Path | None = None,
 ) -> dict:
     """In-memory build (small extracts). Returns the manifest."""
     from mopedmaps_pipeline.osm_pbf import read_osm  # lazy: needs pyosmium
@@ -81,7 +94,7 @@ def build(
     clock = _Clock()
     data = read_osm(src)
     clock.lap("read")
-    graph = build_graph(data)
+    graph = build_graph(data, _traffic(traffic_csv))
     clock.lap("graph")
     no_dem = len(graph.edges)
     if dem_dir is not None:
@@ -105,6 +118,7 @@ def build_streaming(
     workdir: Path | None = None,
     node_index: str = "mem",
     delete_source: bool = False,
+    traffic_csv: Path | None = None,
 ) -> dict:
     """Streaming build with bounded memory (country-sized extracts).
 
@@ -127,7 +141,7 @@ def build_streaming(
         clock.lap("junctions")
         spool = st.TileSpool(tmp / "spool")
         store = "flex_mem" if node_index == "mem" else f"sparse_file_array,{tmp / 'nodes.idx'}"
-        stats = st.stream_edges(filtered, junctions, spool, store, tile_size)
+        stats = st.stream_edges(filtered, junctions, spool, store, tile_size, _traffic(traffic_csv))
         del junctions
         clock.lap("edges")
         heights = None
@@ -185,6 +199,10 @@ def main(argv: list[str] | None = None) -> int:
     b.add_argument("--verify", action="store_true", help="decode every tile afterwards")
     b.add_argument("--dem", type=Path, help="directory with Copernicus GLO-30 tiles")
     b.add_argument(
+        "--traffic", type=Path,
+        help="counting-station CSV (Baden-Württemberg SVZ) for per-edge traffic volume",
+    )  # fmt: skip
+    b.add_argument(
         "--streaming", action="store_true", help="bounded-memory build for large extracts"
     )
     b.add_argument("--workdir", type=Path, help="where to put temp files (streaming mode)")
@@ -225,10 +243,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.streaming:
         m = build_streaming(
             args.input, args.output, args.tile_size, args.dem, args.workdir,
-            args.node_index, args.delete_source,
+            args.node_index, args.delete_source, args.traffic,
         )  # fmt: skip
     else:
-        m = build(args.input, args.output, args.tile_size, args.dem)
+        m = build(args.input, args.output, args.tile_size, args.dem, args.traffic)
     if args.verify:
         _verify(args.output)
     json.dump(m["totals"], sys.stdout, indent=1)

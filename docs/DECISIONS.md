@@ -25,3 +25,10 @@ Decision (user): `highway=track` only when signposted open for mopeds
 carry "Verbot für Kfz, landwirtschaftlicher Verkehr frei", often missing in OSM; routes went over km of
 unpaved tracks. Time-dependent limits (`maxspeed:conditional`, e.g. Habsburgerstraße 30 at night) stay
 ignored: the router has no time of day; the base `maxspeed` is used.
+
+## Traffic data (2026-10-08)
+- Traffic volume: yes — official BW counting stations (DTV) as a raw edge attribute, used in the risk
+  score; fetched by the monthly graph build (user decision).
+- Roadworks/closures: yes, as a **daily static file** built by a GitHub Action (user decision "täglich"),
+  not fetched live in the browser. This relaxes CLAUDE.md "No live data" for closures only; no traffic jams.
+- Live congestion: no (no free source; commercial APIs need keys).

@@ -38,6 +38,7 @@ never goes below 0. Edges without a stored score (risk 0) stay 0.
 | Bundesstraße surcharge (limit > 30) | trunk +50, primary +40 |
 | Calm main road (limit ≤ 30) | class points removed: trunk −25, primary −15, secondary −10 |
 | Signal refund | −5 per signal (cancels the pipeline's signal points; the wait is in the time cost) |
+| Traffic volume (DTV, official counts) | 2,000 → 0 · 8,000 → +20 · ≥ 20,000 → +45 (linear between); × 0.5 for limits ≤ 50, none for ≤ 30 |
 
 Examples for a 45 km/h moped: trunk at 60 → +110/km; tertiary Landstraße at
 100 → +110/km; urban road at 50 → +1.5/km; primary at 30 → −15/km. A 25 km/h
@@ -61,7 +62,15 @@ against a local rider's choices:
 - Known data issue: OSM tags most of Habsburgerstraße (B3 north) as 50 km/h,
   the rider reports 30.
 
+### Traffic volume source
+Baden-Württemberg counting stations (Verkehrsministerium BW, dl-de/by-2-0,
+5,600 points on A/B/L/K roads, DTV 2024). The pipeline gives each edge the
+DTV of the nearest station on a road with the same `ref` within 8 km
+(`pipeline/src/mopedmaps_pipeline/traffic.py`); otherwise 0 = unknown. City
+streets (Gemeindestraßen) have no free counts; outside BW the value is 0.
+Details and other sources: `docs/research-traffic-data.md`.
+
 ## Not modelled yet
-- Accident statistics, traffic volume (no live data by design).
+- Accident statistics; traffic counts outside Baden-Württemberg and on city streets.
 - Signal direction (`traffic_signals:direction`) and merging signal nodes of
   one junction in the pipeline; would allow a realistic per-junction wait.

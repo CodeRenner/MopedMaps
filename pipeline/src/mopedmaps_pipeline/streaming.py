@@ -24,6 +24,7 @@ from mopedmaps_pipeline.chunks import TileKey, encode_tile, tile_name, tile_of
 from mopedmaps_pipeline.elevation import ElevationSource, edge_climbs, smooth_heights
 from mopedmaps_pipeline.graph import Edge, split_way
 from mopedmaps_pipeline.osm_pbf import KEEP_KEYS
+from mopedmaps_pipeline.traffic import TrafficIndex
 
 
 def routable_tags(way: osmium.osm.Way) -> dict[str, str] | None:
@@ -73,7 +74,7 @@ def junction_ids(path: Path) -> np.ndarray:
 # --- Pass 2: edges into per-tile spool files ------------------------------------
 
 
-_EDGE_HEAD = struct.Struct("<qqqdBHHBBb?dHI")  # fixed part of a spooled edge
+_EDGE_HEAD = struct.Struct("<qqqdBHHBBb?dHII")  # fixed part of a spooled edge
 _NODE_ROW = struct.Struct("<qdd")
 _LIT = {None: -1, False: 0, True: 1}
 _LIT_BACK = {-1: None, 0: False, 1: True}
@@ -85,7 +86,7 @@ def encode_edge(e: Edge) -> bytes:
     head = _EDGE_HEAD.pack(
         e.from_node, e.to_node, e.way_id, e.length_m, int(e.road_class),
         e.maxspeed_fwd or 0, e.maxspeed_bwd or 0, int(e.flags), int(e.surface),
-        _LIT[e.lit], e.cycleway, e.curvature_deg, e.signals, len(e.geometry),
+        _LIT[e.lit], e.cycleway, e.curvature_deg, e.signals, e.dtv, len(e.geometry),
     )  # fmt: skip
     coords = struct.pack(f"<{2 * len(e.geometry)}d", *(c for p in e.geometry for c in p))
     return head + coords
@@ -95,7 +96,7 @@ def _decode_edges(buf: bytes) -> list[Edge]:
     out = []
     pos = 0
     while pos < len(buf):
-        (fr, to, way, length, rc, msf, msb, flags, surf, lit, cyc, curv, sig, n) = (
+        (fr, to, way, length, rc, msf, msb, flags, surf, lit, cyc, curv, sig, dtv, n) = (
             _EDGE_HEAD.unpack_from(buf, pos)
         )
         pos += _EDGE_HEAD.size
@@ -117,6 +118,7 @@ def _decode_edges(buf: bytes) -> list[Edge]:
                 cycleway=cyc,
                 curvature_deg=curv,
                 signals=sig,
+                dtv=dtv,
             )  # fmt: skip
         )
     return out
@@ -182,6 +184,7 @@ def stream_edges(
     spool: TileSpool,
     location_store: str = "flex_mem",
     tile_size: float = config.TILE_SIZE_DEG,
+    traffic: TrafficIndex | None = None,
 ) -> dict[str, int]:
     """Pass 2: split routable ways at `junctions` and spool edges by from-tile.
 
@@ -222,14 +225,16 @@ def stream_edges(
         else:
             stats["ways"] += 1
             for e in split_way(
-                obj.id, refs, coords, tags, t.access_flags(tags), is_split, signals.__contains__
-            ):
+                obj.id, refs, coords, tags, t.access_flags(tags), is_split, signals.__contains__,
+                traffic,
+            ):  # fmt: skip
                 key = tile_of(*e.geometry[0], tile_size)
                 spool.add("edges", key, e)
                 spool.add("nodes", key, (e.from_node, *e.geometry[0]))
                 to_key = tile_of(*e.geometry[-1], tile_size)
                 spool.add("nodes", to_key, (e.to_node, *e.geometry[-1]))
                 stats["edges"] += 1
+                stats["edges_with_dtv"] = stats.get("edges_with_dtv", 0) + (e.dtv > 0)
             continue
         stats["skipped_incomplete"] += 1
     spool.close()

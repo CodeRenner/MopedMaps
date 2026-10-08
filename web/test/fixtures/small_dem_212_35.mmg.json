@@ -54,7 +54,8 @@
    "ascent_m": 0.2,
    "descent_m": 0.0,
    "risk": 29,
-   "shape": []
+   "shape": [],
+   "dtv": 0
   },
   {
    "from_idx": 1,
@@ -76,7 +77,8 @@
    "ascent_m": 0.9,
    "descent_m": 0.0,
    "risk": 29,
-   "shape": []
+   "shape": [],
+   "dtv": 0
   },
   {
    "from_idx": 1,
@@ -98,7 +100,8 @@
    "ascent_m": 0.0,
    "descent_m": 0.2,
    "risk": 124,
-   "shape": []
+   "shape": [],
+   "dtv": 0
   },
   {
    "from_idx": 2,
@@ -125,7 +128,8 @@
      53.071,
      8.815
     ]
-   ]
+   ],
+   "dtv": 0
   }
  ]
 }

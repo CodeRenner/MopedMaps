@@ -63,10 +63,25 @@ jobs:
           curl -fL --retry 3 -o data/source.osm.pbf "https://download.geofabrik.de/${REGION}-latest.osm.pbf"
           ls -lh data/source.osm.pbf
 
+      # Traffic volume (BW counting stations, dl-de/by-2-0). The file name
+      # contains a date, so resolve the current CSV via the CKAN API. Optional:
+      # the build continues without it (edges then have DTV 0 = unknown).
+      - name: Fetch traffic counts (Baden-Württemberg)
+        id: traffic
+        continue-on-error: true
+        run: |
+          url=$(curl -fsSL --retry 3 "https://mobidata-bw.de/api/3/action/package_show?id=karte_strassenverkehrszaehlung" \
+            | python -c "import json,sys; r=json.load(sys.stdin)['result']['resources']; print(next(x['url'] for x in r if x['url'].lower().endswith('.csv')))")
+          echo "$url"
+          curl -fL --retry 3 -o data/traffic-bw.csv "$url"
+          wc -l data/traffic-bw.csv
+
       - name: Build tiles (streaming)
         run: |
+          traffic=""
+          if [ -s data/traffic-bw.csv ]; then traffic="--traffic data/traffic-bw.csv"; else echo "::warning::No traffic counts - building without DTV."; fi
           python -m mopedmaps_pipeline build data/source.osm.pbf data/graph \
-            --streaming --dem data/dem --workdir data --delete-source --verify
+            --streaming --dem data/dem --workdir data --delete-source --verify $traffic
           df -h .
 
       - uses: actions/upload-artifact@v4

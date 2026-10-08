@@ -11,6 +11,9 @@ export const GEONAMES_ATTRIBUTION =
 export const ELEVATION_ATTRIBUTION =
   'Höhen: <a href="https://spacedata.copernicus.eu/collections/copernicus-digital-elevation-model" target="_blank" rel="noopener">Copernicus DEM GLO-30</a> (© DLR e.V., © Airbus DS, ESA/EU)';
 
+export const TRAFFIC_ATTRIBUTION =
+  'Verkehrsmengen: <a href="https://mobidata-bw.de/dataset/karte_strassenverkehrszaehlung" target="_blank" rel="noopener">Verkehrsministerium BW</a> (<a href="https://www.govdata.de/dl-de/by-2-0" target="_blank" rel="noopener">dl-de/by-2-0</a>, bearbeitet)';
+
 export function appAttributions(): string[] {
-  return [OSM_ATTRIBUTION, GEONAMES_ATTRIBUTION, ELEVATION_ATTRIBUTION];
+  return [OSM_ATTRIBUTION, GEONAMES_ATTRIBUTION, ELEVATION_ATTRIBUTION, TRAFFIC_ATTRIBUTION];
 }

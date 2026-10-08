@@ -994,3 +994,18 @@ contains the chart and range strings. Live tiles are still format v1 until the n
 - Lesson: the graph build's deploy job builds the app from the commit the build was dispatched on, so it
   overwrote the fix; re-ran Deploy on main (b63bd68) afterwards. Live now: v2 tiles + SW fix.
   Improvement idea: let graph-build deploy check out `main` instead of the dispatch commit.
+
+### Iteration 59 — routing tuning on real Freiburg routes (2026-10-08)
+- What: branch `tuning/risk-speed`. Router: vehicle-dependent risk (`runtimeRiskPerKm`: speed differential to vmax
+  by road class, urban <= 50 only x0.3; Bundesstraße surcharge trunk +50 / primary +40 above 30 km/h; class points
+  removed on 30 km/h main roads; signal risk refunded), signal wait 5 s per node, junction penalty by class
+  (0.5 s main roads, 2 s side streets). Pipeline: access lists like `agricultural;forestry` now deny (needs rebuild).
+- Why: user report — B3 at 30 km/h avoided, 60 km/h B3/B31 (Guildfordallee) kept until max safety, then the
+  whole route flips. Analysis (scratch scripts, OSM street names): risk slider had no effect up to b = 1.5,
+  signals counted per node (several per junction), every junction cost the same with or without right of way.
+- Calibration against the rider's routes: Tennenbacher/Stefan-Meier -> Tiengener/Basler Landstr. now takes
+  Eschholz -> Markgrafen -> Uffhauser from b = 1 (before only at 3); -> Elsässer/Wirthstr. stays on Neunlinden-/
+  Hartmannstraße up to b = 1. Overland (Emmendingen, Waldkirch, Bad Krozingen) checked; found farm tracks used.
+- Open: OSM has Habsburgerstraße (B3) mostly as 50 km/h (rider says 30); track policy (see below).
+- Tests: vitest 147 passed, tsc clean, build ok; pytest 93 passed, ruff clean.
+- Next: user decision on tracks; PR; graph build for the access fix.

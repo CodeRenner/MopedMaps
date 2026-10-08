@@ -1009,3 +1009,9 @@ contains the chart and range strings. Live tiles are still format v1 until the n
 - Open: OSM has Habsburgerstraße (B3) mostly as 50 km/h (rider says 30); track policy (see below).
 - Tests: vitest 147 passed, tsc clean, build ok; pytest 93 passed, ruff clean.
 - Next: user decision on tracks; PR; graph build for the access fix.
+
+### Note — tuning live, tracks closed (2026-10-08)
+PR #15 merged (tuning + access lists + tracks only when signposted open, user decision). Graph build
+37762634018 succeeded and deployed (tiles v2 built 2026-10-08 10:52). Verified with live tiles: Tennenbacher ->
+Emmendingen KKH and Hbf -> Waldkirch use 0 m of tracks (before: several km from b = 0.5); R1 takes the rider's
+route (Eschholz -> Markgrafen -> Uffhauser) at b = 1.

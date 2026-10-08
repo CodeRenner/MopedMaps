@@ -1015,3 +1015,14 @@ PR #15 merged (tuning + access lists + tracks only when signposted open, user de
 37762634018 succeeded and deployed (tiles v2 built 2026-10-08 10:52). Verified with live tiles: Tennenbacher ->
 Emmendingen KKH and Hbf -> Waldkirch use 0 m of tracks (before: several km from b = 0.5); R1 takes the rider's
 route (Eschholz -> Markgrafen -> Uffhauser) at b = 1.
+
+### Iteration 60 — route controls and fast-section colours (2026-10-08)
+- What: branch `feature/route-controls`. ⇄ (reverse) and ✕ (cancel) buttons at the bottom centre, kept above the
+  map attribution (ResizeObserver; the attribution wraps to 4 lines on phones). Taps no longer reset an existing
+  route (user: zooming to inspect the route cancelled it). Route sections > 50 km/h orange, > 70 km/h red
+  (`ROUTE_BAND_*` in config), sections < 100 m dropped (unmapped links default to 100 and flashed red).
+- Browser check: Bremen (reverse swaps markers, route recomputed 19.9 -> 20.5 km; stray tap keeps the route);
+  Freiburg -> Emmendingen with local Germany tiles: red section at Denzlingen, orange at Gundelfingen; phone
+  viewport: buttons 10 px above the attribution; ✕ clears markers, chart and buttons.
+- Tests: vitest 151 passed, tsc clean, build ok.
+- Next: user review/merge; traffic-volume data research (user question).

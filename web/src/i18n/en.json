@@ -42,6 +42,7 @@
   "route.energy.electricKwh": "↑ {climb} m · {kwh} kWh",
   "route.energy.combustion": "↑ {climb} m · {litres} l",
   "map.offlineBasemap": "Basemap unavailable offline – route and area still work.",
+  "map.offlineRoads": "Offline: no map background – showing the roads of the loaded area. Tapping a destination and navigating still work.",
   "chart.title": "Elevation & speed",
   "chart.legend": "km/h (left, blue) · elevation in m (right, green) · distance in km",
   "chart.legendSpeed": "km/h over distance in km",

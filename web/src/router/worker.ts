@@ -8,5 +8,7 @@ declare const self: DedicatedWorkerGlobalScope;
 const service = new RouterService();
 
 self.onmessage = (ev: MessageEvent<RouterRequest>) => {
-  self.postMessage(service.handle(ev.data));
+  const res = service.handle(ev.data);
+  const transfer = res.type === 'roads' ? [res.roads.coords.buffer, res.roads.offsets.buffer, res.roads.classes.buffer] : [];
+  self.postMessage(res, transfer);
 };

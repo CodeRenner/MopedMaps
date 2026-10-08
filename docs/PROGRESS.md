@@ -1166,3 +1166,11 @@ Follow-up idea: let the graph build's deploy check out `main` to avoid shipping 
   Map attribution (now many sources) starts collapsed behind MapLibre's (i) instead of covering the map bottom.
 - Browser: i toggles the note; attribution collapsed at start, expands on tap.
 - Graph build with the new DTV sources started manually (run 37847326840).
+### Iteration 75 — offline street map (2026-10-08)
+- What: branch `feature/offline-roads` (stacked on #32). User: offline the app routes but shows no map, so no points
+  can be set. Worker request `roads` (bbox, max class by zoom, limit) -> `RoadsLayer` draws the loaded graph's roads
+  when the basemap is down (fallback style, browser offline, or repeated basemap tile errors); note above the controls.
+- Browser (Bremen, basemap layers hidden + offline event): roads readable at z14.5, start/destination taps route
+  normally; zoom 9.5 -> 12.5 redraw incl. render ~2-3 s.
+- Tests: vitest 197 passed (roads.test.ts: bbox, class filter, limit, GeoJSON order).
+- Next: offline address/POI search.

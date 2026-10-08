@@ -42,6 +42,7 @@
   "route.energy.electricKwh": "↑ {climb} m · {kwh} kWh",
   "route.energy.combustion": "↑ {climb} m · {litres} l",
   "map.offlineBasemap": "Kartenhintergrund offline nicht verfügbar – Route und Umkreis funktionieren trotzdem.",
+  "map.offlineRoads": "Offline: Kartenhintergrund nicht verfügbar – gezeigt werden die Straßen des geladenen Umkreises. Ziel antippen und navigieren geht trotzdem.",
   "chart.title": "Höhe & Geschwindigkeit",
   "chart.legend": "km/h (links, blau) · Höhe in m (rechts, grün) · Strecke in km",
   "chart.legendSpeed": "km/h über Strecke in km",

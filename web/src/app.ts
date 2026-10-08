@@ -1,7 +1,7 @@
 /** App wiring: data loading, router worker, map layers, panels. */
 
 import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
-import { CLOSURES_URL, GRAPH_BASE_URL, PLZ_TABLE_URL, REROUTE_DEBOUNCE_MS } from './config';
+import { CLOSURES_URL, GRAPH_BASE_URL, OFFLINE_TILE_ERRORS, PLZ_TABLE_URL, REROUTE_DEBOUNCE_MS } from './config';
 import { AreaError, loadArea } from './data/area';
 import { type Manifest, parseManifest } from './data/manifest';
 import { type ChunkStore, IdbStore, MemoryStore } from './data/store';
@@ -17,6 +17,7 @@ import { areaErrorKey, downloadMb, energySummary, rangeSummary, routeErrorKey, r
 import { createProfilePanel } from './ui/profilePanel';
 import { createRouteChart } from './ui/routeChart';
 import { loadEnergySettings, loadProfile, saveEnergySettings, saveProfile } from './ui/profileStore';
+import { RoadsLayer } from './ui/roadsLayer';
 import { RouteLayer } from './ui/routeLayer';
 import { loadLastArea, saveLastArea } from './ui/areaStore';
 import { createPlacesPanel } from './ui/placesPanel';
@@ -81,6 +82,9 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
   );
   let manifest: Manifest | null = null;
   let areaLoaded = false;
+  const basemapSources = new Set(Object.keys(map.getStyle().sources ?? {}));
+  const roads = new RoadsLayer(map, router); // first: below the route and markers
+  watchBasemap(map, roads, basemapSources);
   const routeLayer = new RouteLayer(map);
   const chart = createRouteChart();
   let picker: PickerState = EMPTY;
@@ -232,6 +236,7 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
       );
       showArea(map, area.centre[0], area.centre[1], area.radiusKm);
       areaLoaded = true;
+      roads.refresh();
       void loadClosures();
       saveLastArea(storage, { plz: code, radiusKm: area.radiusKm });
       // Keep downloaded graph chunks from being evicted (best effort, iOS may still clear).
@@ -303,4 +308,41 @@ function safeLocalStorage(): Storage | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Switch the offline street map on while the basemap is unusable: local
+ * fallback style (style JSON unreachable), browser offline, or repeated tile
+ * errors (style cached by the service worker but tiles not).
+ */
+function watchBasemap(map: MapLibreMap, roads: RoadsLayer, basemapSources: Set<string>): void {
+  let tileErrors = 0;
+  let note: HTMLElement | null = null;
+  const update = () => {
+    const down = document.body.dataset.basemap === 'offline' || !navigator.onLine || tileErrors >= OFFLINE_TILE_ERRORS;
+    roads.setActive(down);
+    if (down && !note) {
+      document.querySelector('.offline-note')?.remove(); // replaces the plain fallback note
+      note = document.createElement('p');
+      note.className = 'offline-note';
+      note.textContent = t('map.offlineRoads');
+      document.body.append(note);
+    } else if (!down && note) {
+      note.remove();
+      note = null;
+    }
+  };
+  map.on('error', (ev) => {
+    const sourceId = (ev as { sourceId?: string }).sourceId;
+    if (sourceId && basemapSources.has(sourceId)) {
+      tileErrors++;
+      update();
+    }
+  });
+  window.addEventListener('offline', update);
+  window.addEventListener('online', () => {
+    tileErrors = 0;
+    update();
+  });
+  update();
 }

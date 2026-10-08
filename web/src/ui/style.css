@@ -140,7 +140,7 @@ body {
   position: absolute;
   left: 12px;
   right: 12px;
-  bottom: calc(48px + env(safe-area-inset-bottom));
+  bottom: calc(96px + env(safe-area-inset-bottom));
   margin: 0;
   padding: 8px 10px;
   border-radius: 8px;

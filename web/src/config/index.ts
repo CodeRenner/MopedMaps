@@ -264,3 +264,7 @@ export const VOICE_EARLY_S = 20;
 /** "Now" announcement at this distance (m) — or VOICE_NOW_S of travel when fast. */
 export const VOICE_NOW_M = 40;
 export const VOICE_NOW_S = 4;
+
+/** Offline street map: max road lines per view, and basemap tile errors that switch it on. */
+export const OFFLINE_ROADS_LIMIT = 40_000;
+export const OFFLINE_TILE_ERRORS = 3;

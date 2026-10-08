@@ -15,6 +15,7 @@
 | Graph `manifest.json` | SW runtime cache, network-first | ✅ last seen version |
 | Basemap style, sprites, fonts | SW runtime cache, stale-while-revalidate | ✅ once seen online |
 | Basemap tiles (OpenFreeMap) | browser HTTP cache only | ⚠️ only what the browser still has; no bulk caching (provider policy) |
+| Offline street map | drawn from the loaded graph chunks (IndexedDB) | ✅ roads of the loaded area, no names |
 | Routing, risk, energy | runs in a Web Worker, no network | ✅ |
 
 If the basemap style can't load at all, the app switches to a built-in
@@ -37,3 +38,11 @@ next area load.
   DECISIONS.md). Without network the map may show only the plain background.
 - Routes only within the loaded radius around the chosen PLZ.
 - First start must be online (to install the service worker and load data).
+
+## Offline street map
+When the basemap is unusable — local fallback style, `navigator.onLine === false`, or
+`OFFLINE_TILE_ERRORS` (3) tile errors from basemap sources — the app draws the road network of the
+loaded area from the router's graph (`router/roads.ts`, `ui/roadsLayer.ts`): the worker returns the
+edges inside the current view (classes by zoom: trunk/primary below z10 … service from z13.5, at most
+`OFFLINE_ROADS_LIMIT` = 40,000 lines), redrawn after each move. Start/destination taps, routing and
+navigation work on top of it. No street names (the graph does not store them).

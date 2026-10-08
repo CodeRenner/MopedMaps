@@ -1,13 +1,17 @@
 name: Deploy
 
 # Builds the web app and deploys it together with the graph tiles of a
-# graph-build run to Cloudflare Pages (one project for app + tiles).
+# graph-build run and a fresh road-closures file to Cloudflare Pages (one
+# project for app + tiles). Runs on push, daily, and after graph builds.
 
 on:
   push:
     branches: [main]
     paths: ["web/**", ".github/workflows/deploy.yml"]
   workflow_dispatch:
+  # Daily redeploy with a fresh road-closures file (closures.json).
+  schedule:
+    - cron: "30 2 * * *"
   workflow_call:
     inputs:
       graph-run-id:
@@ -44,6 +48,12 @@ jobs:
         run: |
           npm ci
           npm run build
+
+      # Road closures (MobiData BW + Stadt Freiburg, dl-de/by-2-0), stdlib only.
+      # Optional: without it the app simply routes without closures.
+      - name: Fetch road closures
+        continue-on-error: true
+        run: PYTHONPATH=pipeline/src python3 -m mopedmaps_pipeline.closures web/dist/closures.json
 
       - name: Find graph build
         id: graph

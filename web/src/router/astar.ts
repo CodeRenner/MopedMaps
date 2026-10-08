@@ -7,6 +7,7 @@
  * not estimated (stays admissible); energy (step 6) must also stay >= 0.
  */
 
+import { CLOSURE_AVOID_PENALTY_S } from '../config';
 import { edgeEnergy } from './energy';
 import type { Graph } from './graph';
 import { haversineM } from './geo';
@@ -81,8 +82,13 @@ export function findRoute(
     for (let a = g.arcStart[u]!; a < g.arcStart[u + 1]!; a++) {
       const v = g.arcTarget[a]!;
       if (closed[v]) continue;
-      const c = edgeCost(g.edges[g.arcEdge[a]!]!, g.arcForward[a] === 1, profile, weights);
+      const ei = g.arcEdge[a]!;
+      const fwd = g.arcForward[a] === 1;
+      const cs = g.closures;
+      if (cs && (fwd ? cs.closedFwd[ei] : cs.closedBwd[ei])) continue; // road closed
+      let c = edgeCost(g.edges[ei]!, fwd, profile, weights);
       if (c === Infinity) continue;
+      if (cs?.avoid[ei]) c += weights.time * CLOSURE_AVOID_PENALTY_S;
       const gv = gu + c;
       if (gv < gScore[v]!) {
         gScore[v] = gv;

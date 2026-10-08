@@ -1,12 +1,14 @@
 /** Message protocol between the UI thread and the router worker. */
 
 import type { CostWeights, VehicleProfile } from './profile';
+import type { Closure } from './closures';
 import type { RouteProfile } from './routeProfile';
 
 export type LatLon = [number, number];
 
 export type RouterRequest =
   | { type: 'load'; id: number; chunks: ArrayBuffer[] }
+  | { type: 'closures'; id: number; closures: Closure[]; now: number }
   | {
       type: 'route';
       id: number;
@@ -34,6 +36,7 @@ export interface RouteResult {
 
 export type RouterResponse =
   | { type: 'loaded'; id: number; nodeCount: number; edgeCount: number }
+  | { type: 'closures'; id: number; matched: string[] }
   | { type: 'route'; id: number; route: RouteResult }
   | { type: 'no-route'; id: number; reason: NoRouteReason }
   | { type: 'error'; id: number; message: string };

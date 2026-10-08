@@ -1060,3 +1060,13 @@ route (Eschholz -> Markgrafen -> Uffhauser) at b = 1.
   cross-language, DTV risk + routing test); actionlint ok.
 - Not yet verified: matching rate on real BW data (needs the next graph build).
 - Next: daily roadworks/closures file (GitHub Action) + router blocking; then graph build and Freiburg check.
+### Iteration 64 — daily road closures (2026-10-08)
+- What: branch `feature/closures`. Pipeline `closures.py` (stdlib): MobiData BW ROAD_CLOSED lines -> `closed`,
+  Freiburg "Vollsperrung" polygons -> `avoid`; Deploy workflow writes `dist/closures.json` on every deploy and
+  daily (cron 02:30 UTC). App: worker matches closures to edges (`router/closures.ts`), A* skips closed
+  directions and adds 600 s for avoid areas; map layer; attribution; SW network-first; docs/closures.md.
+- Real data (2026-10-08): 343 BW closures + 9 Freiburg full closures (386 KB). Freiburg area: 3 BW lines and
+  8 Freiburg polygons matched. R1 at b = 1 avoids the full closure "Haslacher Straße Kreuzung Markgrafenstraße"
+  (falls back to the B3 corridor). Browser: closures drawn, attribution shown.
+- Tests: pytest (new test_closures.py), vitest 166 passed (closures matching/routing, SW policy), actionlint ok.
+- Next: user review/merge (#19 traffic volume, closures PR); graph build for DTV.

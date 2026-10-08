@@ -39,3 +39,11 @@ describe('cache versioning', () => {
     expect(hashList(['x'])).toBe(hashList(['x']));
   });
 });
+
+describe('closures file', () => {
+  it('is network-first (fresh daily, still offline)', async () => {
+    const { strategyFor } = await import('../src/sw/policy');
+    const scope = new URL('https://x.test/');
+    expect(strategyFor(new URL('https://x.test/closures.json'), scope, new Set(), false)).toBe('network-first');
+  });
+});

@@ -219,3 +219,12 @@ export const RISK_DTV_POINTS: readonly (readonly [number, number])[] = [
 ];
 /** Urban roads (limit <= RISK_DIFF_URBAN_MAX_KMH) get this share; calm 30 km/h roads none. */
 export const RISK_DTV_URBAN_FACTOR = 0.5;
+// --- Road closures (daily closures.json, docs/closures.md) ----------------------
+/** A closure line matches an edge when this share of the edge lies within CLOSURE_MATCH_M of it. */
+export const CLOSURE_MATCH_M = 15;
+export const CLOSURE_MATCH_SHARE = 0.7;
+/** "Avoid" areas (city construction sites with a full closure somewhere inside): share of the edge inside. */
+export const CLOSURE_AVOID_SHARE = 0.6;
+/** Extra cost (s) for edges in an "avoid" area: used only if there is no reasonable detour. */
+export const CLOSURE_AVOID_PENALTY_S = 600;
+export const CLOSURES_URL = './closures.json';

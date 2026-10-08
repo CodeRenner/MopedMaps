@@ -2,7 +2,8 @@
  * Caching strategy per request (pure, no imports, so it bundles into sw.js).
  *
  * - precache: app shell + PLZ table, cached at install, served cache-first
- * - network-first: graph manifest (must see new builds, works offline)
+ * - network-first: graph manifest and the daily closures file (must see
+ *   new versions, still work offline)
  * - stale-while-revalidate: basemap style JSON, sprites and glyphs (small;
  *   needed so the map can start offline)
  * - passthrough: graph chunks (already in IndexedDB) and basemap tiles
@@ -23,7 +24,7 @@ export function strategyFor(
   if (url.origin === scope.origin && url.pathname.startsWith(scope.pathname)) {
     const rel = url.pathname.slice(scope.pathname.length);
     if (isNavigation) return 'precache'; // served from cached index.html
-    if (rel === 'graph/manifest.json') return 'network-first';
+    if (rel === 'graph/manifest.json' || rel === 'closures.json') return 'network-first';
     if (rel.startsWith('graph/')) return 'passthrough';
     if (precache.has(rel)) return 'precache';
     return 'passthrough';

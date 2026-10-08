@@ -8,6 +8,7 @@
  */
 
 import { AccessFlag, type Chunk, type ChunkEdge, type TileKey } from './chunk';
+import type { ClosureState } from './closures';
 
 export interface Graph {
   nodeCount: number;
@@ -25,6 +26,8 @@ export interface Graph {
   arcEdge: Uint32Array;
   /** 1 if the arc runs along the edge (from -> to), 0 if against it. */
   arcForward: Uint8Array;
+  /** Active road closures (closures.ts), if any were applied. */
+  closures?: ClosureState;
 }
 
 const keyStr = (k: TileKey): string => `${k[0]},${k[1]}`;

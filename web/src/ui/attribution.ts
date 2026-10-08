@@ -13,7 +13,9 @@ export const ELEVATION_ATTRIBUTION =
 
 export const TRAFFIC_ATTRIBUTION =
   'Verkehrsmengen: <a href="https://mobidata-bw.de/dataset/karte_strassenverkehrszaehlung" target="_blank" rel="noopener">Verkehrsministerium BW</a> (<a href="https://www.govdata.de/dl-de/by-2-0" target="_blank" rel="noopener">dl-de/by-2-0</a>, bearbeitet)';
+export const CLOSURES_ATTRIBUTION =
+  'Sperrungen: <a href="https://mobidata-bw.de/dataset/baustelleninformationen-baden-wurttemberg" target="_blank" rel="noopener">MobiData BW</a>, <a href="https://www.freiburg.de/pb/231323.html" target="_blank" rel="noopener">Stadt Freiburg</a> (<a href="https://www.govdata.de/dl-de/by-2-0" target="_blank" rel="noopener">dl-de/by-2-0</a>)';
 
 export function appAttributions(): string[] {
-  return [OSM_ATTRIBUTION, GEONAMES_ATTRIBUTION, ELEVATION_ATTRIBUTION, TRAFFIC_ATTRIBUTION];
+  return [OSM_ATTRIBUTION, GEONAMES_ATTRIBUTION, ELEVATION_ATTRIBUTION, TRAFFIC_ATTRIBUTION, CLOSURES_ATTRIBUTION];
 }

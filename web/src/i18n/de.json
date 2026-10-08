@@ -91,6 +91,7 @@
   "prefs.level.plus": "wichtiger (×2)",
   "prefs.hint": "− halbiert, + verdoppelt den Einfluss. Wirkt zusammen mit dem Gewicht Sicherheit.",
   "prefs.coverage": "Baustellen-Sperrungen gibt es nur für Baden-Württemberg, Sachsen, Brandenburg und Berlin, gemessene Verkehrsmengen nur für Baden-Württemberg, Bayern, Nordrhein-Westfalen, Sachsen, Brandenburg, Berlin und Hamburg. Andere Länder veröffentlichen diese Daten nicht unter einer freien Lizenz – aus Lizenzgründen fehlen sie dort; die App schätzt den Verkehr dann aus dem Straßentyp.",
+  "prefs.coverageToggle": "Datenverfügbarkeit nach Bundesland",
   "places.title": "Ziele",
   "places.home": "Zuhause",
   "places.work": "Arbeit",

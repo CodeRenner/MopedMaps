@@ -23,5 +23,13 @@ export function createMap(container: HTMLElement): MapLibreMap {
     'bottom-right',
   );
   map.addControl(new NavigationControl({ showCompass: false }), 'top-right');
+  // With all data sources the attribution spans several lines; start it
+  // collapsed behind MapLibre's (i) button instead of covering the map.
+  collapseAttribution(container);
+  map.once('load', () => collapseAttribution(container));
   return map;
+}
+
+export function collapseAttribution(container: HTMLElement): void {
+  container.querySelector('.maplibregl-ctrl-attrib.maplibregl-compact')?.classList.remove('maplibregl-compact-show');
 }

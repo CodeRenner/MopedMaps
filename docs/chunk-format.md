@@ -68,7 +68,7 @@ Edges are undirected; direction is governed by the oneway flags.
 | 27  | uint8  | reserved                                                      |
 | 28  | uint32 | byte offset of this edge's shape in the geometry section      |
 | 32  | uint16 | number of intermediate shape points                           |
-| 34  | uint16 | reserved                                                      |
+| 34  | uint16 | traffic volume DTV / 10 (vehicles/day, official counts); 0 = unknown (since 2026-10, older builds 0) |
 
 Access flags: `1` MOPED, `2` MOFA, `4` MOTORROAD, `8` DESTINATION,
 `16` ONEWAY, `32` ONEWAY_REVERSE. Motorway/trunk exclusion for vmax < 60 is

@@ -204,3 +204,18 @@ export const NAV_ARRIVAL_M = 30;
 export const NAV_TURN_MIN_DEG = 35;
 /** Map zoom while navigating. */
 export const NAV_ZOOM = 16.5;
+
+// --- Traffic volume risk (official counts, docs/risk-model.md) ------------------
+/**
+ * Risk points per km by traffic volume (DTV, vehicles/day), linearly
+ * interpolated between the points and constant beyond the last one.
+ * Roughly: quiet Kreisstraße (< 2,000) 0, busy Landstraße (8,000) +20,
+ * Bundesstraße with heavy traffic (>= 20,000) +45.
+ */
+export const RISK_DTV_POINTS: readonly (readonly [number, number])[] = [
+  [2000, 0],
+  [8000, 20],
+  [20000, 45],
+];
+/** Urban roads (limit <= RISK_DIFF_URBAN_MAX_KMH) get this share; calm 30 km/h roads none. */
+export const RISK_DTV_URBAN_FACTOR = 0.5;

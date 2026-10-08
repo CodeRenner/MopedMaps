@@ -108,3 +108,33 @@ describe.skipIf(!existsSync(BREMEN))('Bremen with risk (local data)', () => {
     expect(results[2]!.timeS).toBeGreaterThanOrEqual(results[0]!.timeS);
   });
 });
+
+describe('traffic volume risk', async () => {
+  const { dtvRiskPerKm } = await import('../src/router/profile');
+  it('interpolates points by DTV, halves them in town, ignores calm 30 roads', () => {
+    expect(dtvRiskPerKm(0, 100)).toBe(0); // unknown
+    expect(dtvRiskPerKm(1500, 100)).toBe(0);
+    expect(dtvRiskPerKm(5000, 100)).toBeCloseTo(10);
+    expect(dtvRiskPerKm(8000, 100)).toBe(20);
+    expect(dtvRiskPerKm(14000, 100)).toBeCloseTo(32.5);
+    expect(dtvRiskPerKm(51320, 100)).toBe(45);
+    expect(dtvRiskPerKm(8000, 50)).toBe(10);
+    expect(dtvRiskPerKm(51320, 30)).toBe(0);
+  });
+
+  it('a busy Landstraße loses against a quiet parallel one at moderate safety', () => {
+    const chunk: Chunk = {
+      key: [0, 0], tileSize: 0.25,
+      nodes: [[0, 0], [0, 0.02], [0.004, 0.01]],
+      heights: [null, null, null],
+      edges: [
+        e(0, 1, 2224, { roadClass: RoadClass.SECONDARY, maxspeedFwd: 70, maxspeedBwd: 70, risk: 120, dtv: 15000 }),
+        e(0, 2, 1150, { roadClass: RoadClass.TERTIARY, maxspeedFwd: 70, maxspeedBwd: 70, risk: 120, dtv: 1500 }),
+        e(2, 1, 1150, { roadClass: RoadClass.TERTIARY, maxspeedFwd: 70, maxspeedBwd: 70, risk: 120, dtv: 1500 }),
+      ],
+    };
+    const g = assembleGraph([chunk]);
+    expect(findRoute(g, 0, 1, MOPED, { time: 1, risk: 0, energy: 0 })!.nodes).toEqual([0, 1]);
+    expect(findRoute(g, 0, 1, MOPED, { time: 1, risk: 1, energy: 0 })!.nodes).toEqual([0, 2, 1]);
+  });
+});

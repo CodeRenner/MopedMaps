@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from mopedmaps_pipeline import tags as t
 from mopedmaps_pipeline.geo import bearing_deg, haversine_m, turn_deg
 from mopedmaps_pipeline.osm_xml import OsmData, Way
+from mopedmaps_pipeline.traffic import TrafficIndex
 
 
 @dataclass(frozen=True)
@@ -32,6 +33,7 @@ class Edge:
     signals: int  # traffic signals on the edge, excluding the start node
     ascent_m: float = 0.0  # climb along from -> to (filled by elevation.py)
     descent_m: float = 0.0  # drop along from -> to
+    dtv: int = 0  # traffic volume, vehicles/day (traffic.py); 0 = unknown
 
 
 @dataclass
@@ -65,6 +67,7 @@ def split_way(
     flags: t.AccessFlag,
     is_split: Callable[[int], bool],
     is_signal: Callable[[int], bool],
+    traffic: TrafficIndex | None = None,
 ) -> Iterator[Edge]:
     """Split one routable way into edges at junction nodes (shared by the
     in-memory and the streaming build so both produce identical edges)."""
@@ -98,10 +101,11 @@ def split_way(
             cycleway=cycleway,
             curvature_deg=_curvature(geom),
             signals=sum(1 for r in seg[1:] if is_signal(r)),
+            dtv=traffic.dtv(tags.get("ref"), *geom[len(geom) // 2]) if traffic else 0,
         )
 
 
-def build_graph(data: OsmData) -> Graph:
+def build_graph(data: OsmData, traffic: TrafficIndex | None = None) -> Graph:
     ways = _routable(data)
     usage: Counter[int] = Counter()
     for w, _ in ways:
@@ -120,6 +124,7 @@ def build_graph(data: OsmData) -> Graph:
                 flags,
                 is_split=lambda r: usage[r] >= 2,
                 is_signal=lambda r: data.node_tags.get(r, {}).get("highway") == "traffic_signals",
+                traffic=traffic,
             )
         )
 

@@ -1048,3 +1048,15 @@ route (Eschholz -> Markgrafen -> Uffhauser) at b = 1.
 - Not verified in the browser: arrival display (covered by unit test); real device GPS/wake lock (needs the user).
 - Tests: vitest 159 passed, tsc clean, build ok.
 - Next: user test on the phone; traffic data (report docs/research-traffic-data.md).
+
+### Iteration 63 — traffic volume (DTV) from BW counting stations (2026-10-08)
+- What: branch `feature/traffic-volume`. Pipeline `traffic.py` (CSV reader, ref normalisation incl. "B 3;B 31",
+  nearest same-ref station within 8 km), `Edge.dtv`, stored in the reserved uint16 of the edge record (DTV/10;
+  format stays v2, old tiles read 0 = unknown), `--traffic` CLI option, graph build resolves the CSV via the
+  MobiData BW CKAN API (optional step). Router: `dtvRiskPerKm` (0 / +20 / +45 at 2k / 8k / 20k vehicles/day,
+  half in town, none on 30 km/h roads). Attribution + DATA_SOURCES.md; research report committed.
+- Why: user decision after the data research (busy L/K roads look harmless by OSM class alone).
+- Tests: pytest 97 passed (new test_traffic.py), ruff clean; vitest 162 passed (new traffic fixture decoded
+  cross-language, DTV risk + routing test); actionlint ok.
+- Not yet verified: matching rate on real BW data (needs the next graph build).
+- Next: daily roadworks/closures file (GitHub Action) + router blocking; then graph build and Freiburg check.

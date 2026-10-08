@@ -8,6 +8,8 @@ export const MAGIC = 'MMG1';
 /** Latest format; v1 (no node heights) is still decoded. */
 export const VERSION = 2;
 export const HEIGHT_UNKNOWN = -32768;
+/** Edge DTV is stored in units of this many vehicles/day (pipeline config.TRAFFIC_DTV_UNIT). */
+export const DTV_UNIT = 10;
 const COORD_SCALE = 1e7;
 const HEADER_SIZE = 32;
 const NODE_SIZE_V1 = 8;
@@ -61,6 +63,8 @@ export interface ChunkEdge {
   ascentM: number;
   descentM: number;
   risk: number;
+  /** Traffic volume, vehicles/day (official counts); 0 or missing = unknown. */
+  dtv?: number;
   /** Intermediate shape points as [lat, lon]; endpoints are the nodes. */
   shape: [number, number][];
 }
@@ -170,6 +174,7 @@ export function decodeChunk(data: ArrayBuffer | Uint8Array): Chunk {
       ascentM: v.getUint16(pos + 22, true) / 10,
       descentM: v.getUint16(pos + 24, true) / 10,
       risk: v.getUint8(pos + 26),
+      dtv: v.getUint16(pos + 34, true) * DTV_UNIT,
       shape,
     };
   }

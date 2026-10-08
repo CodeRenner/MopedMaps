@@ -16,6 +16,7 @@ from mopedmaps_pipeline.osm_xml import OsmData, Way
 KEEP_KEYS = frozenset(
     {
         "highway",
+        "ref",
         "area",
         "junction",
         "access",

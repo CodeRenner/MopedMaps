@@ -39,9 +39,27 @@ export function runtimeRiskPerKm(e: ChunkEdge, forward: boolean, p: VehicleProfi
     limit <= cfg.RISK_DIFF_URBAN_MAX_KMH
       ? cfg.RISK_DIFF_URBAN_FACTOR
       : (cfg.RISK_DIFF_CLASS_FACTOR[e.roadClass] ?? cfg.RISK_DIFF_DEFAULT_FACTOR);
-  const base = diff * factor - signalRefund;
+  const base = diff * factor - signalRefund + dtvRiskPerKm(e.dtv ?? 0, limit);
   if (limit <= cfg.RISK_CALM_MAIN_ROAD_MAX_KMH) return base - (cfg.RISK_CLASS_POINTS_BY_CLASS[e.roadClass] ?? 0);
   return base + (cfg.RISK_MAIN_ROAD_POINTS[e.roadClass] ?? 0);
+}
+
+/** Risk points per km from the traffic volume (0 if unknown or on calm <= 30 km/h roads). */
+export function dtvRiskPerKm(dtv: number, limit: number): number {
+  if (dtv <= 0 || limit <= cfg.RISK_CALM_MAIN_ROAD_MAX_KMH) return 0;
+  const pts = cfg.RISK_DTV_POINTS;
+  let v = pts[pts.length - 1]![1];
+  if (dtv <= pts[0]![0]) v = pts[0]![1];
+  else
+    for (let i = 1; i < pts.length; i++) {
+      const [x0, y0] = pts[i - 1]!;
+      const [x1, y1] = pts[i]!;
+      if (dtv <= x1) {
+        v = y0 + ((y1 - y0) * (dtv - x0)) / (x1 - x0);
+        break;
+      }
+    }
+  return limit <= cfg.RISK_DIFF_URBAN_MAX_KMH ? v * cfg.RISK_DTV_URBAN_FACTOR : v;
 }
 
 /** Risk contribution of an edge in "risk points" (score per km × km), >= 0. 0 if not computed. */

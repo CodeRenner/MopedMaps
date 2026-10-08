@@ -13,10 +13,17 @@ from mopedmaps_pipeline.chunks import decode_chunk, split_into_chunks, tile_name
 from mopedmaps_pipeline.elevation import apply_elevation
 from mopedmaps_pipeline.graph import build_graph
 from mopedmaps_pipeline.osm_xml import read_osm_xml
+from mopedmaps_pipeline.traffic import TrafficIndex
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "pipeline" / "tests" / "fixtures"
 OUT = ROOT / "web" / "test" / "fixtures"
+
+
+# Every edge gets the same DTV (traffic fixture for the TS decoder).
+class _AllRoads(TrafficIndex):
+    def dtv(self, ref_tag: str | None, lat: float, lon: float) -> int:
+        return 12_340
 
 
 class _Ramp:
@@ -28,12 +35,13 @@ class _Ramp:
 
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
-    for osm, prefix, dem in (
-        ("small.osm", "small", None),
-        ("cross_tile.osm", "cross_tile", None),
-        ("small.osm", "small_dem", _Ramp()),
+    for osm, prefix, dem, traffic in (
+        ("small.osm", "small", None, None),
+        ("cross_tile.osm", "cross_tile", None, None),
+        ("small.osm", "small_dem", _Ramp(), None),
+        ("small.osm", "small_traffic", None, _AllRoads([])),
     ):
-        graph = build_graph(read_osm_xml(SRC / osm))
+        graph = build_graph(read_osm_xml(SRC / osm), traffic)
         if dem is not None:
             graph, _ = apply_elevation(graph, dem)
         chunks = split_into_chunks(graph)

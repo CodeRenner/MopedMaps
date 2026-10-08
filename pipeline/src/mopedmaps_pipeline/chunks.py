@@ -57,6 +57,7 @@ class DecodedEdge:
     descent_m: float
     risk: int
     shape: list[tuple[float, float]]  # intermediate points only
+    dtv: int = 0  # vehicles/day, 0 = unknown
 
 
 @dataclass
@@ -167,7 +168,7 @@ def encode_tile(
             0,  # reserved
             offset,
             len(e.geometry) - 2,
-            0,  # reserved
+            min(round(e.dtv / config.TRAFFIC_DTV_UNIT), 0xFFFF),  # DTV / 10, 0 = unknown
         )
         n_edges += 1
     header = HEADER.pack(
@@ -233,7 +234,7 @@ def decode_chunk(buf: bytes) -> Chunk:
         r = EDGE.unpack_from(buf, pos)
         pos += EDGE.size
         (fi, ti, dx, dy, rc, fl, msf, msb, attrs, sig, len_dm, curv, asc, desc, risk, _,
-         goff, gcnt, _) = r  # fmt: skip
+         goff, gcnt, dtv10) = r  # fmt: skip
         shape = []
         lat, lon = (_e7(c) for c in chunk.nodes[fi])
         gp = geom_start + goff
@@ -263,6 +264,7 @@ def decode_chunk(buf: bytes) -> Chunk:
                 descent_m=desc / 10,
                 risk=risk,
                 shape=shape,
+                dtv=dtv10 * config.TRAFFIC_DTV_UNIT,
             )
         )
     if geom_start + n_geom != len(buf):

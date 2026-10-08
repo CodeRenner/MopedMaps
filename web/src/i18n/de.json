@@ -109,5 +109,16 @@
   "voice.meters": "{n} Metern",
   "voice.km": "{n} Kilometern",
   "voice.on": "Sprachansagen an",
-  "voice.off": "Sprachansagen aus"
+  "voice.off": "Sprachansagen aus",
+  "welcome.title": "Willkommen bei MopedMaps",
+  "welcome.safety": "Die Verkehrsregeln und Schilder vor Ort gehen immer vor. Bediene die App nicht während der Fahrt.",
+  "welcome.noWarranty": "Routen, Tempolimits, Sperrungen und Reichweite beruhen auf offenen Daten (OpenStreetMap u. a.) und können falsch oder veraltet sein – ohne Gewähr.",
+  "welcome.privacy": "Kein Konto, kein Tracking: Einstellungen, Ziele und Kartendaten bleiben auf deinem Gerät.",
+  "welcome.ios.install": "iPhone: Über „Teilen → Zum Home-Bildschirm“ als App installieren – dann funktioniert sie auch offline.",
+  "welcome.ios.screen": "iPhone: Beim Navigieren muss der Bildschirm an und die App im Vordergrund bleiben (kein GPS im Hintergrund).",
+  "welcome.ios.voice": "iPhone: Für Sprachansagen den Stummschalter ausschalten.",
+  "welcome.android.install": "Android: Über das Browser-Menü „App installieren“ – dann funktioniert sie auch offline.",
+  "welcome.android.battery": "Android: Beim Navigieren muss der Bildschirm an bleiben; Energiesparmodus kann die Ortung bremsen.",
+  "welcome.desktop.plan": "Am Computer eignet sich die App zum Planen; zum Navigieren das Handy verwenden.",
+  "welcome.accept": "Verstanden"
 }

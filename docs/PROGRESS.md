@@ -1126,6 +1126,13 @@ Follow-up idea: let the graph build's deploy check out `main` to avoid shipping 
 - Not verifiable here: real voice output on iOS (needs the device).
 - Tests: vitest 189 passed (new voice.test.ts).
 
+### Iteration 70 — one-time notice per device (2026-10-08)
+- What: branch `feature/welcome`. `ui/welcome.ts`: on first start a dialog with safety ("rules and signs on site
+  take precedence, do not operate while riding"), no-warranty note on open data, privacy note, plus device tips
+  (iOS: add to home screen, screen on / no background GPS, silent switch; Android: install, screen on / battery
+  saver; desktop: for planning). Accepted once per device (`mopedmaps.welcome`, versioned to re-show later).
+- Browser (phone viewport): dialog readable, "Verstanden" stores it, not shown again after reload.
+- Tests: vitest 192 passed (platform detection incl. iPadOS, items, versioned acceptance).
 ### Iteration 71 — reliable scheduled runs (2026-10-08)
 - Schedules: graph build monthly (3rd 02:00 UTC), deploy daily (02:30 UTC, fresh closures) — neither has run on
   schedule yet (deploy schedule added today; next graph build 2026-11-03).

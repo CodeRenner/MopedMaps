@@ -32,3 +32,6 @@ ignored: the router has no time of day; the base `maxspeed` is used.
 - Roadworks/closures: yes, as a **daily static file** built by a GitHub Action (user decision "täglich"),
   not fetched live in the browser. This relaxes CLAUDE.md "No live data" for closures only; no traffic jams.
 - Live congestion: no (no free source; commercial APIs need keys).
+
+## Default safety weight (2026-10-08)
+New installs start with time 1 and safety 1.5 (user decision; before 0.5). Stored settings are kept.

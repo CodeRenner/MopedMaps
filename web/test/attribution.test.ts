@@ -16,6 +16,12 @@ describe('compliance', () => {
     for (const src of ['MobiData BW', 'Freiburg', 'Sachsen', 'Brandenburg', 'VIZ Berlin']) expect(all).toContain(src);
   });
 
+  it('names every traffic-volume source', () => {
+    const all = appAttributions().join(' ');
+    for (const src of ['Verkehrsministerium BW', 'BAYSIS', 'Straßen.NRW', 'LASuV Sachsen', 'LS Brandenburg', 'Berlin', 'Hamburg'])
+      expect(all).toContain(src);
+  });
+
   it('never uses openstreetmap.org tile servers', () => {
     expect(BASEMAP_STYLE_URL).not.toMatch(/tile\.openstreetmap\.org/);
   });

@@ -90,11 +90,24 @@ the summary) always uses neutral settings so it stays comparable.
 Baden-Württemberg counting stations (Verkehrsministerium BW, dl-de/by-2-0,
 5,600 points on A/B/L/K roads, DTV 2024). The pipeline gives each edge the
 DTV of the nearest station on a road with the same `ref` within 8 km
-(`pipeline/src/mopedmaps_pipeline/traffic.py`); otherwise 0 = unknown. City
-streets (Gemeindestraßen) have no free counts; outside BW the value is 0.
-Details and other sources: `docs/research-traffic-data.md`.
+(`pipeline/src/mopedmaps_pipeline/traffic.py`); otherwise 0 = unknown.
+
+Six more states publish their counted sections as **lines** under open
+licences (`traffic_lines.py`): Bayern 2021 (B/St/K, CC BY 4.0), NRW 2021
+(A/B/L/K, dl-de/zero), Brandenburg 2021, Sachsen 2021 (dl-de/by), Berlin DTVw
+2023 (main network incl. city streets, weekday counts, dl-de/zero) and Hamburg
+HVS 2019 (main roads, dl-de/by). An edge (class up to residential) takes the
+DTV of a section segment within 20 m of its midpoint that runs within 30° of
+the edge and whose road number does not contradict the edge's `ref`
+(`TRAFFIC_LINE_*`); line matches win over BW stations. Coverage check
+2026-10-08: Hamburg primary 94 %, secondary 88 %; Berlin trunk/primary/
+secondary 96–98 %, tertiary 70 %. The other states (and Niedersachsen, whose
+terms say "nicht zur Navigation geeignet") are left out for licence reasons;
+there the value is 0 and the road-class proxy applies.
+Details: `docs/research-traffic-data.md`, `docs/research-data-germany.md`.
 
 ## Not modelled yet
-- Accident statistics; traffic counts outside Baden-Württemberg and on city streets.
+- Accident statistics; traffic counts in states without open data (see above) and on most
+  city streets outside Berlin.
 - Signal direction (`traffic_signals:direction`) and merging signal nodes of
   one junction in the pipeline; would allow a realistic per-junction wait.

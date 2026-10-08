@@ -25,7 +25,6 @@ from __future__ import annotations
 
 import io
 import json
-import math
 import re
 import sys
 import urllib.request
@@ -33,6 +32,8 @@ import zipfile
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
+
+from mopedmaps_pipeline.geo import utm_to_latlon
 
 MOBIDATA_URL = "https://api.mobidata-bw.de/datasets/traffic/roadworks/roadworks_geojson.json"
 FREIBURG_URL = (
@@ -141,37 +142,6 @@ def from_freiburg(doc: Json, now: datetime) -> list[Json]:
                 "polygon": _ll(ring),
             })  # fmt: skip
     return out
-
-
-# ETRS89 / UTM (GRS80), inverse transverse Mercator after Krüger (sub-mm in-zone).
-_A, _F = 6378137.0, 1 / 298.257222101
-_N = _F / (2 - _F)
-_RECT = _A / (1 + _N) * (1 + _N**2 / 4 + _N**4 / 64)
-_BETA = (
-    _N / 2 - 2 * _N**2 / 3 + 37 * _N**3 / 96,
-    _N**2 / 48 + _N**3 / 15,
-    17 * _N**3 / 480,
-)
-_DELTA = (
-    2 * _N - 2 * _N**2 / 3 - 2 * _N**3,
-    7 * _N**2 / 3 - 8 * _N**3 / 5,
-    56 * _N**3 / 15,
-)
-
-
-def utm_to_latlon(e: float, n: float, zone: int = 33) -> tuple[float, float]:
-    xi = n / (0.9996 * _RECT)
-    eta = (e - 500000) / (0.9996 * _RECT)
-    xi_ = xi - sum(
-        b * math.sin(2 * j * xi) * math.cosh(2 * j * eta) for j, b in enumerate(_BETA, 1)
-    )
-    eta_ = eta - sum(
-        b * math.cos(2 * j * xi) * math.sinh(2 * j * eta) for j, b in enumerate(_BETA, 1)
-    )
-    chi = math.asin(math.sin(xi_) / math.cosh(eta_))
-    lat = chi + sum(d * math.sin(2 * j * chi) for j, d in enumerate(_DELTA, 1))
-    lon = math.radians(zone * 6 - 183) + math.atan2(math.sinh(eta_), math.cos(xi_))
-    return math.degrees(lat), math.degrees(lon)
 
 
 def _de_day(s: str | None, end_of_day: bool) -> str | None:

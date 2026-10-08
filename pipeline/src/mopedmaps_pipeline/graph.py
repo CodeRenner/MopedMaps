@@ -101,7 +101,9 @@ def split_way(
             cycleway=cycleway,
             curvature_deg=_curvature(geom),
             signals=sum(1 for r in seg[1:] if is_signal(r)),
-            dtv=traffic.dtv(tags.get("ref"), *geom[len(geom) // 2]) if traffic else 0,
+            dtv=traffic.edge_dtv(tags.get("ref"), geom)
+            if traffic is not None and rc <= t.RoadClass.RESIDENTIAL
+            else 0,
         )
 
 

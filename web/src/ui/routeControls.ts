@@ -1,21 +1,38 @@
-/** Small floating buttons at the bottom centre: reverse (⇄) and cancel (✕) the route. */
+/**
+ * Small floating buttons at the bottom centre: my location as start (◎),
+ * reverse (⇄), start navigation (▶) and cancel (✕).
+ */
 
 import { t } from '../i18n';
+import { keepAboveAttribution } from './aboveAttribution';
+
+export interface RouteControlsState {
+  areaLoaded: boolean;
+  hasStart: boolean;
+  hasRoute: boolean;
+}
 
 export interface RouteControls {
   root: HTMLElement;
-  /** Cancel is shown once a start is set, reverse once a route exists. */
-  update(hasStart: boolean, hasRoute: boolean): void;
+  update(s: RouteControlsState): void;
 }
 
-export function createRouteControls(onReverse: () => void, onCancel: () => void): RouteControls {
+export interface RouteControlActions {
+  onLocate(): void;
+  onReverse(): void;
+  onNavigate(): void;
+  onCancel(): void;
+}
+
+export function createRouteControls(a: RouteControlActions): RouteControls {
   const root = document.createElement('div');
   root.className = 'route-controls';
   root.hidden = true;
-  const button = (label: string, text: string, onClick: () => void) => {
+  const button = (label: string, text: string, onClick: () => void, cls = '') => {
     const b = document.createElement('button');
     b.type = 'button';
     b.textContent = text;
+    b.className = cls;
     b.setAttribute('aria-label', label);
     b.title = label;
     b.addEventListener('click', (ev) => {
@@ -25,24 +42,20 @@ export function createRouteControls(onReverse: () => void, onCancel: () => void)
     root.append(b);
     return b;
   };
-  const rev = button(t('route.reverse'), '⇄', onReverse);
-  button(t('route.cancel'), '✕', onCancel);
-  // Sit just above the map attribution, whose height depends on screen width
-  // and on whether it is expanded (it wraps to several lines on phones).
-  const place = () => {
-    const attrib = document.querySelector('.maplibregl-ctrl-attrib');
-    const top = attrib?.getBoundingClientRect().top;
-    root.style.bottom = top ? `${Math.max(12, window.innerHeight - top + 10)}px` : '';
-  };
-  const attrib = document.querySelector('.maplibregl-ctrl-attrib');
-  if (attrib && 'ResizeObserver' in window) new ResizeObserver(place).observe(attrib);
-  window.addEventListener('resize', place);
+  const locate = button(t('nav.locate'), '◎', a.onLocate);
+  const rev = button(t('route.reverse'), '⇄', a.onReverse);
+  const go = button(t('nav.start'), '▶', a.onNavigate, 'primary');
+  const cancel = button(t('route.cancel'), '✕', a.onCancel);
+
+  const place = keepAboveAttribution(root);
   return {
     root,
-    update(hasStart, hasRoute) {
-      if (hasStart) place();
-      root.hidden = !hasStart;
-      rev.hidden = !hasRoute;
+    update(s) {
+      root.hidden = !s.areaLoaded;
+      locate.hidden = !s.areaLoaded;
+      rev.hidden = go.hidden = !s.hasRoute;
+      cancel.hidden = !s.hasStart;
+      if (!root.hidden) place();
     },
   };
 }

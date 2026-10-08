@@ -81,7 +81,7 @@ Static hosting on Cloudflare Pages (project `mopedmaps`, app + graph tiles):
 - Routes only inside the loaded radius around the chosen PLZ.
 - iOS: no background GPS (keep the screen on), web storage may be evicted —
   the app re-downloads chunks when needed.
-- No free-text address search (no server): PLZ / place name + tap on map.
+- Address/place search only inside the loaded area (offline index from OpenStreetMap, see docs/search.md); no typo tolerance.
 - No live traffic data. Germany only.
 - Full offline basemap needs own PMTiles (planned); offline, the map falls
   back to a plain background while routing keeps working.

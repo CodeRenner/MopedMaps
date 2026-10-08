@@ -5,6 +5,9 @@
 /graph/manifest.json
   ! Cache-Control
   Cache-Control: no-cache
+/graph/places/index.json
+  ! Cache-Control
+  Cache-Control: no-cache
 /sw.js
   Cache-Control: no-cache
 /index.html

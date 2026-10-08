@@ -83,6 +83,15 @@ jobs:
         continue-on-error: true
         run: python -m mopedmaps_pipeline.traffic_lines data/traffic-lines.jsonl.gz
 
+      # Addresses, streets and named places per tile for the offline search.
+      # Runs before the build, which deletes the extract. Optional: without it
+      # the app works, only the search field stays disabled.
+      - name: Build search data (addresses, places)
+        continue-on-error: true
+        run: |
+          python -m mopedmaps_pipeline places data/source.osm.pbf data/graph --workdir data
+          du -sh data/graph/places
+
       - name: Build tiles (streaming)
         run: |
           traffic=""

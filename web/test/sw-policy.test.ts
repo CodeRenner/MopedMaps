@@ -15,6 +15,8 @@ describe('service worker strategy', () => {
   it('graph: manifest network-first, chunks left to IndexedDB', () => {
     expect(s('https://example.test/app/graph/manifest.json')).toBe('network-first');
     expect(s('https://example.test/app/graph/212_35.mmg')).toBe('passthrough');
+    expect(s('https://example.test/app/graph/places/index.json')).toBe('network-first');
+    expect(s('https://example.test/app/graph/places/212_35.json')).toBe('passthrough');
   });
 
   it('caches only small basemap assets, never tiles', () => {

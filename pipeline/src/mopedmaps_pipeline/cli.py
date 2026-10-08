@@ -233,7 +233,33 @@ def main(argv: list[str] | None = None) -> int:
         "--bbox", type=int, nargs=4, metavar=("SOUTH", "WEST", "NORTH", "EAST"),
         help="integer degrees, north/east exclusive (default: Germany 47 5 55 16)",
     )  # fmt: skip
+    q = sub.add_parser(
+        "places", help="OSM extract -> per-tile addresses/places for the offline search"
+    )
+    q.add_argument("input", type=Path, help=".osm.pbf")
+    q.add_argument("output", type=Path, help="graph output directory (writes places/ inside)")
+    q.add_argument("--tile-size", type=float, default=config.TILE_SIZE_DEG)
+    q.add_argument("--workdir", type=Path, help="where to put temp files")
+    q.add_argument(
+        "--node-index", choices=["mem", "disk"], default="mem",
+        help="node locations in RAM (flex_mem) or a sparse file in the workdir",
+    )  # fmt: skip
     args = p.parse_args(argv)
+
+    if args.cmd == "places":
+        from mopedmaps_pipeline.places import build_places
+
+        work = args.workdir or args.output
+        work.mkdir(parents=True, exist_ok=True)
+        store = (
+            "flex_mem"
+            if args.node_index == "mem"
+            else f"sparse_file_array,{work / 'places-nodes.idx'}"
+        )
+        index = build_places(args.input, args.output, args.tile_size, args.workdir, store)
+        total = sum(t["gzip_bytes"] for t in index["tiles"].values())
+        print(json.dumps({**index["totals"], "tiles": len(index["tiles"]), "gzip_bytes": total}))
+        return 0
 
     if args.cmd == "dem-fetch":
         from mopedmaps_pipeline.dem import GERMANY_BBOX, fetch_tiles, tiles_for_bbox

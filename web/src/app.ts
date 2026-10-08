@@ -4,7 +4,8 @@ import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 import { CLOSURES_URL, GRAPH_BASE_URL, OFFLINE_TILE_ERRORS, PLZ_TABLE_URL, REROUTE_DEBOUNCE_MS } from './config';
 import { AreaError, loadArea } from './data/area';
 import { type Manifest, parseManifest } from './data/manifest';
-import { type ChunkStore, IdbStore, MemoryStore } from './data/store';
+import { loadSearchData } from './data/places';
+import { type ChunkStore, IdbStore, MemoryStore, type StoreName } from './data/store';
 import { getLocale, t } from './i18n';
 import { circleBounds, circlePolygon } from './location/circle';
 import { PlzIndex } from './location/plz';
@@ -21,6 +22,8 @@ import { RoadsLayer } from './ui/roadsLayer';
 import { RouteLayer } from './ui/routeLayer';
 import { loadLastArea, saveLastArea } from './ui/areaStore';
 import { createPlacesPanel } from './ui/placesPanel';
+import { createSearchBox } from './ui/searchBox';
+import type { SearchIndex } from './search/index';
 import { addRecent, clearFavourite, loadPlaces, type Place, savePlaces, setFavourite } from './ui/placesStore';
 import { showClosures } from './ui/closuresLayer';
 import { createRouteControls } from './ui/routeControls';
@@ -51,9 +54,9 @@ async function loadManifest(): Promise<Manifest> {
   }
 }
 
-async function openStore(): Promise<ChunkStore> {
+async function openStore(name: StoreName = 'chunks'): Promise<ChunkStore> {
   try {
-    return await IdbStore.open();
+    return await IdbStore.open(indexedDB, name);
   } catch {
     return new MemoryStore(); // private mode / storage disabled
   }
@@ -75,7 +78,7 @@ function showArea(map: MapLibreMap, lat: number, lon: number, km: number): void 
 }
 
 export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void> {
-  const [plzTable, store] = await Promise.all([fetchJson(PLZ_TABLE_URL), openStore()]);
+  const [plzTable, store, placesStore] = await Promise.all([fetchJson(PLZ_TABLE_URL), openStore(), openStore('places')]);
   const plz = new PlzIndex(plzTable as ConstructorParameters<typeof PlzIndex>[0]);
   const router: RouterPort = new WorkerRouterPort(
     new Worker(new URL('./router/worker.ts', import.meta.url), { type: 'module' }),
@@ -102,6 +105,11 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
     return e ? `${e.plz} ${e.name}` : `${p[0].toFixed(4)}, ${p[1].toFixed(4)}`;
   };
   let rerouteTimer: ReturnType<typeof setTimeout> | undefined;
+  // Offline search over the loaded area's addresses and places.
+  let searchIndex: SearchIndex | null = null;
+  let searchedTarget: { p: LatLon; label: string } | null = null;
+  const targetLabel = (p: LatLon): string =>
+    searchedTarget && searchedTarget.p[0] === p[0] && searchedTarget.p[1] === p[1] ? searchedTarget.label : placeLabel(p);
 
   let currentRoute: RouteResult | null = null;
   const updateControls = () =>
@@ -122,15 +130,17 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
       { enableHighAccuracy: true, timeout: 15_000, maximumAge: 10_000 },
     );
   };
+  /** Route to a place: from the current start, or from the GPS position. */
+  const goToPlace = (place: Pick<Place, 'lat' | 'lon'>) => {
+    const target: LatLon = [place.lat, place.lon];
+    if (picker.start) setPicker({ start: picker.start, target });
+    else {
+      setPicker({ start: null, target }); // a map tap now sets the start
+      withLocation((p) => setPicker({ start: p, target }));
+    }
+  };
   const placesPanel = createPlacesPanel({
-    go(place: Place) {
-      const target: LatLon = [place.lat, place.lon];
-      if (picker.start) setPicker({ start: picker.start, target });
-      else {
-        setPicker({ start: null, target }); // a map tap now sets the start
-        withLocation((p) => setPicker({ start: p, target }));
-      }
-    },
+    go: goToPlace,
     saveFavourite(key) {
       if (!picker.target) return;
       places = setFavourite(places, key, picker.target, placeLabel(picker.target), Date.now());
@@ -196,7 +206,7 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
       routeLayer.setRoute(res.route.geometry, speedBands(res.route.geometry, res.route.profile));
       currentRoute = res.route;
       updateControls();
-      places = addRecent(places, picker.target, placeLabel(picker.target), Date.now());
+      places = addRecent(places, picker.target, targetLabel(picker.target), Date.now());
       savePlaces(storage, places);
       placesPanel.render(places, true);
       chart.setProfile(res.route.profile);
@@ -219,6 +229,29 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
     }
   }
 
+  const searchBox = createSearchBox({
+    search(q) {
+      const c = map.getCenter();
+      return searchIndex?.search(q, [c.lat, c.lng]) ?? [];
+    },
+    pick(r) {
+      const p: LatLon = [r.lat, r.lon];
+      searchedTarget = { p, label: r.detail ? `${r.label}, ${r.detail}` : r.label };
+      map.easeTo({ center: [r.lon, r.lat], zoom: Math.max(map.getZoom(), 14) });
+      goToPlace(r);
+    },
+  });
+  const loadSearch = async (files: string[]): Promise<void> => {
+    searchBox.setReady(false);
+    try {
+      searchIndex = await loadSearchData(files, { baseUrl: GRAPH_BASE_URL, store: placesStore });
+    } catch (err) {
+      console.warn('search data unavailable', err);
+      searchIndex = null;
+    }
+    searchBox.setReady(searchIndex !== null);
+  };
+
   const loadAreaFor = async (code: string, radiusKm: number): Promise<void> => {
     panel.setBusy(true);
     try {
@@ -237,6 +270,7 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
       showArea(map, area.centre[0], area.centre[1], area.radiusKm);
       areaLoaded = true;
       roads.refresh();
+      void loadSearch(area.files);
       void loadClosures();
       saveLastArea(storage, { plz: code, radiusKm: area.radiusKm });
       // Keep downloaded graph chunks from being evicted (best effort, iOS may still clear).
@@ -291,7 +325,7 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
       if (areaLoaded && wantsRoute(picker)) void computeRoute();
     }, REROUTE_DEBOUNCE_MS);
   });
-  ui.append(panel.root, placesPanel.root, chart.root, profilePanel, weightsPanel);
+  ui.append(panel.root, searchBox.root, placesPanel.root, chart.root, profilePanel, weightsPanel);
 
   // Reopen the last area: its chunks are usually still in IndexedDB, so this is
   // fast and works offline; if they were evicted they are downloaded again.

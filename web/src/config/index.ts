@@ -192,3 +192,15 @@ export const ROUTE_BAND_RED_ABOVE_KMH = 70;
  * get the class default (e.g. 100) and would flash red at every junction.
  */
 export const ROUTE_BAND_MIN_M = 100;
+
+// --- Navigation mode -----------------------------------------------------------
+/** Off route when farther than this from the route line (m), or the GPS accuracy if worse. */
+export const NAV_OFF_ROUTE_M = 40;
+/** ... for this many consecutive position fixes, then reroute. */
+export const NAV_OFF_ROUTE_FIXES = 3;
+/** Destination reached within this distance (m). */
+export const NAV_ARRIVAL_M = 30;
+/** Turns sharper than this (degrees) get an instruction. */
+export const NAV_TURN_MIN_DEG = 35;
+/** Map zoom while navigating. */
+export const NAV_ZOOM = 16.5;

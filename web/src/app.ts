@@ -18,6 +18,7 @@ import { createProfilePanel } from './ui/profilePanel';
 import { createRouteChart } from './ui/routeChart';
 import { loadEnergySettings, loadProfile, saveEnergySettings, saveProfile } from './ui/profileStore';
 import { RouteLayer } from './ui/routeLayer';
+import { loadLastArea, saveLastArea } from './ui/areaStore';
 import { createRouteControls } from './ui/routeControls';
 import { EMPTY, hintKey, type PickerState, reverse, tap, wantsRoute } from './ui/routePicker';
 import { speedBands } from './ui/speedBands';
@@ -144,7 +145,7 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
     }
   }
 
-  const panel = createAreaPanel(plz, async (code, radiusKm) => {
+  const loadAreaFor = async (code: string, radiusKm: number): Promise<void> => {
     panel.setBusy(true);
     try {
       manifest ??= await loadManifest();
@@ -161,6 +162,7 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
       );
       showArea(map, area.centre[0], area.centre[1], area.radiusKm);
       areaLoaded = true;
+      saveLastArea(storage, { plz: code, radiusKm: area.radiusKm });
       // Keep downloaded graph chunks from being evicted (best effort, iOS may still clear).
       void requestPersistence(navigator.storage);
       panel.setCollapsed(true);
@@ -180,7 +182,8 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
     } finally {
       panel.setBusy(false);
     }
-  });
+  };
+  const panel = createAreaPanel(plz, (code, radiusKm) => void loadAreaFor(code, radiusKm));
   const profilePanel = createProfilePanel(profile, (p) => {
     profile = p;
     saveProfile(storage, p);
@@ -195,6 +198,14 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
     }, REROUTE_DEBOUNCE_MS);
   });
   ui.append(panel.root, chart.root, profilePanel, weightsPanel);
+
+  // Reopen the last area: its chunks are usually still in IndexedDB, so this is
+  // fast and works offline; if they were evicted they are downloaded again.
+  const last = loadLastArea(storage);
+  if (last) {
+    panel.setValues(last.plz, last.radiusKm);
+    void loadAreaFor(last.plz, last.radiusKm);
+  }
 }
 
 function safeLocalStorage(): Storage | null {

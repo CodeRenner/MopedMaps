@@ -356,3 +356,49 @@ body.nav-mode .route-controls {
   background: #2b6cb0;
   color: #fff;
 }
+.places summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.places-body {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+.places-favs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.fav-wrap {
+  display: flex;
+  gap: 4px;
+}
+.panel .places-favs button.fav {
+  flex: 1;
+  background: #e2e8f0;
+  color: #1a202c;
+}
+.panel .places-favs button.fav:not(:disabled) {
+  background: #2b6cb0;
+  color: #fff;
+}
+.panel .places-favs button.fav-save,
+.panel .places-favs button.fav-clear {
+  width: 40px;
+  padding: 6px 0;
+  background: #e2e8f0;
+  color: #1a202c;
+}
+.places-recent {
+  display: grid;
+  gap: 4px;
+}
+.panel .places-recent button.recent {
+  text-align: left;
+  font-size: 14px;
+  padding: 8px 10px;
+  background: #f7fafc;
+  color: #1a202c;
+  border: 1px solid #e2e8f0;
+}

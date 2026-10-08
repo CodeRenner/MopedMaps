@@ -89,5 +89,16 @@
   "prefs.level.minus": "less important (×0.5)",
   "prefs.level.neutral": "normal (×1)",
   "prefs.level.plus": "more important (×2)",
-  "prefs.hint": "− halves, + doubles the influence. Works together with the safety weight."
+  "prefs.hint": "− halves, + doubles the influence. Works together with the safety weight.",
+  "places.title": "Destinations",
+  "places.home": "Home",
+  "places.work": "Work",
+  "places.notSet": "Not set yet – choose a destination, then tap ＋.",
+  "places.save.home": "Save current destination as home",
+  "places.save.work": "Save current destination as work",
+  "places.clear.home": "Remove home",
+  "places.clear.work": "Remove work",
+  "places.empty": "No recent destinations yet.",
+  "places.saveHint": "＋ saves the current destination as home or work.",
+  "places.goHint": "Tap: route from the current start (or your location) there."
 }

@@ -81,3 +81,22 @@ describe('bundled plz.json', () => {
     }
   });
 });
+
+describe('nearest PLZ', async () => {
+  const { PlzIndex } = await import('../src/location/plz');
+  it('labels a point by the closest PLZ centre', () => {
+    const idx = new PlzIndex({ v: 1, attribution: 'x', rows: [['79098', 47.9942, 7.847, 'Freiburg im Breisgau'], ['79312', 48.121, 7.849, 'Emmendingen']] });
+    expect(idx.nearest(48.12525, 7.8558)?.plz).toBe('79312');
+    expect(idx.nearest(48.0079, 7.8509)?.name).toBe('Freiburg im Breisgau');
+  });
+
+  it('skips company and authority postal codes', async () => {
+    const { isPlaceName } = await import('../src/location/plz');
+    for (const n of ['Deutsche Post AG NL Filialen', 'Finanzamt Kiel', 'Commerzbank AG', 'Humboldt-Universität', 'R+V Versicherung'])
+      expect(isPlaceName(n)).toBe(false);
+    for (const n of ['Freiamt', 'Landesbergen', 'Postbauer-Heng', 'Bad Krozingen', 'Freiburg im Breisgau'])
+      expect(isPlaceName(n)).toBe(true);
+    const idx = new PlzIndex({ v: 1, attribution: 'x', rows: [['28195', 53.08, 8.80, 'Bremen'], ['28375', 53.0832, 8.8121, 'Deutsche Post AG NL Filialen']] });
+    expect(idx.nearest(53.0832, 8.8121)?.name).toBe('Bremen');
+  });
+});

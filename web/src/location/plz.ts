@@ -18,6 +18,18 @@ interface PlzTable {
 
 const PLZ_RE = /^\d{5}$/;
 
+/**
+ * GeoNames also lists ~1,450 large-customer postal codes named after companies
+ * and authorities ("Deutsche Post AG …", "Finanzamt …"). They are skipped when
+ * labelling a place; real places like Freiamt or Landesbergen stay.
+ */
+const NON_PLACE_RE =
+  /(\b(AG|GmbH|KG|SE|eG|e\.\s?V\.|Post|Postbank|Bank|Sparkasse|Volksbank|Versicherung|Zentrale|Center|Centrum|Postfach|NL|Niederlassung|Filiale|Filialdirektion|Verlag|Behörde|Ministerium|Ministerpräsident|Universität|Hochschule|Klinikum|Klinik|Rundfunk|Stadtwerke|Landesbank|Landeshauptstadt|Landratsamt|Telekom|Krankenkasse|Gericht|Stadtverwaltung|Bundesarchiv|Bundesknappschaft|Service)\b|(Finanz|Versorgungs|Tiefbau|kriminal|präsidial|verwaltungs|Bundes|post)amt\b|-Verlag|-Universität|-Versicherung|-Bank|-AG\b|&|\d)/i;
+
+export function isPlaceName(name: string): boolean {
+  return !NON_PLACE_RE.test(name);
+}
+
 /** Lowercase, strip diacritics and map ß -> ss, for forgiving name search. */
 export function normalizeName(s: string): string {
   return s
@@ -48,6 +60,22 @@ export class PlzIndex {
 
   get size(): number {
     return this.entries.length;
+  }
+
+  /** PLZ area of a real place whose centre is closest to a point (a coarse, offline place label). */
+  nearest(lat: number, lon: number): PlzEntry | undefined {
+    const k = Math.cos((lat * Math.PI) / 180);
+    let best: PlzEntry | undefined;
+    let bd = Infinity;
+    for (const e of this.entries) {
+      if (!isPlaceName(e.name)) continue;
+      const d = (e.lat - lat) ** 2 + ((e.lon - lon) * k) ** 2;
+      if (d < bd) {
+        bd = d;
+        best = e;
+      }
+    }
+    return best;
   }
 
   /** Exact lookup; undefined if unknown or malformed. */

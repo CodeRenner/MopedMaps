@@ -59,5 +59,7 @@
   "route.range.reserve": "Achtung: weniger als {reserve} % Reserve übrig",
   "route.range.electricShort": "{share} % Akku",
   "route.range.combustionShort": "{share} % Tank",
-  "route.range.short": "Reicht nicht ohne Laden/Tanken"
+  "route.range.short": "Reicht nicht ohne Laden/Tanken",
+  "route.reverse": "Route umdrehen",
+  "route.cancel": "Route abbrechen"
 }

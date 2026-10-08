@@ -59,5 +59,7 @@
   "route.range.reserve": "Warning: less than {reserve} % reserve left",
   "route.range.electricShort": "{share} % battery",
   "route.range.combustionShort": "{share} % tank",
-  "route.range.short": "Not enough without recharging/refuelling"
+  "route.range.short": "Not enough without recharging/refuelling",
+  "route.reverse": "Reverse route",
+  "route.cancel": "Cancel route"
 }

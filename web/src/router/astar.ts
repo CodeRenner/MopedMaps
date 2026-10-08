@@ -16,6 +16,7 @@ import {
   DEFAULT_WEIGHTS,
   edgeCost,
   edgeRisk,
+  limitKmh,
   speedKmh,
   travelTimeS,
   type VehicleProfile,
@@ -124,6 +125,8 @@ function buildRoute(
   const heightOf = (v: number) => (Number.isNaN(g.height[v]!) ? null : g.height[v]!);
   const heightM = [heightOf(start)];
   const speeds: number[] = [];
+  const limits: number[] = [];
+  const geomIndex = [0];
   for (const a of arcs) {
     const e = g.edges[g.arcEdge[a]!]!;
     const fwd = g.arcForward[a] === 1;
@@ -140,8 +143,10 @@ function buildRoute(
     distM.push(distanceM);
     heightM.push(heightOf(v));
     speeds.push(speedKmh(e, fwd, profile));
+    limits.push(limitKmh(e, fwd));
+    geomIndex.push(geometry.length - 1);
   }
-  const routeProfile: RouteProfile = { distM, heightM, speedKmh: speeds };
+  const routeProfile: RouteProfile = { distM, heightM, speedKmh: speeds, limitKmh: limits, geomIndex };
   // Node heights (format v2) are smoothed and give a far better total than
   // summing per-edge climbs; fall back to the edges for v1 tiles.
   const ascentM = hasFullHeights(routeProfile) ? climbWithHysteresis(heightM) : edgeAscentM;

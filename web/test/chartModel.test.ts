@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { chartSeries, downsample, niceTicks, type Pt, speedSteps, svgPath, valueAt } from '../src/chart/model';
-import type { RouteProfile } from '../src/router/routeProfile';
+import type { ChartProfile } from '../src/chart/model';
 
-const P: RouteProfile = {
+const P: ChartProfile = {
   distM: [0, 100, 300, 600, 1000],
   heightM: [10, 12, null, 20, 15],
   speedKmh: [30, 30, 45, 30],

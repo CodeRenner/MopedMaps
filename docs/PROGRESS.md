@@ -1125,3 +1125,12 @@ Follow-up idea: let the graph build's deploy check out `main` to avoid shipping 
   "In 300 Metern rechts abbiegen.", "Jetzt rechts abbiegen."; muted -> no speech, setting stored.
 - Not verifiable here: real voice output on iOS (needs the device).
 - Tests: vitest 189 passed (new voice.test.ts).
+
+### Iteration 71 — reliable scheduled runs (2026-10-08)
+- Schedules: graph build monthly (3rd 02:00 UTC), deploy daily (02:30 UTC, fresh closures) — neither has run on
+  schedule yet (deploy schedule added today; next graph build 2026-11-03).
+- Fixes: deploy always checks out `main` (graph-build deploys shipped an hour-old app twice); deploy fails instead
+  of shipping a site without tiles; new `keepalive.yml` (weekly, actions: write) re-enables the scheduled workflows
+  via the API against GitHub's 60-day inactivity rule (kept out of deploy.yml: the graph build calls deploy with
+  read-only actions permission). README documents the automatic tasks.
+- Data for other states: research running (docs/research-data-germany.md).

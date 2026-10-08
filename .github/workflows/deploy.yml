@@ -35,7 +35,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
+      # Always ship the latest app from main: when called by a graph build, the
+      # caller's commit can be an hour old (the app was rolled back twice).
       - uses: actions/checkout@v5
+        with:
+          ref: main
 
       - uses: actions/setup-node@v5
         with:
@@ -66,12 +70,13 @@ jobs:
               --status success --limit 1 --json databaseId --jq '.[0].databaseId')
           fi
           if [ -z "$RUN_ID" ]; then
-            echo "::warning::No successful graph build yet - deploying the app without map data."
+            # Never replace the live site with one without map data.
+            echo "::error::No successful graph build found - not deploying."
+            exit 1
           fi
           echo "run-id=$RUN_ID" >> "$GITHUB_OUTPUT"
 
       - name: Download graph tiles
-        if: steps.graph.outputs.run-id != ''
         uses: actions/download-artifact@v5
         with:
           name: graph-tiles

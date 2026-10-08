@@ -89,5 +89,16 @@
   "prefs.level.minus": "weniger wichtig (×0,5)",
   "prefs.level.neutral": "normal (×1)",
   "prefs.level.plus": "wichtiger (×2)",
-  "prefs.hint": "− halbiert, + verdoppelt den Einfluss. Wirkt zusammen mit dem Gewicht Sicherheit."
+  "prefs.hint": "− halbiert, + verdoppelt den Einfluss. Wirkt zusammen mit dem Gewicht Sicherheit.",
+  "places.title": "Ziele",
+  "places.home": "Zuhause",
+  "places.work": "Arbeit",
+  "places.notSet": "Noch nicht gesetzt – Ziel wählen, dann ＋ tippen.",
+  "places.save.home": "Aktuelles Ziel als Zuhause speichern",
+  "places.save.work": "Aktuelles Ziel als Arbeit speichern",
+  "places.clear.home": "Zuhause löschen",
+  "places.clear.work": "Arbeit löschen",
+  "places.empty": "Noch keine letzten Ziele.",
+  "places.saveHint": "＋ speichert das aktuelle Ziel als Zuhause oder Arbeit.",
+  "places.goHint": "Antippen: Route vom aktuellen Start (oder deinem Standort) dorthin."
 }

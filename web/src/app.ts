@@ -19,6 +19,8 @@ import { createRouteChart } from './ui/routeChart';
 import { loadEnergySettings, loadProfile, saveEnergySettings, saveProfile } from './ui/profileStore';
 import { RouteLayer } from './ui/routeLayer';
 import { loadLastArea, saveLastArea } from './ui/areaStore';
+import { createPlacesPanel } from './ui/placesPanel';
+import { addRecent, clearFavourite, loadPlaces, type Place, savePlaces, setFavourite } from './ui/placesStore';
 import { showClosures } from './ui/closuresLayer';
 import { createRouteControls } from './ui/routeControls';
 import { createNavigation } from './nav/navigation';
@@ -90,6 +92,11 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
     set: (d: VehicleProfile['drive'], s: EnergySettings) => saveEnergySettings(storage, d, s),
   };
   let weights: CostWeights = loadWeights(storage);
+  let places = loadPlaces(storage);
+  const placeLabel = (p: LatLon): string => {
+    const e = plz.nearest(p[0], p[1]);
+    return e ? `${e.plz} ${e.name}` : `${p[0].toFixed(4)}, ${p[1].toFixed(4)}`;
+  };
   let rerouteTimer: ReturnType<typeof setTimeout> | undefined;
 
   let currentRoute: RouteResult | null = null;
@@ -99,8 +106,40 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
     if (next === picker) return; // e.g. a stray tap while a route is shown
     picker = next;
     routeLayer.setPoints(picker);
+    placesPanel.render(places, picker.target !== null);
     void computeRoute();
   };
+  /** Current position as a start (navigator.geolocation), or an error status. */
+  const withLocation = (then: (p: LatLon) => void) => {
+    if (!navigator.geolocation) return panel.setStatus(t('nav.noGps'), true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => then([pos.coords.latitude, pos.coords.longitude]),
+      () => panel.setStatus(t('nav.noGps'), true),
+      { enableHighAccuracy: true, timeout: 15_000, maximumAge: 10_000 },
+    );
+  };
+  const placesPanel = createPlacesPanel({
+    go(place: Place) {
+      const target: LatLon = [place.lat, place.lon];
+      if (picker.start) setPicker({ start: picker.start, target });
+      else {
+        setPicker({ start: null, target }); // a map tap now sets the start
+        withLocation((p) => setPicker({ start: p, target }));
+      }
+    },
+    saveFavourite(key) {
+      if (!picker.target) return;
+      places = setFavourite(places, key, picker.target, placeLabel(picker.target), Date.now());
+      savePlaces(storage, places);
+      placesPanel.render(places, true);
+    },
+    clearFavourite(key) {
+      places = clearFavourite(places, key);
+      savePlaces(storage, places);
+      placesPanel.render(places, picker.target !== null);
+    },
+  });
+  placesPanel.render(places, false);
   const requestRoute = (from: LatLon, to: LatLon) =>
     router.request({ type: 'route', from, to, profile, weights });
   const navigation = createNavigation({
@@ -120,12 +159,7 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
   });
   const controls = createRouteControls({
     onLocate() {
-      if (!navigator.geolocation) return panel.setStatus(t('nav.noGps'), true);
-      navigator.geolocation.getCurrentPosition(
-        (pos) => setPicker({ start: [pos.coords.latitude, pos.coords.longitude], target: picker.target }),
-        () => panel.setStatus(t('nav.noGps'), true),
-        { enableHighAccuracy: true, timeout: 15_000, maximumAge: 10_000 },
-      );
+      withLocation((p) => setPicker({ start: p, target: picker.target }));
     },
     onReverse: () => setPicker(reverse(picker)),
     onNavigate() {
@@ -157,6 +191,9 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
       routeLayer.setRoute(res.route.geometry, speedBands(res.route.geometry, res.route.profile));
       currentRoute = res.route;
       updateControls();
+      places = addRecent(places, picker.target, placeLabel(picker.target), Date.now());
+      savePlaces(storage, places);
+      placesPanel.render(places, true);
       chart.setProfile(res.route.profile);
       const summary = t('route.summary', routeSummaryParams(getLocale(), res.route.distanceM, res.route.timeS));
       const r = res.route;
@@ -248,7 +285,7 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
       if (areaLoaded && wantsRoute(picker)) void computeRoute();
     }, REROUTE_DEBOUNCE_MS);
   });
-  ui.append(panel.root, chart.root, profilePanel, weightsPanel);
+  ui.append(panel.root, placesPanel.root, chart.root, profilePanel, weightsPanel);
 
   // Reopen the last area: its chunks are usually still in IndexedDB, so this is
   // fast and works offline; if they were evicted they are downloaded again.

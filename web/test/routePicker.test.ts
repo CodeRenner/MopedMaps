@@ -23,6 +23,10 @@ describe('route picker', () => {
     expect(reverse(EMPTY)).toBe(EMPTY);
   });
 
+  it('a destination chosen first (from the list) is kept when the start is tapped', () => {
+    expect(tap({ start: null, target: [2, 2] }, [1, 1])).toEqual({ start: [1, 1], target: [2, 2] });
+  });
+
   it('hints the start first', () => {
     expect(hintKey(EMPTY)).toBe('route.tapStart');
   });

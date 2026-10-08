@@ -15,7 +15,7 @@ export const EMPTY: PickerState = { start: null, target: null };
  * cancel it by accident; use `EMPTY` (cancel button) to start over.
  */
 export function tap(s: PickerState, p: LatLon): PickerState {
-  if (!s.start) return { start: p, target: null };
+  if (!s.start) return { start: p, target: s.target }; // keeps a destination chosen from the list
   if (!s.target) return { start: s.start, target: p };
   return s;
 }

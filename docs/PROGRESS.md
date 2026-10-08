@@ -1107,3 +1107,12 @@ excluded), 335 MB gzip. Its deploy job shipped the app of the dispatch commit ag
 (70f5c57). DTV coverage Freiburg–Emmendingen by length: primary 72 %, trunk 62 %, secondary 65 %, tertiary 51 %,
 unclassified 0 % (as expected). Calibration suite on the new tiles unchanged (R1, R2, Kandel <-> KKH).
 Follow-up idea: let the graph build's deploy check out `main` to avoid shipping an old app.
+
+### Iteration 68 — recent destinations and favourites (2026-10-08)
+- What: branch `feature/places`. `ui/placesStore.ts` (recent destinations, newest first, deduplicated within 75 m,
+  max 8; home/work), panel "Ziele" (⌂ Zuhause, ⚒ Arbeit, recent list; ＋ saves the current destination, ✕ removes).
+  Tapping a destination routes from the current start or, without one, from the GPS position; a destination chosen
+  first is kept when the start is tapped. Labels: nearest real place from the PLZ table (`PlzIndex.nearest`,
+  ~1,450 company/authority postal codes like "Deutsche Post AG …" skipped; Freiamt/Landesbergen kept).
+- Browser (Bremen): route -> recent "27809 Lemwerder", saved as home, cancel, tap Zuhause -> route from location.
+- Tests: vitest 183 passed.

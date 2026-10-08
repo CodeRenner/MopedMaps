@@ -1026,3 +1026,11 @@ route (Eschholz -> Markgrafen -> Uffhauser) at b = 1.
   viewport: buttons 10 px above the attribution; ✕ clears markers, chart and buttons.
 - Tests: vitest 151 passed, tsc clean, build ok.
 - Next: user review/merge; traffic-volume data research (user question).
+
+### Iteration 61 — reopen last area (2026-10-08)
+- What: branch `feature/remember-area`. `ui/areaStore.ts` stores PLZ + radius after a successful load; on start
+  the panel is prefilled and the area loads automatically (chunks from IndexedDB). Profile/weights/energy were
+  already persisted.
+- Browser check: load 28195 / 30 km, reload -> area back after ~1 s, panel collapsed, ready for taps.
+- Tests: vitest 152 passed, tsc clean.
+- Next: navigation mode (location, follow, slim UI).

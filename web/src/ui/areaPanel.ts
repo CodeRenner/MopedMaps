@@ -10,6 +10,8 @@ export interface AreaPanel {
   setBusy(busy: boolean): void;
   /** Collapse to the status line (after an area is loaded) or expand again. */
   setCollapsed(collapsed: boolean): void;
+  /** Prefill the inputs (e.g. with the last loaded area). */
+  setValues(plz: string, radiusKm: number): void;
 }
 
 const RADIUS_STEP_KM = 5;
@@ -93,6 +95,11 @@ export function createAreaPanel(
     setCollapsed(collapsed) {
       root.classList.toggle('collapsed', collapsed);
       change.hidden = !collapsed;
+    },
+    setValues(code, radiusKm) {
+      plzInput.value = code;
+      radius.value = String(radiusKm);
+      showRadius();
     },
   };
 }

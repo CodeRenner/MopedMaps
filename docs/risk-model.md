@@ -49,6 +49,14 @@ maps one signalised junction with several nodes) and junction penalties by
 class — 0.5 s on trunk/primary/secondary (right of way), 1 s tertiary, 2 s on
 smaller streets.
 
+Real speed in side streets: residential roads are driven at 0.8 × the posted
+limit (`CLASS_SPEED_FACTOR`: right-before-left, parked cars, speed bumps), so a
+30 km/h main road beats a parallel 30-zone rat-run. Calibrated on Kandel Döner
+(Rennweg) ↔ Kreiskrankenhaus Emmendingen at safety 1.5: before, the way back
+cut through Berggasse/Sonnhalde/Händelstraße (1.4 % cheaper than the
+Zähringer Straße); now both directions use Zähringer Straße (B3, 30) →
+Gundelfinger Straße. The earlier Freiburg calibration routes are unchanged.
+
 ## Calibration (Freiburg, 2026-10-08)
 Local Germany tiles, 45 km/h electric, routes checked with street names
 against a local rider's choices:

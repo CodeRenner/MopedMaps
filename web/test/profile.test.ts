@@ -15,7 +15,7 @@ const BIKE125: VehicleProfile = { vmaxKmh: 100, drive: 'combustion' };
 
 function edge(over: Partial<ChunkEdge> = {}): ChunkEdge {
   return {
-    fromIdx: 0, toIdx: 1, toTile: [0, 0], roadClass: RoadClass.RESIDENTIAL,
+    fromIdx: 0, toIdx: 1, toTile: [0, 0], roadClass: RoadClass.UNCLASSIFIED,
     flags: AccessFlag.MOPED | AccessFlag.MOFA, maxspeedFwd: null, maxspeedBwd: null,
     surface: Surface.PAVED, lit: null, cycleway: false, signals: 0, lengthM: 1000,
     curvatureDeg: 0, ascentM: 0, descentM: 0, risk: 0, shape: [], ...over,
@@ -54,7 +54,8 @@ describe('speed and time', () => {
     const e = edge({ roadClass: RoadClass.PRIMARY, maxspeedFwd: 30, maxspeedBwd: null });
     expect(speedKmh(e, true, BIKE125)).toBe(30);
     expect(speedKmh(e, false, BIKE125)).toBe(100); // rural default
-    expect(speedKmh(edge(), true, BIKE125)).toBe(50); // residential -> urban 50
+    const res = edge({ roadClass: RoadClass.RESIDENTIAL });
+    expect(speedKmh(res, true, BIKE125)).toBe(40); // residential -> urban 50, × 0.8 real speed in 30-zones/side streets
   });
 
   it('slows down on bad surface', () => {

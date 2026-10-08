@@ -14,7 +14,7 @@ const fixture = (f: string) => decodeChunk(readFileSync(join(__dirname, 'fixture
 
 function e(from: number, to: number, lengthM: number, over: Partial<ChunkEdge> = {}): ChunkEdge {
   return {
-    fromIdx: from, toIdx: to, toTile: [0, 0], roadClass: RoadClass.RESIDENTIAL,
+    fromIdx: from, toIdx: to, toTile: [0, 0], roadClass: RoadClass.UNCLASSIFIED,
     flags: AccessFlag.MOPED | AccessFlag.MOFA, maxspeedFwd: 30, maxspeedBwd: 30,
     surface: Surface.PAVED, lit: null, cycleway: false, signals: 0, lengthM,
     curvatureDeg: 0, ascentM: 0, descentM: 0, risk: 0, shape: [], ...over,

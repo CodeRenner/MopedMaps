@@ -1079,3 +1079,13 @@ route (Eschholz -> Markgrafen -> Uffhauser) at b = 1.
 - Also: PR #21 auto-update (user's phone kept the old app after deploy).
 - Tests: vitest (prefs storage, each factor, routing flip with "+ fast roads"), tsc clean.
 - Next: merge; check graph build (DTV) in Freiburg.
+
+### Iteration 66 — default safety 1.5, residential real speed (2026-10-08)
+- Default safety weight 1.5 for new installs (PR #23, user request).
+- User report: Kandel Döner (Rennweg 23a) -> KKH Emmendingen at time 1 / safety 1.5 uses Zähringer Straße (B3),
+  the way back a rat-run (Berggasse, Wildtalstraße, Rötebuckweg, Sonnhalde, Rotackerstraße, Händelstraße).
+  Analysis with live tiles + closures: not a closure; reversing the outbound path hits one-ways at
+  Gundelfinger/Zähringer Str.; forced return via Zähringer Straße costs only 1.4 % more (36.2 vs 35.5 min).
+  Fix: residential speed factor 0.8 (`CLASS_SPEED_FACTOR`). Suite (live tiles): K both directions via Zähringer
+  Straße from b = 1; R1 unchanged; R2 now stays on main roads up to b = 1.5.
+- Tests: vitest 173 passed (test helpers use a neutral class; residential factor asserted).

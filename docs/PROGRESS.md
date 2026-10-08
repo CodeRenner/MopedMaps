@@ -1034,3 +1034,17 @@ route (Eschholz -> Markgrafen -> Uffhauser) at b = 1.
 - Browser check: load 28195 / 30 km, reload -> area back after ~1 s, panel collapsed, ready for taps.
 - Tests: vitest 152 passed, tsc clean.
 - Next: navigation mode (location, follow, slim UI).
+
+### Iteration 62 — navigation mode (2026-10-08)
+- What: branch `feature/navigation` (stacked on `feature/remember-area`). Pure core `web/src/nav/progress.ts`
+  (projection onto the route, remaining distance/time share, arrival, off-route detector) and `maneuvers.ts`
+  (turns at junctions from geometry); `nav/navigation.ts` (watchPosition, follow camera jump-or-glide, heading,
+  wake lock, reroute, slim overlay); controls ◎ (my location as start) and ▶ (start navigation);
+  `ui/aboveAttribution.ts` keeps bottom elements above the attribution. Docs: docs/navigation.md.
+- Browser check with a simulated GPS track (Bremen Hbf -> Vegesack): slim UI, "In 80 m rechts abbiegen",
+  limit badge 50, remaining km/min/ETA, follow at zoom 16.5; a 150 m detour triggers "Neue Route …" after 3 fixes
+  and new instructions; ✕ restores the normal UI. Fixed during the check: camera lagged behind (jump when far,
+  glide 600 ms otherwise); bottom bar covered the attribution.
+- Not verified in the browser: arrival display (covered by unit test); real device GPS/wake lock (needs the user).
+- Tests: vitest 159 passed, tsc clean, build ok.
+- Next: user test on the phone; traffic data (report docs/research-traffic-data.md).

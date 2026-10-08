@@ -62,3 +62,14 @@ describe('maneuvers', () => {
     expect(turnKind(-150)).toBe('sharp-left');
   });
 });
+
+describe('nav text', async () => {
+  const { etaClock, navDistance } = await import('../src/nav/format');
+  it('formats distances and arrival time', () => {
+    expect(navDistance('de', 247)).toBe('250 m');
+    expect(navDistance('de', 4)).toBe('0 m');
+    expect(navDistance('de', 1240)).toBe('1,2 km');
+    expect(navDistance('en', 12_600)).toBe('13 km');
+    expect(etaClock(new Date(2026, 9, 8, 14, 20), 12 * 60 + 5)).toBe('14:32');
+  });
+});

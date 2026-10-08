@@ -20,6 +20,8 @@ import { loadEnergySettings, loadProfile, saveEnergySettings, saveProfile } from
 import { RouteLayer } from './ui/routeLayer';
 import { loadLastArea, saveLastArea } from './ui/areaStore';
 import { createRouteControls } from './ui/routeControls';
+import { createNavigation } from './nav/navigation';
+import type { LatLon, RouteResult } from './router/protocol';
 import { EMPTY, hintKey, type PickerState, reverse, tap, wantsRoute } from './ui/routePicker';
 import { speedBands } from './ui/speedBands';
 import { loadWeights, riskClass, saveWeights } from './ui/weights';
@@ -88,17 +90,47 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
   let weights: CostWeights = loadWeights(storage);
   let rerouteTimer: ReturnType<typeof setTimeout> | undefined;
 
+  let currentRoute: RouteResult | null = null;
+  const updateControls = () =>
+    controls.update({ areaLoaded, hasStart: picker.start !== null, hasRoute: currentRoute !== null });
   const setPicker = (next: PickerState) => {
     if (next === picker) return; // e.g. a stray tap while a route is shown
     picker = next;
     routeLayer.setPoints(picker);
-    controls.update(picker.start !== null, wantsRoute(picker));
     void computeRoute();
   };
-  const controls = createRouteControls(
-    () => setPicker(reverse(picker)),
-    () => setPicker(EMPTY),
-  );
+  const requestRoute = (from: LatLon, to: LatLon) =>
+    router.request({ type: 'route', from, to, profile, weights });
+  const navigation = createNavigation({
+    map,
+    async reroute(from) {
+      if (!picker.target) return null;
+      const res = await requestRoute(from, picker.target);
+      return res.type === 'route' ? res.route : null;
+    },
+    showRoute(r, from) {
+      picker = { start: from, target: picker.target };
+      routeLayer.setPoints(picker);
+      currentRoute = r;
+      routeLayer.setRoute(r.geometry, speedBands(r.geometry, r.profile));
+    },
+    onExit: () => updateControls(),
+  });
+  const controls = createRouteControls({
+    onLocate() {
+      if (!navigator.geolocation) return panel.setStatus(t('nav.noGps'), true);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setPicker({ start: [pos.coords.latitude, pos.coords.longitude], target: picker.target }),
+        () => panel.setStatus(t('nav.noGps'), true),
+        { enableHighAccuracy: true, timeout: 15_000, maximumAge: 10_000 },
+      );
+    },
+    onReverse: () => setPicker(reverse(picker)),
+    onNavigate() {
+      if (currentRoute) navigation.start(currentRoute);
+    },
+    onCancel: () => setPicker(EMPTY),
+  });
   document.body.append(controls.root);
 
   map.on('click', (ev) => {
@@ -109,22 +141,20 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
   async function computeRoute(): Promise<void> {
     routeLayer.setRoute(null);
     chart.setProfile(null);
+    currentRoute = null;
+    updateControls();
     if (!wantsRoute(picker)) {
       panel.setStatus(t(hintKey(picker)));
       return;
     }
     const seq = ++routeSeq;
     panel.setStatus(t('route.computing'));
-    const res = await router.request({
-      type: 'route',
-      from: picker.start,
-      to: picker.target,
-      profile,
-      weights,
-    });
+    const res = await requestRoute(picker.start, picker.target);
     if (seq !== routeSeq) return; // a newer tap superseded this request
     if (res.type === 'route') {
       routeLayer.setRoute(res.route.geometry, speedBands(res.route.geometry, res.route.profile));
+      currentRoute = res.route;
+      updateControls();
       chart.setProfile(res.route.profile);
       const summary = t('route.summary', routeSummaryParams(getLocale(), res.route.distanceM, res.route.timeS));
       const r = res.route;
@@ -167,8 +197,9 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
       void requestPersistence(navigator.storage);
       panel.setCollapsed(true);
       picker = EMPTY;
+      currentRoute = null;
       routeLayer.setPoints(picker);
-      controls.update(false, false);
+      updateControls();
       routeLayer.setRoute(null);
       chart.setProfile(null);
       panel.setStatus(

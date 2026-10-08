@@ -11,7 +11,7 @@ All numbers are first guesses meant to be tuned.
 |------|--------|
 | vmax ≤ 25 → edge needs the MOFA flag; otherwise the MOPED flag | `MOFA_MAX_VMAX_KMH` |
 | vmax < 60 → no motorway class and no `motorroad=yes` edges (StVO §18: design speed > 60 km/h required) | `MOTORWAY_MIN_VMAX_KMH` |
-| Cycleways/footways only with explicit `moped`/`mofa`/`motor_vehicle` permission | pipeline `tags.py` |
+| Cycleways/footways/tracks only with explicit `moped`/`mofa`/`motor_vehicle` permission (tracks: user decision 2026-10-08, "nur bei Schild") | pipeline `tags.py` |
 | Oneway restrictions | graph arcs |
 
 ## Travel time

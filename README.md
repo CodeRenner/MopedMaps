@@ -66,8 +66,14 @@ Static hosting on Cloudflare Pages (project `mopedmaps`, app + graph tiles):
 - `.github/workflows/graph-build.yml` — monthly (3rd, 02:00 UTC) or manual:
   Geofabrik extract + Copernicus GLO-30 → streaming build (~1 h for Germany)
   → tiles artifact (90 days) → deploy.
-- `.github/workflows/deploy.yml` — on pushes to `main` touching `web/`:
-  builds the app and deploys it with the tiles of the latest graph build.
+- `.github/workflows/deploy.yml` — on pushes to `main` touching `web/`, **daily at
+  02:30 UTC** and after each graph build: builds the latest `main`, fetches a fresh
+  road-closures file (`closures.json`) and deploys both with the tiles of the
+  latest successful graph build (it refuses to deploy without tiles).
+- `.github/workflows/keepalive.yml` — weekly: re-enables the scheduled workflows
+  via the API, because GitHub disables schedules in public repositories after
+  60 days without activity.
+- GitHub emails the repository owner when a scheduled run fails.
 - Required repository secrets: `CLOUDFLARE_API_TOKEN` (permission
   *Account → Cloudflare Pages → Edit*) and `CLOUDFLARE_ACCOUNT_ID`.
 

@@ -134,7 +134,9 @@ export function limitKmh(e: ChunkEdge, forward: boolean): number {
 /** Effective speed in km/h for one direction: min(limit, vmax) × surface. */
 export function speedKmh(e: ChunkEdge, forward: boolean, p: VehicleProfile): number {
   const limit = limitKmh(e, forward);
-  return Math.min(limit, p.vmaxKmh) * (cfg.SURFACE_SPEED_FACTOR[e.surface] ?? 1);
+  return (
+    Math.min(limit, p.vmaxKmh) * (cfg.SURFACE_SPEED_FACTOR[e.surface] ?? 1) * (cfg.CLASS_SPEED_FACTOR[e.roadClass] ?? 1)
+  );
 }
 
 /** Travel time in seconds including penalties. */

@@ -54,6 +54,13 @@ export const DEFAULT_SPEED_BY_CLASS_KMH: Record<number, number> = {
 };
 
 /** Multiplier on the effective speed by surface (small wheels, comfort). */
+/**
+ * Real average speed relative to the limit by road class: in residential
+ * 30-zones right-before-left, parked cars and speed bumps slow you down, so a
+ * 30 km/h main road is faster than a 30 km/h side street (calibrated on
+ * Freiburg routes, docs/risk-model.md).
+ */
+export const CLASS_SPEED_FACTOR: Record<number, number> = { 6: 0.8 };
 export const SURFACE_SPEED_FACTOR: Record<number, number> = {
   [Surface.UNKNOWN]: 1.0,
   [Surface.PAVED]: 1.0,

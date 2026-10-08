@@ -18,11 +18,12 @@ from __future__ import annotations
 import csv
 import re
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from pathlib import Path
 
 from mopedmaps_pipeline import config
 from mopedmaps_pipeline.geo import haversine_m
+from mopedmaps_pipeline.traffic_lines import LineIndex
 
 _REF_RE = re.compile(r"^\s*([ABLK])\s*(\d+[a-z]?)\s*$", re.IGNORECASE)
 
@@ -41,15 +42,30 @@ def way_refs(ref_tag: str | None) -> list[str]:
 
 
 class TrafficIndex:
-    """Stations grouped by road reference."""
+    """Stations grouped by road reference, plus optional section lines of other
+    states (traffic_lines.py)."""
 
-    def __init__(self, stations: Iterable[tuple[str, float, float, int]]) -> None:
+    def __init__(
+        self,
+        stations: Iterable[tuple[str, float, float, int]] = (),
+        lines: LineIndex | None = None,
+    ) -> None:
         self.by_ref: dict[str, list[tuple[float, float, int]]] = defaultdict(list)
         for ref, lat, lon, dtv in stations:
             self.by_ref[ref].append((lat, lon, dtv))
+        self.lines = lines
 
     def __len__(self) -> int:
         return sum(len(v) for v in self.by_ref.values())
+
+    def edge_dtv(self, ref_tag: str | None, geom: Sequence[tuple[float, float]]) -> int:
+        """DTV for an edge: a matching section line first (exact section), then the
+        nearest station on the same road; 0 if unknown."""
+        if self.lines is not None:
+            v = self.lines.dtv(ref_tag, geom)
+            if v:
+                return v
+        return self.dtv(ref_tag, *geom[len(geom) // 2]) if self.by_ref else 0
 
     def dtv(self, ref_tag: str | None, lat: float, lon: float) -> int:
         """DTV for a point on a road with OSM `ref` ref_tag; 0 if unknown."""

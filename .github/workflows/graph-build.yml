@@ -76,10 +76,18 @@ jobs:
           curl -fL --retry 3 -o data/traffic-bw.csv "$url"
           wc -l data/traffic-bw.csv
 
+      # Traffic volume of other states published as section lines under open
+      # licences (BY, NW, BB, SN, BE, HH; docs/research-data-germany.md).
+      # Optional like the BW file; a failing state is skipped inside the script.
+      - name: Fetch traffic counts (other states)
+        continue-on-error: true
+        run: python -m mopedmaps_pipeline.traffic_lines data/traffic-lines.jsonl.gz
+
       - name: Build tiles (streaming)
         run: |
           traffic=""
-          if [ -s data/traffic-bw.csv ]; then traffic="--traffic data/traffic-bw.csv"; else echo "::warning::No traffic counts - building without DTV."; fi
+          if [ -s data/traffic-bw.csv ]; then traffic="--traffic data/traffic-bw.csv"; else echo "::warning::No BW traffic counts."; fi
+          if [ -s data/traffic-lines.jsonl.gz ]; then traffic="$traffic --traffic data/traffic-lines.jsonl.gz"; else echo "::warning::No traffic section lines."; fi
           python -m mopedmaps_pipeline build data/source.osm.pbf data/graph \
             --streaming --dem data/dem --workdir data --delete-source --verify $traffic
           df -h .

@@ -1150,3 +1150,13 @@ Follow-up idea: let the graph build's deploy check out `main` to avoid shipping 
 - Real data: 1,303 closures (BW 347, Freiburg 9, SN 750, BB 148, BE 49), 958 KB / 240 KB gzip.
 - Tests: pytest 103 passed, vitest 193 passed.
 - Next: traffic volumes (DTV) for BY, NRW, BB, SN, BE, HH in the graph build (separate PR).
+### Iteration 73 — traffic volumes for six more states (2026-10-08)
+- What: branch `feature/dtv-more-states` (stacked on #30). `traffic_lines.py`: downloads BY, NW, BB, SN, BE, HH
+  section lines (GeoJSON/OGC API, stdlib shapefile+dbf reader, UTM → WGS84 now in `geo.py`), simplifies (3 m) and
+  writes `traffic-lines.jsonl.gz` (38k sections, ~3.8 MB); `LineIndex` grid match (≤ 20 m, ≤ 30°, ref must not
+  contradict); `--traffic` repeatable (CSV + lines); graph-build fetch step (optional, retries for NRW's flaky
+  server). App note + attribution list all states with data; Niedersachsen left out (licence terms).
+- Bug found while testing: a lines-only `TrafficIndex` was falsy (`__len__` counts stations) → `is not None`.
+- Checks (local Geofabrik extracts): Hamburg primary 94 %, secondary 88 %; Berlin trunk/primary/secondary 96–98 %,
+  tertiary 70 %. Live download: all six sources ok (NRW after one retry).
+- Tests: pytest 109 passed, vitest 194 passed. Takes effect with the next graph build (monthly, 2026-11-03, or manual).

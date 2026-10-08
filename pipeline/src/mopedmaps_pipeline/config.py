@@ -124,5 +124,11 @@ ELEVATION_SMOOTHING_ALPHA: Final[float] = 0.5
 # An edge takes the DTV of the nearest counting station on the same road
 # (same `ref`) within this distance; farther stations are ignored (unknown).
 TRAFFIC_MAX_DISTANCE_M: Final[float] = 8000.0
+# Section lines (traffic_lines.py): an edge takes the DTV of a section segment
+# within this distance of its midpoint, running within this angle of the edge.
+TRAFFIC_LINE_MAX_DISTANCE_M: Final[float] = 20.0
+TRAFFIC_LINE_MAX_ANGLE_DEG: Final[float] = 30.0
+# Douglas-Peucker tolerance when writing the normalised section file.
+TRAFFIC_LINE_SIMPLIFY_M: Final[float] = 3.0
 # Stored per edge in units of this many vehicles/day (uint16, 0 = unknown).
 TRAFFIC_DTV_UNIT: Final[int] = 10

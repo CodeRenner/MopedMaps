@@ -13,8 +13,13 @@ export const ELEVATION_ATTRIBUTION =
 
 export const TRAFFIC_ATTRIBUTION =
   'Verkehrsmengen: <a href="https://mobidata-bw.de/dataset/karte_strassenverkehrszaehlung" target="_blank" rel="noopener">Verkehrsministerium BW</a> (<a href="https://www.govdata.de/dl-de/by-2-0" target="_blank" rel="noopener">dl-de/by-2-0</a>, bearbeitet)';
+const DL_BY = '<a href="https://www.govdata.de/dl-de/by-2-0" target="_blank" rel="noopener">dl-de/by-2-0</a>';
 export const CLOSURES_ATTRIBUTION =
-  'Sperrungen: <a href="https://mobidata-bw.de/dataset/baustelleninformationen-baden-wurttemberg" target="_blank" rel="noopener">MobiData BW</a>, <a href="https://www.freiburg.de/pb/231323.html" target="_blank" rel="noopener">Stadt Freiburg</a> (<a href="https://www.govdata.de/dl-de/by-2-0" target="_blank" rel="noopener">dl-de/by-2-0</a>)';
+  'Sperrungen: <a href="https://mobidata-bw.de/dataset/baustelleninformationen-baden-wurttemberg" target="_blank" rel="noopener">MobiData BW</a>, ' +
+  '<a href="https://www.freiburg.de/pb/231323.html" target="_blank" rel="noopener">Stadt Freiburg</a>, ' +
+  '<a href="https://www.list.smwa.sachsen.de/" target="_blank" rel="noopener">Baustelleninformationssystem Sachsen (LISt)</a>, ' +
+  '<a href="https://geobasis-bb.de/" target="_blank" rel="noopener">Landesbetrieb Straßenwesen Brandenburg</a>, ' +
+  `<a href="https://viz.berlin.de/" target="_blank" rel="noopener">VIZ Berlin</a> (${DL_BY})`;
 
 export function appAttributions(): string[] {
   return [OSM_ATTRIBUTION, GEONAMES_ATTRIBUTION, ELEVATION_ATTRIBUTION, TRAFFIC_ATTRIBUTION, CLOSURES_ATTRIBUTION];

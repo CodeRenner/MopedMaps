@@ -90,7 +90,10 @@ export function createWeightsPanel(initial: CostWeights, onChange: (w: CostWeigh
   const prefsHint = document.createElement('p');
   prefsHint.className = 'hint-muted';
   prefsHint.textContent = t('prefs.hint');
-  prefs.append(prefsHint);
+  const coverage = document.createElement('p');
+  coverage.className = 'hint-muted';
+  coverage.textContent = t('prefs.coverage');
+  prefs.append(prefsHint, coverage);
   root.append(prefs);
   return root;
 }

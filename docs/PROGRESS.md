@@ -1141,3 +1141,12 @@ Follow-up idea: let the graph build's deploy check out `main` to avoid shipping 
   via the API against GitHub's 60-day inactivity rule (kept out of deploy.yml: the graph build calls deploy with
   read-only actions permission). README documents the automatic tasks.
 - Data for other states: research running (docs/research-data-germany.md).
+### Iteration 72 — closures for Sachsen, Brandenburg, Berlin (2026-10-08)
+- What: branch `feature/closures-more-states`. User: "von denen übernehmen wo es kein problem ist" + note in the app
+  that only these are used for licence reasons. `closures.py`: Sachsen SPERRINFOSYS (UTM33 → WGS84, Vollsperrung),
+  Brandenburg OGC API (Sperrung + "Vollsperrung" note, paged), Berlin VIZ (severity Vollsperrung). Attribution,
+  DATA_SOURCES, docs/closures.md; hint "prefs.coverage" in "Sicherheit im Detail". Research report committed.
+- Left out (licence): RP (no licence), SH-WFS incl. NI/MV/HH layers (unclear), all Mobilithek-only states.
+- Real data: 1,303 closures (BW 347, Freiburg 9, SN 750, BB 148, BE 49), 958 KB / 240 KB gzip.
+- Tests: pytest 103 passed, vitest 193 passed.
+- Next: traffic volumes (DTV) for BY, NRW, BB, SN, BE, HH in the graph build (separate PR).

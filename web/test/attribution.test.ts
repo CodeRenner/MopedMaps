@@ -11,6 +11,11 @@ describe('compliance', () => {
     expect(all).toContain('CC BY 4.0');
   });
 
+  it('names every closures source', () => {
+    const all = appAttributions().join(' ');
+    for (const src of ['MobiData BW', 'Freiburg', 'Sachsen', 'Brandenburg', 'VIZ Berlin']) expect(all).toContain(src);
+  });
+
   it('never uses openstreetmap.org tile servers', () => {
     expect(BASEMAP_STYLE_URL).not.toMatch(/tile\.openstreetmap\.org/);
   });

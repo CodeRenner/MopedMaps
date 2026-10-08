@@ -14,3 +14,4 @@ dist/
 web/public/graph
 *.egg-info/
 web/public/closures.json
+web/test/_scratch/

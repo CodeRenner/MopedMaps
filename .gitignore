@@ -15,3 +15,4 @@ web/public/graph
 *.egg-info/
 web/public/closures.json
 web/test/_scratch/
+web/public/_sim.json

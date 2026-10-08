@@ -100,5 +100,14 @@
   "places.clear.work": "Arbeit löschen",
   "places.empty": "Noch keine letzten Ziele.",
   "places.saveHint": "＋ speichert das aktuelle Ziel als Zuhause oder Arbeit.",
-  "places.goHint": "Antippen: Route vom aktuellen Start (oder deinem Standort) dorthin."
+  "places.goHint": "Antippen: Route vom aktuellen Start (oder deinem Standort) dorthin.",
+  "voice.start": "Navigation gestartet.",
+  "voice.early": "In {dist} {turn}.",
+  "voice.now": "Jetzt {turn}.",
+  "voice.arrived": "Ziel erreicht.",
+  "voice.rerouted": "Neue Route berechnet.",
+  "voice.meters": "{n} Metern",
+  "voice.km": "{n} Kilometern",
+  "voice.on": "Sprachansagen an",
+  "voice.off": "Sprachansagen aus"
 }

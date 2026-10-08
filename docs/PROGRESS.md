@@ -1116,3 +1116,12 @@ Follow-up idea: let the graph build's deploy check out `main` to avoid shipping 
   ~1,450 company/authority postal codes like "Deutsche Post AG …" skipped; Freiamt/Landesbergen kept).
 - Browser (Bremen): route -> recent "27809 Lemwerder", saved as home, cancel, tap Zuhause -> route from location.
 - Tests: vitest 183 passed.
+
+### Iteration 69 — voice guidance (2026-10-08)
+- What: branch `feature/voice` (stacked on `feature/places`). `nav/voice.ts` (pure announcer: early + "now" per turn,
+  arrival, reroute; speed-dependent distances), `nav/speech.ts` (speechSynthesis, de-DE/en-GB, on/off stored),
+  🔊/🔇 button in the navigation bar, first announcement inside the ▶ tap (iOS gesture rule).
+- Browser with simulated GPS (speech recorded): "Navigation gestartet.", "In 150 Metern links abbiegen.",
+  "In 300 Metern rechts abbiegen.", "Jetzt rechts abbiegen."; muted -> no speech, setting stored.
+- Not verifiable here: real voice output on iOS (needs the device).
+- Tests: vitest 189 passed (new voice.test.ts).

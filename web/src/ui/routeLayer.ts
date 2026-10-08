@@ -3,8 +3,10 @@
 import { type GeoJSONSource, type Map as MapLibreMap, Marker } from 'maplibre-gl';
 import type { LatLon } from '../router/protocol';
 import type { PickerState } from './routePicker';
+import type { BandSection } from './speedBands';
 
 const SRC = 'route';
+const BANDS = 'route-bands';
 const EMPTY_LINE = { type: 'FeatureCollection' as const, features: [] };
 
 export class RouteLayer {
@@ -23,6 +25,16 @@ export class RouteLayer {
       layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: { 'line-color': '#2b6cb0', 'line-width': 5 },
     });
+    // Fast sections on top of the blue line: > 50 km/h orange, > 70 km/h red.
+    map.addSource(BANDS, { type: 'geojson', data: EMPTY_LINE });
+    map.addLayer({
+      id: 'route-bands', type: 'line', source: BANDS,
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: {
+        'line-color': ['match', ['get', 'band'], 'red', '#c53030', '#dd6b20'],
+        'line-width': 5,
+      },
+    });
   }
 
   setPoints(s: PickerState): void {
@@ -30,7 +42,15 @@ export class RouteLayer {
     place(this.targetMarker, s.target, this.map);
   }
 
-  setRoute(geometry: LatLon[] | null): void {
+  setRoute(geometry: LatLon[] | null, bands: BandSection[] = []): void {
+    this.map.getSource<GeoJSONSource>(BANDS)?.setData({
+      type: 'FeatureCollection',
+      features: bands.map((b) => ({
+        type: 'Feature' as const,
+        properties: { band: b.band },
+        geometry: { type: 'LineString' as const, coordinates: b.coords.map(([lat, lon]) => [lon, lat]) },
+      })),
+    });
     const src = this.map.getSource<GeoJSONSource>(SRC);
     if (!src) return;
     src.setData(

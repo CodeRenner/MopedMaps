@@ -12,6 +12,10 @@ export interface RouteProfile {
   heightM: (number | null)[];
   /** Effective speed on each traversed edge (km/h); one fewer than nodes. */
   speedKmh: number[];
+  /** Posted limit on each traversed edge (km/h, class default if unknown). */
+  limitKmh: number[];
+  /** Index into the route geometry where each node lies (same length as distM). */
+  geomIndex: number[];
 }
 
 /**

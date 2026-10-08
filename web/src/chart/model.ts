@@ -6,6 +6,9 @@
 import { ROUTE_CHART_MAX_POINTS } from '../config';
 import type { RouteProfile } from '../router/routeProfile';
 
+/** The part of the route profile the chart needs. */
+export type ChartProfile = Pick<RouteProfile, 'distM' | 'heightM' | 'speedKmh'>;
+
 /** [distance m, value] */
 export type Pt = [number, number];
 
@@ -18,7 +21,7 @@ export interface ChartSeries {
 }
 
 /** Step line for speed: each run of equal speed is one horizontal segment. */
-export function speedSteps(p: RouteProfile): Pt[] {
+export function speedSteps(p: ChartProfile): Pt[] {
   const out: Pt[] = [];
   for (let i = 0; i < p.speedKmh.length; i++) {
     const v = p.speedKmh[i]!;
@@ -66,7 +69,7 @@ export function downsample(pts: Pt[], maxPoints: number): Pt[] {
   return out;
 }
 
-export function chartSeries(p: RouteProfile, maxPoints: number = ROUTE_CHART_MAX_POINTS): ChartSeries {
+export function chartSeries(p: ChartProfile, maxPoints: number = ROUTE_CHART_MAX_POINTS): ChartSeries {
   const elevation: Pt[] = [];
   p.heightM.forEach((h, i) => {
     if (h !== null) elevation.push([p.distM[i]!, h]);

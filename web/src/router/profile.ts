@@ -31,8 +31,7 @@ export interface CostWeights {
  * on calm (<= 30 km/h) main roads.
  */
 export function runtimeRiskPerKm(e: ChunkEdge, forward: boolean, p: VehicleProfile): number {
-  const raw = forward ? e.maxspeedFwd : e.maxspeedBwd;
-  const limit = raw ?? cfg.DEFAULT_SPEED_BY_CLASS_KMH[e.roadClass] ?? 50;
+  const limit = limitKmh(e, forward);
   const diff = Math.max(0, limit - p.vmaxKmh);
   const km = Math.max(e.lengthM, 1) / 1000;
   const signalRefund = (cfg.RISK_SIGNAL_REFUND_POINTS * e.signals) / km;
@@ -72,10 +71,14 @@ export function canUse(e: ChunkEdge, p: VehicleProfile): boolean {
   return true;
 }
 
+/** Posted limit for one direction; unknown -> default by road class. */
+export function limitKmh(e: ChunkEdge, forward: boolean): number {
+  return (forward ? e.maxspeedFwd : e.maxspeedBwd) ?? cfg.DEFAULT_SPEED_BY_CLASS_KMH[e.roadClass] ?? 50;
+}
+
 /** Effective speed in km/h for one direction: min(limit, vmax) × surface. */
 export function speedKmh(e: ChunkEdge, forward: boolean, p: VehicleProfile): number {
-  const raw = forward ? e.maxspeedFwd : e.maxspeedBwd;
-  const limit = raw ?? cfg.DEFAULT_SPEED_BY_CLASS_KMH[e.roadClass] ?? 50;
+  const limit = limitKmh(e, forward);
   return Math.min(limit, p.vmaxKmh) * (cfg.SURFACE_SPEED_FACTOR[e.surface] ?? 1);
 }
 

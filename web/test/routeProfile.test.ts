@@ -54,6 +54,9 @@ describe('route profile', () => {
     expect(r.profile.heightM).toEqual([10, 11, 13, 20]);
     expect(r.profile.speedKmh).toHaveLength(3);
     expect(r.profile.speedKmh[1]).toBeLessThanOrEqual(45);
+    // posted limits (not capped at vmax) and where each node sits in the geometry
+    expect(r.profile.limitKmh).toEqual([30, 70, 30]);
+    expect(r.profile.geomIndex).toEqual([0, 1, 2, 3]);
     expect(r.ascentM).toBe(10);
   });
 

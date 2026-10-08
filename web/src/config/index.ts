@@ -181,3 +181,14 @@ export const RISK_MAIN_ROAD_POINTS: Record<number, number> = { 1: 50, 2: 40 };
  * and the wait is already in the time cost, so the router refunds them.
  */
 export const RISK_SIGNAL_REFUND_POINTS = 5;
+
+// --- Route display ------------------------------------------------------------
+/** Route sections with a posted limit above this are drawn orange ... */
+export const ROUTE_BAND_ORANGE_ABOVE_KMH = 50;
+/** ... and above this red. */
+export const ROUTE_BAND_RED_ABOVE_KMH = 70;
+/**
+ * Shorter coloured sections are not drawn: short links without a mapped limit
+ * get the class default (e.g. 100) and would flash red at every junction.
+ */
+export const ROUTE_BAND_MIN_M = 100;

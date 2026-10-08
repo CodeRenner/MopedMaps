@@ -18,7 +18,9 @@ import { createProfilePanel } from './ui/profilePanel';
 import { createRouteChart } from './ui/routeChart';
 import { loadEnergySettings, loadProfile, saveEnergySettings, saveProfile } from './ui/profileStore';
 import { RouteLayer } from './ui/routeLayer';
-import { EMPTY, hintKey, type PickerState, tap, wantsRoute } from './ui/routePicker';
+import { createRouteControls } from './ui/routeControls';
+import { EMPTY, hintKey, type PickerState, reverse, tap, wantsRoute } from './ui/routePicker';
+import { speedBands } from './ui/speedBands';
 import { loadWeights, riskClass, saveWeights } from './ui/weights';
 import { createWeightsPanel } from './ui/weightsPanel';
 
@@ -85,11 +87,22 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
   let weights: CostWeights = loadWeights(storage);
   let rerouteTimer: ReturnType<typeof setTimeout> | undefined;
 
+  const setPicker = (next: PickerState) => {
+    if (next === picker) return; // e.g. a stray tap while a route is shown
+    picker = next;
+    routeLayer.setPoints(picker);
+    controls.update(picker.start !== null, wantsRoute(picker));
+    void computeRoute();
+  };
+  const controls = createRouteControls(
+    () => setPicker(reverse(picker)),
+    () => setPicker(EMPTY),
+  );
+  document.body.append(controls.root);
+
   map.on('click', (ev) => {
     if (!areaLoaded) return;
-    picker = tap(picker, [ev.lngLat.lat, ev.lngLat.lng]);
-    routeLayer.setPoints(picker);
-    void computeRoute();
+    setPicker(tap(picker, [ev.lngLat.lat, ev.lngLat.lng]));
   });
 
   async function computeRoute(): Promise<void> {
@@ -110,7 +123,7 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
     });
     if (seq !== routeSeq) return; // a newer tap superseded this request
     if (res.type === 'route') {
-      routeLayer.setRoute(res.route.geometry);
+      routeLayer.setRoute(res.route.geometry, speedBands(res.route.geometry, res.route.profile));
       chart.setProfile(res.route.profile);
       const summary = t('route.summary', routeSummaryParams(getLocale(), res.route.distanceM, res.route.timeS));
       const r = res.route;
@@ -153,6 +166,7 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
       panel.setCollapsed(true);
       picker = EMPTY;
       routeLayer.setPoints(picker);
+      controls.update(false, false);
       routeLayer.setRoute(null);
       chart.setProfile(null);
       panel.setStatus(

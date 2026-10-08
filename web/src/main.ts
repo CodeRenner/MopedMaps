@@ -1,3 +1,4 @@
+import { registerServiceWorker } from './sw/update';
 import './ui/style.css';
 import { startApp } from './app';
 import { detectLocale, setLocale, t } from './i18n';
@@ -43,7 +44,5 @@ if (mapEl && uiEl) {
 
 // Offline support: only in production builds (dev server serves unbundled modules).
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch((err) => console.warn('SW registration failed', err));
-  });
+  window.addEventListener('load', () => registerServiceWorker('./sw.js'));
 }

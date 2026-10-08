@@ -78,7 +78,7 @@ against a local rider's choices:
 |---------|--------|
 | Schnelle Straßen | speed differential and Bundesstraße surcharge |
 | Verkehrsaufkommen | DTV points |
-| Kreuzungen & Abbiegen | junction-density points (static score) and, in the cost, the signal/junction waits |
+| Abbiegen | turn costs at junctions (left/right by sharpness; straight on and following the main road are free), see `docs/routing-model.md` "Turns" |
 | Schlechte Oberfläche | surface points (cobbles 15, compacted 20, unpaved 40) |
 | Unbeleuchtet | lighting points (unlit 15, unknown 5) |
 

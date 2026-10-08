@@ -25,7 +25,7 @@ export interface RiskPrefs {
   fast: number;
   /** Traffic volume (official counts). */
   traffic: number;
-  /** Junction density, signal and junction waits. */
+  /** Turns (left/right) at junctions; going straight and following the main road are free (turns.ts). */
   junctions: number;
   /** Cobbles, gravel, unpaved. */
   surface: number;
@@ -70,9 +70,6 @@ export function runtimeRiskPerKm(
     dtvRiskPerKm(e.dtv ?? 0, limit) * prefs.traffic -
     (calm ? (cfg.RISK_CLASS_POINTS_BY_CLASS[e.roadClass] ?? 0) : 0);
   // Rescale static score components the vehicle doesn't change (pipeline risk.py).
-  if (prefs.junctions !== 1) {
-    pts += (prefs.junctions - 1) * Math.min(cfg.RISK_JUNCTION_POINTS_CAP, cfg.RISK_POINTS_PER_JUNCTION_PER_KM / km);
-  }
   if (prefs.surface !== 1) pts += (prefs.surface - 1) * (cfg.RISK_SURFACE_POINTS[e.surface] ?? 0);
   if (prefs.lighting !== 1) {
     const lit = e.lit === false ? cfg.RISK_UNLIT_POINTS : e.lit === null ? cfg.RISK_LIT_UNKNOWN_POINTS : 0;
@@ -161,11 +158,6 @@ export function edgeCost(
   let time = travelTimeS(e, forward, p);
   if ((e.flags & AccessFlag.DESTINATION) !== 0) time += cfg.DESTINATION_PENALTY_S;
   const prefs = w.prefs;
-  // "Kreuzungen" also scales the junction/signal waits in the cost (not in the shown travel time).
-  if (prefs && prefs.junctions !== 1) {
-    const waits = e.signals * cfg.SIGNAL_PENALTY_S + (cfg.JUNCTION_PENALTY_BY_CLASS_S[e.roadClass] ?? cfg.JUNCTION_PENALTY_S);
-    time += (prefs.junctions - 1) * waits;
-  }
   const energy = w.energy > 0 ? edgeEnergy(e, forward, p).wheelWh * cfg.ENERGY_COST_S_PER_WH : 0;
   return w.time * time + w.risk * edgeRisk(e, forward, p, prefs) + w.energy * energy;
 }

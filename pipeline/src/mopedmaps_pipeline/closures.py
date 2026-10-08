@@ -8,16 +8,28 @@ Sources (Datenlizenz Deutschland – Namensnennung 2.0, see DATA_SOURCES.md):
   polygons; whether a road is closed is only in free text, and the polygon
   can also cover open cross streets, so "Vollsperrung" entries become kind
   "avoid" (a time penalty, not a block).
+- Sachsen SPERRINFOSYS (LISt/LASuV, all road classes incl. municipal roads):
+  daily GeoJSON in a ZIP, ETRS89/UTM33; "Vollsperrung" -> "closed".
+- Landesbetrieb Straßenwesen Brandenburg Baustelleninfo (OGC API Features,
+  B/L/K roads): `Art` "Sperrung" whose note says "Vollsperrung" -> "closed".
+- VIZ Berlin roadworks: `severity` "Vollsperrung" -> "closed".
+
+Other states publish roadworks only under unclear licences or behind a
+Mobilithek subscription (docs/research-data-germany.md), so they are left out
+on purpose.
 
 Run: PYTHONPATH=pipeline/src python -m mopedmaps_pipeline.closures OUT.json
 """
 
 from __future__ import annotations
 
+import io
 import json
+import math
 import re
 import sys
 import urllib.request
+import zipfile
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -27,6 +39,12 @@ FREIBURG_URL = (
     "https://geoportal.freiburg.de/wfs/gut_baustellen/gut_baustellen?service=wfs&version=2.0.0"
     "&SRSNAME=EPSG:4326&request=getfeature&typename=baustellenumgriffe&outputformat=GEOJSON"
 )
+SACHSEN_URL = "https://www.list.smwa.sachsen.de/gdi/download/baustelleninfo/Baustelleninfo_Sachsen_geojson.zip"
+BRANDENBURG_URL = (
+    "https://ogc-api.geobasis-bb.de/datasets/baustelleninfo/collections/baustelleninfo/items"
+    "?f=json&limit=1000"
+)
+BERLIN_URL = "https://api.viz.berlin.de/daten/baustellen_sperrungen_viz.json"
 # Keep closures that are active now or start within this many days (the app
 # filters by its own clock again, the file may be a few days old offline).
 LOOKAHEAD_DAYS = 7
@@ -125,24 +143,168 @@ def from_freiburg(doc: Json, now: datetime) -> list[Json]:
     return out
 
 
-def _get(url: str) -> Json:
-    req = urllib.request.Request(
-        url, headers={"User-Agent": "MopedMaps closures (github.com/CodeRenner/MopedMaps)"}
+# ETRS89 / UTM (GRS80), inverse transverse Mercator after Krüger (sub-mm in-zone).
+_A, _F = 6378137.0, 1 / 298.257222101
+_N = _F / (2 - _F)
+_RECT = _A / (1 + _N) * (1 + _N**2 / 4 + _N**4 / 64)
+_BETA = (
+    _N / 2 - 2 * _N**2 / 3 + 37 * _N**3 / 96,
+    _N**2 / 48 + _N**3 / 15,
+    17 * _N**3 / 480,
+)
+_DELTA = (
+    2 * _N - 2 * _N**2 / 3 - 2 * _N**3,
+    7 * _N**2 / 3 - 8 * _N**3 / 5,
+    56 * _N**3 / 15,
+)
+
+
+def utm_to_latlon(e: float, n: float, zone: int = 33) -> tuple[float, float]:
+    xi = n / (0.9996 * _RECT)
+    eta = (e - 500000) / (0.9996 * _RECT)
+    xi_ = xi - sum(
+        b * math.sin(2 * j * xi) * math.cosh(2 * j * eta) for j, b in enumerate(_BETA, 1)
     )
+    eta_ = eta - sum(
+        b * math.cos(2 * j * xi) * math.sinh(2 * j * eta) for j, b in enumerate(_BETA, 1)
+    )
+    chi = math.asin(math.sin(xi_) / math.cosh(eta_))
+    lat = chi + sum(d * math.sin(2 * j * chi) for j, d in enumerate(_DELTA, 1))
+    lon = math.radians(zone * 6 - 183) + math.atan2(math.sinh(eta_), math.cos(xi_))
+    return math.degrees(lat), math.degrees(lon)
+
+
+def _de_day(s: str | None, end_of_day: bool) -> str | None:
+    """'14.10.2026' -> ISO (UTC day bounds)."""
+    m = re.fullmatch(r"(\d{1,2})\.(\d{1,2})\.(\d{4})", (s or "").strip())
+    return _day(f"{m[3]}-{int(m[2]):02d}-{int(m[1]):02d}", end_of_day) if m else None
+
+
+def from_sachsen(doc: Json, now: datetime) -> list[Json]:
+    out = []
+    for f in doc.get("features", []):
+        p, g = f.get("properties", {}), f.get("geometry") or {}
+        if p.get("Sperrung_Art_Klartext") != "Vollsperrung" or g.get("type") != "LineString":
+            continue
+        start = _de_day(p.get("Sperrung_von"), False)
+        end = _de_day(p.get("Sperrung_bis"), True)
+        if not _relevant(start, end, now):
+            continue
+        line = [[round(c, 5) for c in utm_to_latlon(x, y)] for x, y, *_ in g["coordinates"]]
+        out.append({
+            "id": f"sn:{p.get('ID')}",
+            "kind": "closed",
+            "oneway": False,
+            "label": " ".join(x for x in (p.get("Strasse"), p.get("Ort")) if x),
+            "note": " – ".join(x for x in (p.get("Sperrung_Grund"), p.get("Ortslage")) if x),
+            "start": start,
+            "end": end,
+            "line": line,
+        })  # fmt: skip
+    return out
+
+
+def from_brandenburg(doc: Json, now: datetime) -> list[Json]:
+    out = []
+    for f in doc.get("features", []):
+        p, g = f.get("properties", {}), f.get("geometry") or {}
+        note = (p.get("Verkehrsinformation") or "").strip()
+        if p.get("Art") != "Sperrung" or g.get("type") != "LineString":
+            continue
+        if not _FULL_CLOSURE.search(note):
+            continue
+        start = _day(p.get("Baustellen_Beginn"), False)
+        end = _day(p.get("Baustellen_Ende"), True)
+        if not _relevant(start, end, now):
+            continue
+        out.append({
+            "id": f"bb:{p.get('ID')}",
+            "kind": "closed",
+            "oneway": False,
+            "label": " ".join(x for x in (p.get("Straßenummner"), p.get("Ortsangabe")) if x),
+            "note": re.sub(r"\s+", " ", note)[:300],
+            "start": start,
+            "end": end,
+            "line": _ll(g["coordinates"]),
+        })  # fmt: skip
+    return out
+
+
+def _local_iso(s: str | None) -> str | None:
+    """VIZ times are local (Europe/Berlin) without offset; +02:00 is close enough."""
+    v = _iso(s)
+    return None if v is None else v if "+" in v[10:] else v + "+02:00"
+
+
+def from_berlin(doc: Json, now: datetime) -> list[Json]:
+    out = []
+    for i, f in enumerate(doc.get("features", [])):
+        p, g = f.get("properties", {}), f.get("geometry") or {}
+        if p.get("severity") != "Vollsperrung":
+            continue
+        parts = g.get("geometries", [g]) if g.get("type") == "GeometryCollection" else [g]
+        lines = [x["coordinates"] for x in parts if x.get("type") == "LineString"]
+        lines += [c for x in parts if x.get("type") == "MultiLineString" for c in x["coordinates"]]
+        v = p.get("validity") or {}
+        start, end = _local_iso(v.get("from")), _local_iso(v.get("to"))
+        if not lines or not _relevant(start, end, now):
+            continue
+        for j, line in enumerate(lines):
+            out.append({
+                "id": f"be:{p.get('id', i)}:{j}",
+                "kind": "closed",
+                "oneway": False,
+                "label": p.get("street") or "",
+                "note": " – ".join(x for x in (p.get("section"), p.get("content")) if x),
+                "start": start,
+                "end": end,
+                "line": _ll(line),
+            })  # fmt: skip
+    return out
+
+
+_UA = {"User-Agent": "MopedMaps closures (github.com/CodeRenner/MopedMaps)"}
+
+
+def _get(url: str) -> Json:
+    req = urllib.request.Request(url, headers=_UA)
     with urllib.request.urlopen(req, timeout=60) as r:
         return json.load(r)
+
+
+def _get_paged(url: str) -> Json:
+    """OGC API Features: follow `next` links."""
+    features: list[Json] = []
+    next_url: str | None = url
+    while next_url and len(features) < 50000:
+        page = _get(next_url)
+        features += page.get("features", [])
+        next_url = next((x["href"] for x in page.get("links", []) if x.get("rel") == "next"), None)
+    return {"features": features}
+
+
+def _get_zip_geojson(url: str, member_contains: str) -> Json:
+    req = urllib.request.Request(url, headers=_UA)
+    with urllib.request.urlopen(req, timeout=120) as r:
+        data = r.read()
+    with zipfile.ZipFile(io.BytesIO(data)) as z:
+        name = next(n for n in z.namelist() if member_contains in n and n.endswith(".geojson"))
+        return json.loads(z.read(name))
 
 
 def build(now: datetime | None = None) -> Json:
     now = now or datetime.now(UTC)
     closures: list[Json] = []
     sources = []
-    for name, url, parse in (
-        ("MobiData BW", MOBIDATA_URL, from_mobidata),
-        ("Stadt Freiburg", FREIBURG_URL, from_freiburg),
+    for name, fetch, parse in (
+        ("MobiData BW", lambda: _get(MOBIDATA_URL), from_mobidata),
+        ("Stadt Freiburg", lambda: _get(FREIBURG_URL), from_freiburg),
+        ("Sachsen", lambda: _get_zip_geojson(SACHSEN_URL, "Sperrungen"), from_sachsen),
+        ("Brandenburg", lambda: _get_paged(BRANDENBURG_URL), from_brandenburg),
+        ("Berlin", lambda: _get(BERLIN_URL), from_berlin),
     ):
         try:
-            items = parse(_get(url), now)
+            items = parse(fetch(), now)
         except Exception as err:  # one failing source must not drop the other
             print(f"closures: {name} failed: {err}", file=sys.stderr)
             continue

@@ -10,7 +10,7 @@ be respected when redistributing builds or graph tiles.
 | GeoNames postal codes (`DE.zip`) | `web/public/data/plz.json` | CC BY 4.0 | "PLZ: GeoNames (CC BY 4.0)" |
 | Copernicus DEM GLO-30 | ascent/descent per edge | free licence, attribution required | "Copernicus DEM GLO-30 (© DLR e.V., © Airbus DS, ESA/EU)" |
 | Straßenverkehrszählung Baden-Württemberg (Verkehrsministerium BW via MobiData BW) | traffic volume (DTV) per edge, risk score | Datenlizenz Deutschland – Namensnennung 2.0 | "Verkehrsmengen: Verkehrsministerium BW (dl-de/by-2-0, bearbeitet)" |
-| Baustelleninformationen BW (MobiData BW) and Verkehrsrelevante Baustellen (Stadt Freiburg) | daily road closures (`closures.json`) | Datenlizenz Deutschland – Namensnennung 2.0 | "Sperrungen: MobiData BW, Stadt Freiburg (dl-de/by-2-0)" |
+| Baustelleninformationen BW (MobiData BW), Verkehrsrelevante Baustellen (Stadt Freiburg), Baustelleninformationssystem Sachsen (LISt), Baustelleninfo Landesbetrieb Straßenwesen Brandenburg, VIZ Berlin Baustellen | daily road closures (`closures.json`) | Datenlizenz Deutschland – Namensnennung 2.0 | "Sperrungen: MobiData BW, Stadt Freiburg, Baustelleninformationssystem Sachsen (LISt), Landesbetrieb Straßenwesen Brandenburg, VIZ Berlin (dl-de/by-2-0)" |
 | OpenFreeMap / OpenMapTiles basemap | map background (online) | OSM data ODbL; OpenMapTiles schema | provided by the style ("OpenFreeMap © OpenMapTiles Data from OpenStreetMap") |
 
 Notes:

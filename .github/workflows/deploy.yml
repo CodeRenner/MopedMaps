@@ -11,7 +11,9 @@ on:
   workflow_dispatch:
   # Daily redeploy with a fresh road-closures file (closures.json).
   schedule:
-    - cron: "30 2 * * *"
+    # Off the full/half hour: GitHub delays or drops scheduled runs at busy
+    # times (the first 02:30 run on 2026-10-09 never started).
+    - cron: "17 2 * * *"
   workflow_call:
     inputs:
       graph-run-id:

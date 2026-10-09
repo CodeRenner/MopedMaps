@@ -1183,3 +1183,9 @@ Follow-up idea: let the graph build's deploy check out `main` to avoid shipping 
   -> Obernstraße 5, 28195 Bremen, map moves there, route from a tapped start; recent shows the address.
 - Bug caught by the new test: places loader did not pass `fetchFn` to the tile download.
 - Tests: pytest 112 passed, vitest 205 passed. Takes effect with the next graph build (data for Germany).
+### Iteration 77 — NRW download and schedule robustness (2026-10-09)
+- Graph build 2026-10-08 (DTV for six states) succeeded, but Straßen.NRW answered 403 to the runner for the `.dbf`
+  right after the `.shp` -> NRW missing. Now: 10 s pause between the two files, retries with 30/60/90 s backoff.
+- The first scheduled deploy (02:30 UTC 2026-10-09) never started although all workflows are active; cron moved to
+  02:17 (GitHub drops/delays runs at busy full/half hours). Check again on 2026-10-10.
+- Graph build with offline search data started 2026-10-09 05:07 UTC (run 37887033810).

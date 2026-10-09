@@ -340,19 +340,25 @@ body.nav-mode .route-controls {
   align-items: flex-start;
   gap: 8px;
 }
-.info-btn {
+.panel .info-btn {
   flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   width: 22px;
+  min-width: 0;
   height: 22px;
+  min-height: 0;
   padding: 0;
   border: 1px solid #94a3b8;
   border-radius: 50%;
   background: #fff;
   color: #334155;
-  font: italic 600 13px/20px Georgia, serif;
+  font: 700 13px/1 system-ui, -apple-system, sans-serif;
   cursor: pointer;
 }
-.info-btn[aria-expanded='true'] {
+.panel .info-btn[aria-expanded='true'] {
   background: #334155;
   color: #fff;
 }

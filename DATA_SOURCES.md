@@ -11,7 +11,6 @@ be respected when redistributing builds or graph tiles.
 | Copernicus DEM GLO-30 | ascent/descent per edge | free licence, attribution required | "Copernicus DEM GLO-30 (© DLR e.V., © Airbus DS, ESA/EU)" |
 | Straßenverkehrszählung Baden-Württemberg (Verkehrsministerium BW via MobiData BW) | traffic volume (DTV) per edge, risk score | Datenlizenz Deutschland – Namensnennung 2.0 | "Verkehrsmengen: Verkehrsministerium BW (dl-de/by-2-0, bearbeitet)" |
 | Straßenverkehrszählung 2021 Bayern (BAYSIS Zählstellenbereiche) | traffic volume (DTV) per edge | CC BY 4.0 | "Datenquelle: Bayerische Straßenbauverwaltung – BAYSIS (CC BY 4.0)" |
-| Straßenverkehrszählung 2021 NRW (Straßen.NRW) | traffic volume (DTV) per edge | Datenlizenz Deutschland – Zero 2.0 | "Straßen.NRW" (no duty) |
 | Verkehrsstärke 2021 Brandenburg (Landesbetrieb Straßenwesen, LGB OGC API) | traffic volume (DTV) per edge | Datenlizenz Deutschland – Namensnennung 2.0 | "LS Brandenburg (dl-de/by-2-0, bearbeitet)" |
 | Straßenverkehrszählung 2021 Sachsen (LASuV/LISt) | traffic volume (DTV) per edge | Datenlizenz Deutschland – Namensnennung 2.0 | "LASuV Sachsen (dl-de/by-2-0, bearbeitet)" |
 | Verkehrsmengen DTVw 2023 Berlin (SenMVKU) | traffic volume (weekday) per edge | Datenlizenz Deutschland – Zero 2.0 | "SenMVKU Berlin" (no duty) |

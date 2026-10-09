@@ -1193,3 +1193,10 @@ Follow-up idea: let the graph build's deploy check out `main` to avoid shipping 
 - Graph build 2026-10-09 05:07 succeeded (deployed), but the optional places step crashed on house number "21¹"
   (`str.isdigit` accepts superscripts, `int` does not) -> no search data live. `_hn_sort` now reads leading ASCII
   digits only; test with odd numbers. NRW still 403 in that run (started before the #35 fix).
+### Iteration 79 — search live; NRW disabled; info button (2026-10-09)
+- Graph build 2026-10-09 08:02 UTC: places step ok (20.7 M addresses, 1.06 M streets, 2.1 M places, 876 tiles,
+  132 MB gzip, largest tile 4.4 MB, 15.5 min). Live check (Emmendingen, 25 km): "Kreiskrankenhaus",
+  "Karl-Friedrich-Str 1 Emmendingen", "Hauptstraße 2 Kenzingen", "Tankstelle" all found.
+- NRW still 403 for the `.dbf` despite 10 s pause and 30/60/90 s backoff (works from a home connection) -> removed
+  from SOURCES, the in-app coverage note and the attribution (not circumventing the block).
+- Info button: `.panel button` out-specified `.info-btn` (blue square, 10 px padding) -> `.panel .info-btn`.

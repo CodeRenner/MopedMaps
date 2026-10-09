@@ -18,7 +18,7 @@ describe('compliance', () => {
 
   it('names every traffic-volume source', () => {
     const all = appAttributions().join(' ');
-    for (const src of ['Verkehrsministerium BW', 'BAYSIS', 'Straßen.NRW', 'LASuV Sachsen', 'LS Brandenburg', 'Berlin', 'Hamburg'])
+    for (const src of ['Verkehrsministerium BW', 'BAYSIS', 'LASuV Sachsen', 'LS Brandenburg', 'Berlin', 'Hamburg'])
       expect(all).toContain(src);
   });
 

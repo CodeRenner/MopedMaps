@@ -5,7 +5,9 @@ states publish the counted sections themselves as line geometry, so an edge
 takes the DTV of the section line it runs along:
 
 - Bayern: BAYSIS SVZ 2021 Zählstellenbereiche (CC BY 4.0)
-- Nordrhein-Westfalen: Straßen.NRW SVZ 2021 (dl-de/zero-2-0)
+- (Nordrhein-Westfalen, Straßen.NRW SVZ 2021, dl-de/zero-2-0: `_nrw` is kept
+  but not in SOURCES: the server answers 403 to GitHub's runners for the
+  .dbf, see docs/PROGRESS.md iteration 79.)
 - Brandenburg: Landesbetrieb Straßenwesen, Verkehrsstärke 2021 (dl-de/by-2-0)
 - Sachsen: LASuV SVZ 2021 (dl-de/by-2-0)
 - Berlin: SenMVKU DTVw 2023, weekday traffic (dl-de/zero-2-0)
@@ -325,7 +327,6 @@ def _sachsen() -> list[Section]:
 
 SOURCES: list[tuple[str, Callable[[], list[Section]]]] = [
     ("Bayern", lambda: from_geojson(_json(BAYERN_URL), "Straße", "DTV_Kfz")),
-    ("Nordrhein-Westfalen", _nrw),
     ("Brandenburg", lambda: from_geojson(_json(BRANDENBURG_URL), "strasse", "KFZ")),
     ("Sachsen", _sachsen),
     ("Berlin", lambda: from_geojson(_json(BERLIN_URL), "str_bez", "dtvw_kfz")),

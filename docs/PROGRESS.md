@@ -1189,3 +1189,7 @@ Follow-up idea: let the graph build's deploy check out `main` to avoid shipping 
 - The first scheduled deploy (02:30 UTC 2026-10-09) never started although all workflows are active; cron moved to
   02:17 (GitHub drops/delays runs at busy full/half hours). Check again on 2026-10-10.
 - Graph build with offline search data started 2026-10-09 05:07 UTC (run 37887033810).
+### Iteration 78 — search data build fix (2026-10-09)
+- Graph build 2026-10-09 05:07 succeeded (deployed), but the optional places step crashed on house number "21¹"
+  (`str.isdigit` accepts superscripts, `int` does not) -> no search data live. `_hn_sort` now reads leading ASCII
+  digits only; test with odd numbers. NRW still 403 in that run (started before the #35 fix).

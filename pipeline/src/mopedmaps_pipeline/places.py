@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import gzip
 import json
+import re
 import time
 from collections import defaultdict
 from pathlib import Path
@@ -192,8 +193,9 @@ def collect(
 
 
 def _hn_sort(hn: str) -> tuple[int, str]:
-    digits = "".join(ch for ch in hn if ch.isdigit())
-    return (int(digits[:6]) if digits else 1 << 30, hn)
+    # leading ASCII digits only: OSM has "21¹", "٣", "12-14", "5 1/2" ...
+    m = re.match(r"\s*([0-9]{1,6})", hn)
+    return (int(m.group(1)) if m else 1 << 30, hn)
 
 
 def tile_doc(rows: list[list]) -> dict:

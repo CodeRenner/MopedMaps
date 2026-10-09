@@ -24,7 +24,9 @@ export function strategyFor(
   if (url.origin === scope.origin && url.pathname.startsWith(scope.pathname)) {
     const rel = url.pathname.slice(scope.pathname.length);
     if (isNavigation) return 'precache'; // served from cached index.html
-    if (rel === 'graph/manifest.json' || rel === 'closures.json') return 'network-first';
+    if (rel === 'graph/manifest.json' || rel === 'graph/places/index.json' || rel === 'closures.json') {
+      return 'network-first';
+    }
     if (rel.startsWith('graph/')) return 'passthrough';
     if (precache.has(rel)) return 'precache';
     return 'passthrough';

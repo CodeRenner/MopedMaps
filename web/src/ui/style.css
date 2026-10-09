@@ -478,3 +478,58 @@ body.nav-mode .route-controls {
   background: #2b6cb0;
   color: #fff;
 }
+
+/* Search field (offline address/place search) */
+.search {
+  position: relative;
+  padding: 6px;
+}
+.search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 16px; /* >= 16px: no zoom-on-focus in iOS Safari */
+  background: #fff;
+}
+.search-input:disabled {
+  background: #f1f5f9;
+}
+.search-results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+.search-results button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-top: 1px solid #e2e8f0;
+  background: none;
+  color: #1e293b;
+  font-weight: normal;
+  text-align: left;
+  cursor: pointer;
+}
+.search-results button:hover,
+.search-results button:focus-visible {
+  background: #f1f5f9;
+}
+.search-title {
+  font-weight: 600;
+}
+.search-detail {
+  font-size: 13px;
+  color: #555;
+}
+.search-empty {
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #555;
+}

@@ -1174,3 +1174,12 @@ Follow-up idea: let the graph build's deploy check out `main` to avoid shipping 
   normally; zoom 9.5 -> 12.5 redraw incl. render ~2-3 s.
 - Tests: vitest 197 passed (roads.test.ts: bbox, class filter, limit, GeoJSON order).
 - Next: offline address/POI search.
+### Iteration 76 — offline address and place search (2026-10-08)
+- What: branch `feature/offline-search` (stacked on #33). User: without addresses, points cannot be set offline.
+  Pipeline `places.py` + CLI `places` (addresses, streets, named places per tile; graph-build step before the
+  build); app: own IndexedDB store, `search/index.ts` (normalisation, house number/postcode/settlement handling,
+  kind words, ranking), always-visible search field above "Ziele"; picking routes there and keeps the label.
+- Bremen: 151k addresses / 14k places, 0.9 MB gzip, index build 50-70 ms, queries 1-5 ms. Browser: "Obernstr 5"
+  -> Obernstraße 5, 28195 Bremen, map moves there, route from a tapped start; recent shows the address.
+- Bug caught by the new test: places loader did not pass `fetchFn` to the tile download.
+- Tests: pytest 112 passed, vitest 205 passed. Takes effect with the next graph build (data for Germany).

@@ -17,6 +17,9 @@ export function createMap(container: HTMLElement): MapLibreMap {
     center: MAP_INITIAL_CENTER,
     zoom: MAP_INITIAL_ZOOM,
     attributionControl: false,
+    // No label fade: with a moving navigation camera the fade keeps the map
+    // redrawing at full frame rate (74 instead of ~26 fps measured), costing battery.
+    fadeDuration: 0,
   });
   map.addControl(
     new AttributionControl({ compact: true, customAttribution: appAttributions() }),

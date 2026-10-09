@@ -211,6 +211,14 @@ export const NAV_ARRIVAL_M = 30;
 export const NAV_TURN_MIN_DEG = 35;
 /** Map zoom while navigating. */
 export const NAV_ZOOM = 16.5;
+/** Where the rider's position sits on screen while navigating (share of the height from the top). */
+export const NAV_POSITION_FROM_TOP = 0.72;
+/** Frame cap for the follow camera (battery). */
+export const NAV_CAMERA_FPS = 30;
+/** Above this distance from the route the camera uses the raw GPS position (no snapping). */
+export const NAV_SNAP_M = 25;
+/** Max device pixel ratio while navigating (fewer pixels to draw on 3x phones). */
+export const NAV_MAX_PIXEL_RATIO = 2;
 
 // --- Traffic volume risk (official counts, docs/risk-model.md) ------------------
 /**

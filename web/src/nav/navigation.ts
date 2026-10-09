@@ -6,14 +6,26 @@
  */
 
 import { type Map as MapLibreMap, Marker } from 'maplibre-gl';
-import { NAV_ZOOM } from '../config';
+import { NAV_MAX_PIXEL_RATIO, NAV_SNAP_M } from '../config';
 import { formatNumber, getLocale, t } from '../i18n';
 import { keepAboveAttribution } from '../ui/aboveAttribution';
 import type { KeyValueStorage } from '../ui/profileStore';
 import type { LatLon, RouteResult } from '../router/protocol';
+import { type BandSection, bandsAhead, speedBands } from '../ui/speedBands';
+import { FollowCamera } from './camera';
 import { etaClock, navDistance, TURN_ARROW } from './format';
 import { type Maneuver, maneuvers, nextManeuver } from './maneuvers';
-import { buildTrack, type Fix, locate, OffRouteDetector, type RouteTrack } from './progress';
+import {
+  bearingAt,
+  buildTrack,
+  type Fix,
+  locate,
+  OffRouteDetector,
+  pointAt,
+  type Progress,
+  remainingGeometry,
+  type RouteTrack,
+} from './progress';
 import { loadVoiceOn, saveVoiceOn, speak, speechAvailable, stopSpeaking } from './speech';
 import { Announcer, type Speech } from './voice';
 
@@ -23,6 +35,8 @@ export interface NavigationDeps {
   reroute(from: LatLon): Promise<RouteResult | null>;
   /** Show a (new) route on the map. */
   showRoute(r: RouteResult, from: LatLon): void;
+  /** Redraw the route line (navigation shows only the part still ahead). */
+  drawRoute(geometry: LatLon[], bands: BandSection[]): void;
   /** Called after navigation ended (button or error). */
   onExit(): void;
   /** Where the voice on/off setting is stored. */
@@ -100,17 +114,20 @@ export function createNavigation(deps: NavigationDeps): Navigation {
   const dotEl = document.createElement('div');
   dotEl.className = 'nav-position';
   const dot = new Marker({ element: dotEl, rotationAlignment: 'map' });
+  const camera = new FollowCamera(deps.map, (p) => dot.setLngLat([p.lon, p.lat]).addTo(deps.map));
 
   let active = false;
   let watchId: number | null = null;
   let route: RouteResult | null = null;
   let track: RouteTrack | null = null;
   let turns: Maneuver[] = [];
+  let bands: BandSection[] = [];
   let alongM = 0;
-  let following = true;
+  let drawnAlongM = -1;
+  let lastFixTime = 0;
   let rerouting = false;
   let lastFix: Fix | null = null;
-  let bearing = 0;
+  let gpsBearing = 0;
   let wake: WakeLockSentinelLike | null = null;
   const offRoute = new OffRouteDetector();
 
@@ -118,7 +135,9 @@ export function createNavigation(deps: NavigationDeps): Navigation {
     route = r;
     track = buildTrack(r.geometry, r.profile);
     turns = maneuvers(track);
+    bands = speedBands(r.geometry, r.profile);
     alongM = 0;
+    drawnAlongM = -1;
     offRoute.reset();
   };
 
@@ -135,19 +154,8 @@ export function createNavigation(deps: NavigationDeps): Navigation {
     if (active && document.visibilityState === 'visible') void requestWakeLock();
   };
 
-  const follow = (fix: Fix) => {
-    if (!following) return;
-    const m = deps.map;
-    const c = m.getCenter();
-    const farM = Math.hypot((c.lat - fix.lat) * 111_195, (c.lng - fix.lon) * 111_195 * Math.cos((fix.lat * Math.PI) / 180));
-    const target = { center: [fix.lon, fix.lat] as [number, number], zoom: NAV_ZOOM, bearing };
-    // Far away (start, GPS jump, after panning) or zoomed out: jump; else glide shorter than the fix interval.
-    if (farM > 300 || Math.abs(m.getZoom() - NAV_ZOOM) > 1) m.jumpTo(target);
-    else m.easeTo({ ...target, duration: 600, essential: true });
-  };
-
-  const render = (fix: Fix, speedMps = 0) => {
-    if (!track || !route) return;
+  const render = (fix: Fix, speedMps = 0): Progress | null => {
+    if (!track || !route) return null;
     const p = locate(track, fix, alongM);
     alongM = p.alongM;
     const loc = getLocale();
@@ -173,6 +181,30 @@ export function createNavigation(deps: NavigationDeps): Navigation {
     limitBadge.textContent = limit === undefined ? '' : String(limit);
     limitBadge.title = limit === undefined ? '' : t('nav.limit', { kmh: limit });
     if (!p.arrived && offRoute.update(p, fix) && !rerouting) void doReroute(fix);
+    return p;
+  };
+
+  /** Hide the part already ridden (redrawn every few metres, not every fix). */
+  const trimRoute = (along: number) => {
+    if (!track || Math.abs(along - drawnAlongM) < 5) return;
+    drawnAlongM = along;
+    const { seg, point } = pointAt(track, along);
+    deps.drawRoute(remainingGeometry(track, along), bandsAhead(bands, seg, point));
+  };
+
+  /**
+   * Camera target: on the route, the position predicted for the next fix
+   * (snapped to the route, heading along the road), so the camera glides with
+   * the rider; off the route the raw GPS position and heading.
+   */
+  const follow = (fix: Fix, p: Progress | null, speedMps: number, dtMs: number) => {
+    if (track && p && p.offsetM <= NAV_SNAP_M) {
+      const ahead = p.arrived ? p.alongM : p.alongM + (speedMps * dtMs) / 1000;
+      const { point } = pointAt(track, ahead);
+      camera.moveTo({ lat: point[0], lon: point[1], bearing: bearingAt(track, ahead) }, dtMs);
+    } else {
+      camera.moveTo({ lat: fix.lat, lon: fix.lon, bearing: gpsBearing }, dtMs);
+    }
   };
 
   const doReroute = async (fix: Fix) => {
@@ -195,16 +227,21 @@ export function createNavigation(deps: NavigationDeps): Navigation {
     const fix: Fix = { lat: pos.coords.latitude, lon: pos.coords.longitude, accuracy: pos.coords.accuracy ?? 0 };
     // Heading: from the device when moving, else from the last fix if we moved a bit.
     const h = pos.coords.heading;
-    if (h !== null && h !== undefined && !Number.isNaN(h) && (pos.coords.speed ?? 0) > 2) bearing = h;
+    if (h !== null && h !== undefined && !Number.isNaN(h) && (pos.coords.speed ?? 0) > 2) gpsBearing = h;
     else if (lastFix) {
       const dy = fix.lat - lastFix.lat;
       const dx = (fix.lon - lastFix.lon) * Math.cos((fix.lat * Math.PI) / 180);
-      if (Math.hypot(dx, dy) * 111_195 > 8) bearing = (Math.atan2(dx, dy) * 180) / Math.PI;
+      if (Math.hypot(dx, dy) * 111_195 > 8) gpsBearing = (Math.atan2(dx, dy) * 180) / Math.PI;
     }
     lastFix = fix;
-    dot.setLngLat([fix.lon, fix.lat]).addTo(deps.map);
-    render(fix, pos.coords.speed ?? 0);
-    follow(fix);
+    const now = performance.now();
+    // Glide over the fix interval (typically ~1 s), clamped for missed or bunched fixes.
+    const dtMs = lastFixTime ? Math.min(2000, Math.max(300, now - lastFixTime)) : 1000;
+    lastFixTime = now;
+    const speed = Math.max(0, pos.coords.speed ?? 0);
+    const p = render(fix, speed);
+    if (p) trimRoute(p.alongM);
+    follow(fix, p, speed, dtMs);
   };
 
   const onError = (err: GeolocationPositionError) => {
@@ -217,13 +254,12 @@ export function createNavigation(deps: NavigationDeps): Navigation {
   // Pause following when the rider pans the map; ◎ resumes.
   deps.map.on('dragstart', (ev: { originalEvent?: unknown }) => {
     if (!active || !ev.originalEvent) return;
-    following = false;
+    camera.paused = true;
     recenter.hidden = false;
   });
   recenter.addEventListener('click', () => {
-    following = true;
     recenter.hidden = true;
-    if (lastFix) follow(lastFix);
+    camera.recenter();
   });
   stopBtn.addEventListener('click', () => nav.stop());
 
@@ -235,8 +271,11 @@ export function createNavigation(deps: NavigationDeps): Navigation {
       if (active) return;
       active = true;
       setRoute(r);
-      following = true;
       lastFix = null;
+      lastFixTime = 0;
+      camera.attach();
+      // Fewer pixels to draw per frame on 3x screens (battery); restored on stop.
+      deps.map.setPixelRatio(Math.min(window.devicePixelRatio || 1, NAV_MAX_PIXEL_RATIO));
       document.body.classList.add('nav-mode');
       top.hidden = bottom.hidden = false;
       recenter.hidden = true;
@@ -271,6 +310,9 @@ export function createNavigation(deps: NavigationDeps): Navigation {
       document.body.classList.remove('nav-mode');
       top.hidden = bottom.hidden = recenter.hidden = true;
       dot.remove();
+      camera.release();
+      deps.map.setPixelRatio(window.devicePixelRatio || 1);
+      if (route) deps.drawRoute(route.geometry, bands); // whole route again
       deps.map.easeTo({ bearing: 0, duration: 400 });
       deps.onExit();
     },

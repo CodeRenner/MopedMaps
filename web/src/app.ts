@@ -169,6 +169,7 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
       currentRoute = r;
       routeLayer.setRoute(r.geometry, speedBands(r.geometry, r.profile));
     },
+    drawRoute: (geometry, bands) => routeLayer.setRoute(geometry, bands),
     onExit: () => updateControls(),
     storage,
   });

@@ -67,7 +67,7 @@ Static hosting on Cloudflare Pages (project `mopedmaps`, app + graph tiles):
   Geofabrik extract + Copernicus GLO-30 → streaming build (~1 h for Germany)
   → tiles artifact (90 days) → deploy.
 - `.github/workflows/deploy.yml` — on pushes to `main` touching `web/`, **daily at
-  02:30 UTC** and after each graph build: builds the latest `main`, fetches a fresh
+  02:17 UTC** and after each graph build: builds the latest `main`, fetches a fresh
   road-closures file (`closures.json`) and deploys both with the tiles of the
   latest successful graph build (it refuses to deploy without tiles).
 - `.github/workflows/keepalive.yml` — weekly: re-enables the scheduled workflows

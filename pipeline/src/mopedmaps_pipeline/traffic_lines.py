@@ -291,8 +291,9 @@ def from_geojson(doc: Json, ref_field: str | None, dtv_field: str) -> list[Secti
 _UA = {"User-Agent": "MopedMaps traffic (github.com/CodeRenner/MopedMaps)"}
 
 
-def _bytes(url: str, attempts: int = 3) -> bytes:
-    """GET with retries: some state servers drop large downloads midway."""
+def _bytes(url: str, attempts: int = 4, backoff_s: float = 30.0) -> bytes:
+    """GET with retries: some state servers drop large downloads midway or
+    answer 403 to quick consecutive requests, so wait longer each time."""
     for attempt in range(1, attempts + 1):
         try:
             req = urllib.request.Request(url, headers=_UA)
@@ -302,8 +303,14 @@ def _bytes(url: str, attempts: int = 3) -> bytes:
             if attempt == attempts:
                 raise
             print(f"traffic: retry {attempt} for {url}: {err}", file=sys.stderr)
-            time.sleep(5 * attempt)
+            time.sleep(backoff_s * attempt)
     raise AssertionError("unreachable")
+
+
+def _nrw() -> list[Section]:
+    shp = _bytes(NRW_URL + ".shp")
+    time.sleep(10)  # the server refused the second file when asked right away
+    return from_shapefile(shp, _bytes(NRW_URL + ".dbf"), 32, "STRBEZ", "DTVKFZA")
 
 
 def _json(url: str) -> Json:
@@ -318,12 +325,7 @@ def _sachsen() -> list[Section]:
 
 SOURCES: list[tuple[str, Callable[[], list[Section]]]] = [
     ("Bayern", lambda: from_geojson(_json(BAYERN_URL), "Straße", "DTV_Kfz")),
-    (
-        "Nordrhein-Westfalen",
-        lambda: from_shapefile(
-            _bytes(NRW_URL + ".shp"), _bytes(NRW_URL + ".dbf"), 32, "STRBEZ", "DTVKFZA"
-        ),
-    ),
+    ("Nordrhein-Westfalen", _nrw),
     ("Brandenburg", lambda: from_geojson(_json(BRANDENBURG_URL), "strasse", "KFZ")),
     ("Sachsen", _sachsen),
     ("Berlin", lambda: from_geojson(_json(BERLIN_URL), "str_bez", "dtvw_kfz")),

@@ -19,7 +19,7 @@ from the app (see `docs/DECISIONS.md`).
   Direction-only closures are skipped: the closed direction is not machine-readable.
 - Only closures active now or starting within 7 days; the app filters by its own clock again.
 
-The **Deploy** workflow runs it on every deploy and on a daily schedule (02:30 UTC); the file is
+The **Deploy** workflow runs it on every deploy and on a daily schedule (02:17 UTC); the file is
 served with `Cache-Control: no-cache` and fetched network-first by the service worker, so the app
 uses the last downloaded file offline. If a source fails, the others are still written; if all fail,
 the app routes without closures. Size 2026-10-08: 1,303 closures, 958 KB (240 KB gzip).

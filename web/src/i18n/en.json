@@ -95,6 +95,7 @@
   "prefs.coverageToggle": "Data availability by state",
   "search.placeholder": "Search address or place",
   "search.notReady": "Search available once the area is loaded",
+  "search.unavailable": "Search not available yet – the search data is still being built",
   "search.none": "Nothing found in the loaded area.",
   "places.title": "Destinations",
   "places.home": "Home",

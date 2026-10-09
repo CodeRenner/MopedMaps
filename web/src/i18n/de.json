@@ -95,6 +95,7 @@
   "prefs.coverageToggle": "Datenverfügbarkeit nach Bundesland",
   "search.placeholder": "Adresse oder Ort suchen",
   "search.notReady": "Suche verfügbar, sobald der Umkreis geladen ist",
+  "search.unavailable": "Suche noch nicht verfügbar – die Suchdaten werden gerade erstellt",
   "search.none": "Nichts gefunden im geladenen Umkreis.",
   "places.title": "Ziele",
   "places.home": "Zuhause",

@@ -242,14 +242,14 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
     },
   });
   const loadSearch = async (files: string[]): Promise<void> => {
-    searchBox.setReady(false);
+    searchBox.setState('loading');
     try {
       searchIndex = await loadSearchData(files, { baseUrl: GRAPH_BASE_URL, store: placesStore });
     } catch (err) {
       console.warn('search data unavailable', err);
       searchIndex = null;
     }
-    searchBox.setReady(searchIndex !== null);
+    searchBox.setState(searchIndex ? 'ready' : 'unavailable');
   };
 
   const loadAreaFor = async (code: string, radiusKm: number): Promise<void> => {

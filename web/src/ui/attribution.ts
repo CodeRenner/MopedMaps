@@ -25,7 +25,7 @@ export const TRAFFIC_ATTRIBUTION =
   'Verkehrsmengen (bearbeitet): <a href="https://mobidata-bw.de/dataset/karte_strassenverkehrszaehlung" target="_blank" rel="noopener">Verkehrsministerium BW</a>, ' +
   `<a href="https://www.list.smwa.sachsen.de/" target="_blank" rel="noopener">LASuV Sachsen</a>, <a href="https://geobasis-bb.de/" target="_blank" rel="noopener">LS Brandenburg</a>, FHH Hamburg BVM (${DL_BY}); ` +
   `Datenquelle: <a href="https://www.baysis.bayern.de/" target="_blank" rel="noopener">Bayerische Straßenbauverwaltung – BAYSIS</a> (${CC_BY}); ` +
-  `<a href="https://www.strassen.nrw.de/" target="_blank" rel="noopener">Straßen.NRW</a>, SenMVKU Berlin (${DL_ZERO})`;
+  `SenMVKU Berlin (${DL_ZERO})`;
 
 export function appAttributions(): string[] {
   return [OSM_ATTRIBUTION, GEONAMES_ATTRIBUTION, ELEVATION_ATTRIBUTION, TRAFFIC_ATTRIBUTION, CLOSURES_ATTRIBUTION];

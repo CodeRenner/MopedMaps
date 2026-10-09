@@ -10,6 +10,8 @@ export interface BandSection {
   band: Band;
   coords: LatLon[];
   lengthM: number;
+  /** Route geometry index of coords[0]. */
+  startIdx: number;
 }
 
 /** > 50 km/h orange, > 70 km/h red, otherwise no band. */
@@ -34,8 +36,24 @@ export function speedBands(
     if (band && open && open.band === band) {
       open.coords.push(...part.slice(1));
       open.lengthM += len;
-    } else if (band) out.push((open = { band, coords: part, lengthM: len }));
+    } else if (band) out.push((open = { band, coords: part, lengthM: len, startIdx: p.geomIndex[i]! }));
     else open = null;
   });
   return out.filter((b) => b.lengthM >= minM);
+}
+
+/**
+ * Bands still ahead of a cut on route segment `seg` at `point` (navigation hides
+ * the part already ridden): bands behind are dropped, a band containing the
+ * cut starts at the cut.
+ */
+export function bandsAhead(bands: BandSection[], seg: number, point: LatLon): BandSection[] {
+  const out: BandSection[] = [];
+  for (const b of bands) {
+    const endIdx = b.startIdx + b.coords.length - 1;
+    if (endIdx <= seg) continue;
+    if (b.startIdx > seg) out.push(b);
+    else out.push({ ...b, coords: [point, ...b.coords.slice(seg - b.startIdx + 1)], startIdx: seg });
+  }
+  return out;
 }

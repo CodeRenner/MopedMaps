@@ -1200,3 +1200,13 @@ Follow-up idea: let the graph build's deploy check out `main` to avoid shipping 
 - NRW still 403 for the `.dbf` despite 10 s pause and 30/60/90 s backoff (works from a home connection) -> removed
   from SOURCES, the in-app coverage note and the attribution (not circumventing the block).
 - Info button: `.panel button` out-specified `.info-btn` (blue square, 10 px padding) -> `.panel .info-btn`.
+### Iteration 80 — navigation camera, trimmed route, battery (2026-10-09)
+- User test feedback: the blue route stays behind the rider (confusing on winding roads), the camera jumps after the
+  position and sits too far "back", should stick to the GPS point and turn with it; battery drain is high.
+- What: branch `feature/nav-camera`. `nav/camera.ts` FollowCamera (marker fixed at 72 % height via padding, glides
+  to the predicted next position over the fix interval, bearing along the route, 30 fps cap, idle when standing);
+  `progress.ts` pointAt / remainingGeometry / bearingAt; `speedBands` startIdx + bandsAhead; route trimmed every 5 m;
+  pixel ratio capped at 2 while navigating; `fadeDuration: 0`.
+- Browser (phone viewport, simulated GPS 1 Hz at 30 km/h): marker stays at (187, 585) of 375x812 while the map
+  glides; route behind removed; renders 74 -> 25 fps; stop restores full route, padding, bearing and pixel ratio.
+- Tests: vitest 210 passed (camera maths, route helpers, bandsAhead).

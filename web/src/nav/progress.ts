@@ -109,3 +109,38 @@ export class OffRouteDetector {
     this.count = 0;
   }
 }
+
+/** Segment index and interpolated point at `alongM` (clamped to the route). */
+export function pointAt(t: RouteTrack, alongM: number): { seg: number; point: LatLon } {
+  const total = t.cum[t.cum.length - 1]!;
+  const d = Math.max(0, Math.min(total, alongM));
+  let lo = 0, hi = t.cum.length - 1;
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1;
+    if (t.cum[mid]! <= d) lo = mid;
+    else hi = mid;
+  }
+  const seg = Math.min(lo, Math.max(0, t.geometry.length - 2));
+  const len = t.cum[seg + 1]! - t.cum[seg]!;
+  const u = len > 0 ? (d - t.cum[seg]!) / len : 0;
+  const [aLat, aLon] = t.geometry[seg]!;
+  const [bLat, bLon] = t.geometry[seg + 1] ?? t.geometry[seg]!;
+  return { seg, point: [aLat + u * (bLat - aLat), aLon + u * (bLon - aLon)] };
+}
+
+/** The part of the route still ahead of `alongM` (what navigation draws). */
+export function remainingGeometry(t: RouteTrack, alongM: number): LatLon[] {
+  const { seg, point } = pointAt(t, alongM);
+  return [point, ...t.geometry.slice(seg + 1)];
+}
+
+/** Direction of travel (degrees from north) over the next `aheadM` metres from `alongM`. */
+export function bearingAt(t: RouteTrack, alongM: number, aheadM = 25): number {
+  const total = t.cum[t.cum.length - 1]!;
+  const from = Math.min(alongM, Math.max(0, total - aheadM));
+  const a = pointAt(t, from).point;
+  const b = pointAt(t, from + aheadM).point;
+  const dx = (b[1] - a[1]) * Math.cos((a[0] * Math.PI) / 180);
+  const dy = b[0] - a[0];
+  return ((Math.atan2(dx, dy) * 180) / Math.PI + 360) % 360;
+}

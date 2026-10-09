@@ -5,8 +5,8 @@ import type { SearchResult } from '../search/index';
 
 export interface SearchBox {
   root: HTMLElement;
-  /** null: no data for the area (yet) -> field disabled with a hint */
-  setReady(ready: boolean): void;
+  /** loading: area/search data still loading; unavailable: no search data on the server or cached */
+  setState(state: 'loading' | 'ready' | 'unavailable'): void;
 }
 
 export interface SearchActions {
@@ -21,7 +21,7 @@ export function createSearchBox(a: SearchActions): SearchBox {
   const input = document.createElement('input');
   input.type = 'search';
   input.className = 'search-input';
-  input.placeholder = t('search.placeholder');
+  input.placeholder = t('search.notReady');
   input.setAttribute('aria-label', t('search.placeholder'));
   input.autocomplete = 'off';
   input.enterKeyHint = 'search';
@@ -84,10 +84,10 @@ export function createSearchBox(a: SearchActions): SearchBox {
 
   return {
     root,
-    setReady(ready) {
-      input.disabled = !ready;
-      input.placeholder = t(ready ? 'search.placeholder' : 'search.notReady');
-      if (!ready) clear();
+    setState(state) {
+      input.disabled = state !== 'ready';
+      input.placeholder = t(state === 'ready' ? 'search.placeholder' : state === 'loading' ? 'search.notReady' : 'search.unavailable');
+      if (state !== 'ready') clear();
     },
   };
 }

@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from mopedmaps_pipeline.places import build_places, place_kind, tile_doc
+from mopedmaps_pipeline.places import _hn_sort, build_places, place_kind, tile_doc
 
 OSM = """<?xml version="1.0" encoding="UTF-8"?>
 <osm version="0.6">
@@ -79,3 +79,8 @@ def test_tile_doc_deduplicates():
     doc = tile_doc(rows)
     assert doc["s"] == [["Weg", "1", "X", 100, 100, ["10"], [], []]]
     assert len(doc["p"]) == 1
+
+
+def test_odd_house_numbers_sort_without_crashing():
+    hns = ["21¹", "3", "12-14", "٣", "b", "5a", "2 1/2"]
+    assert sorted(hns, key=_hn_sort) == ["2 1/2", "3", "5a", "12-14", "21¹", "b", "٣"]

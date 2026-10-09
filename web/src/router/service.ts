@@ -11,6 +11,7 @@ import { haversineM } from './geo';
 import { assembleGraph, type Graph, nearestNode } from './graph';
 import type { LatLon, RouterRequest, RouterResponse } from './protocol';
 import { validateProfile } from './profile';
+import { roadsInBbox } from './roads';
 
 export class RouterService {
   private graph: Graph | null = null;
@@ -26,6 +27,14 @@ export class RouterService {
           return { type: 'closures', id: req.id, matched: this.applyClosures() };
         case 'route':
           return this.route(req);
+        case 'roads':
+          return {
+            type: 'roads',
+            id: req.id,
+            roads: this.graph
+              ? roadsInBbox(this.graph, req.bbox, req.maxClass, req.limit)
+              : { coords: new Float32Array(), offsets: new Uint32Array([0]), classes: new Uint8Array(), truncated: false },
+          };
       }
     } catch (err) {
       return { type: 'error', id: req.id, message: err instanceof Error ? err.message : String(err) };

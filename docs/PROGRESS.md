@@ -1160,3 +1160,9 @@ Follow-up idea: let the graph build's deploy check out `main` to avoid shipping 
 - Checks (local Geofabrik extracts): Hamburg primary 94 %, secondary 88 %; Berlin trunk/primary/secondary 96–98 %,
   tertiary 70 %. Live download: all six sources ok (NRW after one retry).
 - Tests: pytest 109 passed, vitest 194 passed. Takes effect with the next graph build (monthly, 2026-11-03, or manual).
+### Iteration 74 — data-availability info behind an "i" (2026-10-08)
+- What: branch `feature/coverage-info`. User: the note on per-state data should open from a small "i" at the
+  parameters. "Sicherheit im Detail" hint now has an (i) button (aria-expanded) that shows/hides the coverage note.
+  Map attribution (now many sources) starts collapsed behind MapLibre's (i) instead of covering the map bottom.
+- Browser: i toggles the note; attribution collapsed at start, expands on tap.
+- Graph build with the new DTV sources started manually (run 37847326840).

@@ -88,11 +88,27 @@ export function createWeightsPanel(initial: CostWeights, onChange: (w: CostWeigh
     prefs.append(row);
   }
   const prefsHint = document.createElement('p');
-  prefsHint.className = 'hint-muted';
-  prefsHint.textContent = t('prefs.hint');
+  prefsHint.className = 'hint-muted hint-with-info';
+  const hintText = document.createElement('span');
+  hintText.textContent = t('prefs.hint');
+  // Data availability per state: behind a small "i", it is long and rarely needed.
+  const info = document.createElement('button');
+  info.type = 'button';
+  info.className = 'info-btn';
+  info.textContent = 'i';
+  info.setAttribute('aria-label', t('prefs.coverageToggle'));
+  info.setAttribute('aria-expanded', 'false');
+  info.setAttribute('aria-controls', 'prefs-coverage');
   const coverage = document.createElement('p');
-  coverage.className = 'hint-muted';
+  coverage.id = 'prefs-coverage';
+  coverage.className = 'hint-muted coverage-note';
   coverage.textContent = t('prefs.coverage');
+  coverage.hidden = true;
+  info.addEventListener('click', () => {
+    coverage.hidden = !coverage.hidden;
+    info.setAttribute('aria-expanded', String(!coverage.hidden));
+  });
+  prefsHint.append(hintText, info);
   prefs.append(prefsHint, coverage);
   root.append(prefs);
   return root;

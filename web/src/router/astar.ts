@@ -125,6 +125,7 @@ export function findRoute(
       if (c === Infinity) continue;
       const t = turnCost(g, a, b);
       const turned = t.timeS > 0;
+      // The "Abbiegen" preference (turnFactor) scales the turn and the turn-chain penalty alike.
       const tc = turned ? turnFactor * (weights.time * (t.timeS + chainS(a)) + weights.risk * t.riskPts) : 0;
       const gb = ga + c + tc;
       if (gb < gScore[b]!) {

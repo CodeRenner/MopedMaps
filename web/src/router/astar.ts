@@ -7,7 +7,7 @@
  * not estimated (stays admissible); energy (step 6) must also stay >= 0.
  */
 
-import { CLOSURE_AVOID_PENALTY_S } from '../config';
+import { CLOSURE_AVOID_PENALTY_S, TURN_CHAIN_DISTANCE_M, TURN_CHAIN_PENALTY_S } from '../config';
 import { edgeEnergy } from './energy';
 import type { Graph } from './graph';
 import { haversineM } from './geo';
@@ -65,6 +65,10 @@ export function findRoute(
   const m = g.arcTarget.length;
   const gScore = new Float64Array(m).fill(Infinity);
   const prevArc = new Int32Array(m).fill(-1);
+  // Metres driven since the last real turn along the best path to the end of
+  // each arc (Infinity: no turn yet), for the turn-chain penalty. It follows
+  // the best label only, so the chain penalty is a heuristic, not exact.
+  const sinceTurnM = new Float64Array(m).fill(Infinity);
   const closed = new Uint8Array(m);
   const arcCostCache = new Float64Array(m).fill(Number.NaN);
   const tLat = g.lat[target]!;
@@ -89,9 +93,9 @@ export function findRoute(
     arcCostCache[a] = c;
     return c;
   };
-  const turn = (inArc: number, outArc: number): number => {
-    const t = turnCost(g, inArc, outArc);
-    return turnFactor * (weights.time * t.timeS + weights.risk * t.riskPts);
+  const chainS = (inArc: number): number => {
+    const d = sinceTurnM[inArc]!;
+    return d < TURN_CHAIN_DISTANCE_M ? TURN_CHAIN_PENALTY_S * (1 - d / TURN_CHAIN_DISTANCE_M) : 0;
   };
 
   const open = new MinHeap();
@@ -119,10 +123,15 @@ export function findRoute(
       if (closed[b]) continue;
       const c = arcCost(b);
       if (c === Infinity) continue;
-      const gb = ga + c + turn(a, b);
+      const t = turnCost(g, a, b);
+      const turned = t.timeS > 0;
+      const tc = turned ? turnFactor * (weights.time * (t.timeS + chainS(a)) + weights.risk * t.riskPts) : 0;
+      const gb = ga + c + tc;
       if (gb < gScore[b]!) {
         gScore[b] = gb;
         prevArc[b] = a;
+        const len = g.edges[g.arcEdge[b]!]!.lengthM;
+        sinceTurnM[b] = turned ? len : sinceTurnM[a]! + len;
         open.push(gb + h(g.arcTarget[b]!), b);
       }
     }

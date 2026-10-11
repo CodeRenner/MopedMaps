@@ -44,6 +44,11 @@ consecutive pieces can be priced (`web/src/router/turns.ts`, constants `TURN_*` 
   outgoing road of the same class and every other way out is a lower class).
 - **Right turn:** 1 / 3 / 8 s (slight 35–60°, normal 60–135°, sharp). **Left turn:** 2 / 6 / 12 s plus
   2 risk points for normal/sharp (crossing oncoming traffic). **U-turn** on the same road: 60 s.
+- **Turn chains:** a turn that follows the previous turn within 150 m of driving costs up to 20 s
+  extra (fading linearly to 0 at 150 m), so the router stops zig-zagging through car parks and
+  side streets to save a few metres. It is a cost only, not added to the shown travel time, and is
+  scaled by "Abbiegen" like the other turn costs. The distance follows the best path found so far, so
+  it is a heuristic, not an exact optimum (constants `TURN_CHAIN_*`).
 - Headings are measured over 20 m before/after the junction so shape wiggles don't count.
 - "Routenwahl → Sicherheit im Detail → Abbiegen" scales the turn costs (× 0.5 / 1 / 2). Main roads
   with many side streets are not penalised for them: driving straight past a junction is free.

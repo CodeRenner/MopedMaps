@@ -20,7 +20,9 @@ on:
 
 permissions:
   contents: read
-  actions: read # the called deploy workflow downloads the tiles artifact
+  # read: the called deploy workflow downloads the tiles artifact;
+  # write: older tiles artifacts are deleted after a successful upload.
+  actions: write
 
 concurrency:
   group: graph-build
@@ -105,8 +107,25 @@ jobs:
         with:
           name: graph-tiles
           path: data/graph
-          retention-days: 90
+          # Long enough for the daily deploy to find the tiles until the next
+          # monthly build; older builds are deleted in the next step.
+          retention-days: 45
           if-no-files-found: error
+
+      # Each tiles artifact is ~0.5 GB and counts against the account's Actions
+      # storage quota (exceeding it blocked Actions on 2026-10-14). Only the
+      # newest one is ever deployed, so drop the rest.
+      - name: Delete older tiles artifacts
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          gh api --paginate "repos/$GITHUB_REPOSITORY/actions/artifacts?name=graph-tiles&per_page=100" \
+            --jq ".artifacts[] | select(.workflow_run.id != $RUN_ID) | .id" |
+          while read -r id; do
+            gh api -X DELETE "repos/$GITHUB_REPOSITORY/actions/artifacts/$id" && echo "deleted artifact $id"
+          done
 
   deploy:
     name: Deploy app + tiles

@@ -1210,3 +1210,8 @@ Follow-up idea: let the graph build's deploy check out `main` to avoid shipping 
 - Browser (phone viewport, simulated GPS 1 Hz at 30 km/h): marker stays at (187, 585) of 375x812 while the map
   glides; route behind removed; renders 74 -> 25 fps; stop restores full route, padding, bearing and pixel ratio.
 - Tests: vitest 210 passed (camera maths, route helpers, bandsAhead).
+### Iteration 81 — Actions storage quota (2026-10-14)
+- GitHub reported Actions blocked by an exhausted quota. The repo is public (runner minutes free); the cause is
+  storage: 7 `graph-tiles` artifacts of ~0.5 GB each, kept 90 days (~3.4 GB vs. 500 MB free).
+- Graph build now keeps tiles 45 days (one monthly cycle plus margin) and deletes all older `graph-tiles`
+  artifacts after a successful upload (`actions: write`). Existing old artifacts to be deleted by hand once (keep the newest, run 37902556323).

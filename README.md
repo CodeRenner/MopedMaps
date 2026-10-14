@@ -65,7 +65,8 @@ PLZ table: `python -m mopedmaps_pipeline plz DE.zip web/public/data/plz.json`
 Static hosting on Cloudflare Pages (project `mopedmaps`, app + graph tiles):
 - `.github/workflows/graph-build.yml` — monthly (3rd, 02:00 UTC) or manual:
   Geofabrik extract + Copernicus GLO-30 → streaming build (~1 h for Germany)
-  → tiles artifact (90 days) → deploy.
+  → tiles artifact (45 days; older tiles artifacts are deleted, only the newest
+  is kept to stay within the Actions storage quota) → deploy.
 - `.github/workflows/deploy.yml` — on pushes to `main` touching `web/`, **daily at
   02:17 UTC** and after each graph build: builds the latest `main`, fetches a fresh
   road-closures file (`closures.json`) and deploys both with the tiles of the

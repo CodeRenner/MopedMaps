@@ -97,4 +97,31 @@ describe('turn costs', () => {
     const noTurns = findRoute(g, 0, 4, MOPED, { ...w, prefs: prefs(0.5) })!;
     expect(straight.timeS).toBeGreaterThan(noTurns.timeS); // it is the slower road, chosen for fewer turns
   });
+
+  it('a chain of turns in quick succession costs extra (zig-zag through a car park)', () => {
+    // Staircase S -> P1 north, -> P2 east, -> P3 north, -> T east (right, left, right; every corner
+    // has a stub, so each is a real choice) vs. one left turn on a 30 % longer L-shaped road S -> Q -> T.
+    const route = (legM: number, junctions = 1) => {
+      const s = legM / 111_000;
+      const nodes: [number, number][] = [
+        [0, 0], [s, 0], [s, s], [2 * s, s], [2 * s, 2 * s], [0, 2 * s], // S, P1, P2, P3, T, Q
+        [s, -s], [0, s * 1.01], [2 * s, 0], [-s, 2 * s], // stubs at P1, P2, P3, Q
+      ];
+      const l = { lengthM: legM };
+      const longL = { lengthM: 2 * legM * 1.3 };
+      const edges = [
+        e(0, 1, RoadClass.SERVICE, l), e(1, 2, RoadClass.SERVICE, l), e(2, 3, RoadClass.SERVICE, l), e(3, 4, RoadClass.SERVICE, l),
+        e(0, 5, RoadClass.RESIDENTIAL, longL), e(5, 4, RoadClass.RESIDENTIAL, longL),
+        e(1, 6, RoadClass.SERVICE), e(2, 7, RoadClass.SERVICE), e(3, 8, RoadClass.SERVICE), e(5, 9, RoadClass.RESIDENTIAL),
+      ];
+      const prefs = { fast: 1, traffic: 1, junctions, surface: 1, lighting: 1 };
+      return findRoute(assembleGraph([chunk(nodes, edges)]), 0, 4, MOPED, { time: 1, risk: 0, energy: 0, prefs })!.nodes;
+    };
+    expect(route(50)).toEqual([0, 5, 4]); // three turns within 50 m of each other: take the calmer road
+    expect(route(200)).toEqual([0, 1, 2, 3, 4]); // the same turns spread out are fine
+    // "Abbiegen" scales the chain penalty too: at 100 m legs "−" keeps the staircase, "+" avoids it
+    // (without the chain penalty the staircase would still win with "+").
+    expect(route(100, 0.5)).toEqual([0, 1, 2, 3, 4]);
+    expect(route(100, 2)).toEqual([0, 5, 4]);
+  });
 });

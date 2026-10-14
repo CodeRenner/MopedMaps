@@ -264,6 +264,13 @@ export const TURN_LEFT_S = [2, 6, 12] as const;
 export const TURN_UTURN_S = 60;
 /** Risk points per left turn (normal/sharp) — crossing oncoming traffic on a moped. */
 export const TURN_LEFT_RISK_POINTS = 2;
+/**
+ * Turn chains: a turn within this many metres of driving after the previous turn
+ * (zig-zag through side streets or a car park) costs extra, fading linearly from
+ * TURN_CHAIN_PENALTY_S right after the last turn to 0 at this distance.
+ */
+export const TURN_CHAIN_DISTANCE_M = 150;
+export const TURN_CHAIN_PENALTY_S = 20;
 
 // --- Voice guidance (navigation) -----------------------------------------------
 /** First announcement of a turn at this distance (m) — or earlier when fast (VOICE_EARLY_S of travel). */

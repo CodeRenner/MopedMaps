@@ -7,6 +7,8 @@ export interface SearchBox {
   root: HTMLElement;
   /** loading: area/search data still loading; unavailable: no search data on the server or cached */
   setState(state: 'loading' | 'ready' | 'unavailable'): void;
+  /** Swap in a fresh input element (keeps the text); drops iOS's undo history for the typing. */
+  resetUndo(): void;
 }
 
 export interface SearchActions {
@@ -18,20 +20,52 @@ export function createSearchBox(a: SearchActions): SearchBox {
   const root = document.createElement('div');
   root.className = 'panel search';
   root.setAttribute('role', 'search');
-  const input = document.createElement('input');
-  input.type = 'search';
-  input.className = 'search-input';
-  input.placeholder = t('search.notReady');
-  input.setAttribute('aria-label', t('search.placeholder'));
-  input.autocomplete = 'off';
-  input.enterKeyHint = 'search';
-  input.disabled = true;
   const list = document.createElement('ul');
   list.className = 'search-results';
   list.setAttribute('role', 'listbox');
-  root.append(input, list);
 
   let timer: ReturnType<typeof setTimeout> | undefined;
+  const makeInput = (): HTMLInputElement => {
+    const el = document.createElement('input');
+    el.type = 'search';
+    el.className = 'search-input';
+    el.placeholder = t('search.notReady');
+    el.setAttribute('aria-label', t('search.placeholder'));
+    el.autocomplete = 'off';
+    el.enterKeyHint = 'search';
+    el.disabled = true;
+    el.addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = setTimeout(run, 120);
+    });
+    el.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter') {
+        clearTimeout(timer);
+        run();
+        (list.querySelector('button') as HTMLButtonElement | null)?.click();
+      } else if (ev.key === 'Escape') {
+        el.value = '';
+        clear();
+      }
+    });
+    return el;
+  };
+  let input = makeInput();
+  root.append(input, list);
+  /**
+   * iOS keeps the typing in the page's undo history, so every shake on the
+   * handlebar offers "Undo Typing". Blurring is not enough; a new element
+   * (same text, state and placeholder) has no history.
+   */
+  const resetUndo = () => {
+    const fresh = makeInput();
+    fresh.value = input.value;
+    fresh.disabled = input.disabled;
+    fresh.placeholder = input.placeholder;
+    input.replaceWith(fresh);
+    input = fresh;
+  };
+
   const clear = () => list.replaceChildren();
   const run = () => {
     const q = input.value.trim();
@@ -60,6 +94,7 @@ export function createSearchBox(a: SearchActions): SearchBox {
           input.value = r.label;
           clear();
           input.blur(); // closes the phone keyboard
+          resetUndo();
           a.pick(r);
         });
         li.append(b);
@@ -67,21 +102,6 @@ export function createSearchBox(a: SearchActions): SearchBox {
       }),
     );
   };
-  input.addEventListener('input', () => {
-    clearTimeout(timer);
-    timer = setTimeout(run, 120);
-  });
-  input.addEventListener('keydown', (ev) => {
-    if (ev.key === 'Enter') {
-      clearTimeout(timer);
-      run();
-      (list.querySelector('button') as HTMLButtonElement | null)?.click();
-    } else if (ev.key === 'Escape') {
-      input.value = '';
-      clear();
-    }
-  });
-
   return {
     root,
     setState(state) {
@@ -89,5 +109,6 @@ export function createSearchBox(a: SearchActions): SearchBox {
       input.placeholder = t(state === 'ready' ? 'search.placeholder' : state === 'loading' ? 'search.notReady' : 'search.unavailable');
       if (state !== 'ready') clear();
     },
+    resetUndo,
   };
 }

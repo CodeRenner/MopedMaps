@@ -1,7 +1,15 @@
 /** App wiring: data loading, router worker, map layers, panels. */
 
 import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
-import { CLOSURES_URL, GRAPH_BASE_URL, OFFLINE_TILE_ERRORS, PLZ_TABLE_URL, REROUTE_DEBOUNCE_MS } from './config';
+import {
+  CLOSURES_URL,
+  GRAPH_BASE_URL,
+  LEARN_MIN_FUEL_KM,
+  LEARN_SAMPLES_TARGET,
+  OFFLINE_TILE_ERRORS,
+  PLZ_TABLE_URL,
+  REROUTE_DEBOUNCE_MS,
+} from './config';
 import { AreaError, loadArea } from './data/area';
 import { type Manifest, parseManifest } from './data/manifest';
 import { loadSearchData } from './data/places';
@@ -11,10 +19,24 @@ import { circleBounds, circlePolygon } from './location/circle';
 import { PlzIndex } from './location/plz';
 import { type RouterPort, WorkerRouterPort } from './router/port';
 import type { CostWeights, VehicleProfile } from './router/profile';
-import { type EnergySettings, estimateRange } from './router/range';
+import { type EnergySettings, calibrationFactor, estimateRange, referenceConsumption } from './router/range';
+import {
+  type LearnState,
+  learnedFactor,
+  promptAfterRide,
+  recordRide,
+  type Ride,
+  setAsking,
+  skipRide,
+  startFuelWindow,
+  submitBattery,
+  submitFill,
+} from './router/learning';
+import { loadLearnState, saveLearnState } from './ui/learningStore';
+import { showRideFeedback } from './ui/rideFeedback';
 import { createAreaPanel } from './ui/areaPanel';
 import { requestPersistence } from './ui/basemap';
-import { areaErrorKey, downloadMb, energySummary, rangeSummary, routeErrorKey, routeSummaryParams } from './ui/messages';
+import { areaErrorKey, consumptionText, downloadMb, energySummary, rangeSummary, routeErrorKey, routeSummaryParams } from './ui/messages';
 import { createProfilePanel } from './ui/profilePanel';
 import { createRouteChart } from './ui/routeChart';
 import { loadEnergySettings, loadProfile, saveEnergySettings, saveProfile } from './ui/profileStore';
@@ -98,6 +120,10 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
     get: (d: VehicleProfile['drive']) => loadEnergySettings(storage, d),
     set: (d: VehicleProfile['drive'], s: EnergySettings) => saveEnergySettings(storage, d, s),
   };
+  const learnAccess = {
+    get: (d: VehicleProfile['drive']) => loadLearnState(storage, d),
+    set: (d: VehicleProfile['drive'], s: LearnState) => saveLearnState(storage, d, s),
+  };
   let weights: CostWeights = loadWeights(storage);
   let places = loadPlaces(storage);
   const placeLabel = (p: LatLon): string => {
@@ -170,7 +196,10 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
       routeLayer.setRoute(r.geometry, speedBands(r.geometry, r.profile));
     },
     drawRoute: (geometry, bands) => routeLayer.setRoute(geometry, bands),
-    onExit: () => updateControls(),
+    onExit(ride) {
+      updateControls();
+      if (ride) void afterRide(ride);
+    },
     storage,
   });
   const controls = createRouteControls({
@@ -216,7 +245,7 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
       const risk = r.riskAvg > 0 ? ` · ${t(`route.risk.${riskClass(r.riskAvg)}`)}` : '';
       // Energy shown calibrated to the user's real consumption (if given), plus range with a capacity.
       const es = energyAccess.get(profile.drive);
-      const est = estimateRange(profile, es, r);
+      const est = estimateRange(profile, es, r, learnAccess.get(profile.drive));
       const electric = profile.drive === 'electric';
       const en = energySummary(getLocale(), profile.drive, electric ? est.used : 0, electric ? 0 : est.used, r.ascentM);
       const range = rangeSummary(getLocale(), profile.drive, est, es.reserveShare);
@@ -228,6 +257,67 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
     } else if (res.type === 'error') {
       panel.setStatus(res.message, true);
     }
+  }
+
+  /** After navigation: book the ride and, when due, ask for the real consumption (router/learning.ts). */
+  async function afterRide(ride: Ride): Promise<void> {
+    const drive = profile.drive;
+    let ls = recordRide(learnAccess.get(drive), drive, ride);
+    learnAccess.set(drive, ls);
+    const es = energyAccess.get(drive);
+    const now = Date.now();
+    const prompt = promptAfterRide(ls, drive, ride, {
+      capacity: es.capacity,
+      factor: calibrationFactor(profile, es, ls),
+      now,
+    });
+    profilePanel.refresh();
+    if (prompt === 'none') return;
+    const answer = await showRideFeedback({
+      prompt,
+      rideKm: ride.km,
+      learning: ls.samples.length < LEARN_SAMPLES_TARGET,
+      capacity: es.capacity,
+      windowKm: ls.fuel?.km ?? 0,
+    });
+    let note: string | null = null;
+    if (answer.action === 'never') {
+      ls = setAsking(ls, false);
+      note = t('learn.neverDone');
+    } else if (answer.action === 'skip') {
+      ls = skipRide(ls, drive);
+      if (drive === 'combustion' && prompt === 'fuel-ride') note = t('learn.fuelSkipped');
+    } else if (answer.action === 'start') {
+      ls = startFuelWindow(ls, now);
+      note = t('learn.fuelStarted');
+    } else {
+      let outcome: string | null = null;
+      if (answer.action === 'battery') {
+        if (es.capacity === null) energyAccess.set(drive, { ...es, capacity: answer.capacity });
+        const res = submitBattery(ls, ride, answer.startPct, answer.endPct, answer.capacity, now);
+        ls = res.state;
+        outcome = res.outcome;
+      } else if (answer.litres !== null) {
+        const res = submitFill(ls, answer.litres, now);
+        ls = res.state;
+        outcome = res.outcome;
+      }
+      if (outcome === 'saved') {
+        const k = learnedFactor(ls) ?? 1;
+        note = t('learn.thanks', {
+          n: ls.samples.length,
+          value: consumptionText(getLocale(), drive, referenceConsumption(profile) * k),
+        });
+        if (drive === 'combustion' && ls.fuel) note += ` ${t('learn.fuelStarted')}`;
+      } else if (outcome) {
+        note = t(`learn.outcome.${outcome}`, { km: LEARN_MIN_FUEL_KM });
+      }
+    }
+    learnAccess.set(drive, ls);
+    profilePanel.refresh();
+    // The learned factor changes the range of the shown route; the note goes last so it stays visible.
+    if (areaLoaded && wantsRoute(picker)) await computeRoute();
+    if (note) panel.setStatus(note);
   }
 
   const searchBox = createSearchBox({
@@ -317,7 +407,7 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
     profile = p;
     saveProfile(storage, p);
     if (areaLoaded && wantsRoute(picker)) void computeRoute();
-  }, energyAccess);
+  }, energyAccess, learnAccess);
   const weightsPanel = createWeightsPanel(weights, (w) => {
     weights = w;
     saveWeights(storage, w);
@@ -326,7 +416,7 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
       if (areaLoaded && wantsRoute(picker)) void computeRoute();
     }, REROUTE_DEBOUNCE_MS);
   });
-  ui.append(panel.root, searchBox.root, placesPanel.root, chart.root, profilePanel, weightsPanel);
+  ui.append(panel.root, searchBox.root, placesPanel.root, chart.root, profilePanel.root, weightsPanel);
 
   // Reopen the last area: its chunks are usually still in IndexedDB, so this is
   // fast and works offline; if they were evicted they are downloaded again.

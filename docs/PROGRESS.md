@@ -1210,3 +1210,15 @@ Follow-up idea: let the graph build's deploy check out `main` to avoid shipping 
 - Browser (phone viewport, simulated GPS 1 Hz at 30 km/h): marker stays at (187, 585) of 375x812 while the map
   glides; route behind removed; renders 74 -> 25 fps; stop restores full route, padding, bearing and pixel ratio.
 - Tests: vitest 210 passed (camera maths, route helpers, bandsAhead).
+### Iteration 81 — learning the real consumption from rides (2026-10-16)
+- What: branch `claude/funny-feynman-fwl83l`. User: instead of typing a consumption, ask after the first rides how
+  much was used and learn from it; with "skip" (e.g. ridden with a passenger) and "don't ask again". Decisions:
+  combustion uses the full-to-full method; after the learning phase ask again every 10 rides or after a month.
+- `router/learning.ts` (pure: samples, factor Σ real / Σ modelled, when to ask, outliers, fuel window),
+  `nav/ride.ts` RideMeter (ridden share of each route incl. reroutes), `ui/rideFeedback.ts` dialog,
+  `ui/learningStore.ts`, vehicle panel section (status, "Vollgetankt", ask on/off, delete). `estimateRange` and
+  `calibrationFactor` take the learned state. Details in docs/energy-model.md ("Learning from rides").
+- Browser (phone viewport): battery and fuel dialogs render, validate and return the answers; panel shows the
+  learned value and the open measurement.
+- Tests: vitest 221 passed (learning.test.ts: factor, ask policy, skip/never, full-to-full, outliers, ride meter,
+  storage, % parsing).

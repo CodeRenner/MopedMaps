@@ -49,3 +49,43 @@ consumption (Wh/km or l/100 km).
   capacity the share used, the remaining distance at this route's consumption,
   and a warning when less than `RANGE_RESERVE_SHARE` (15 %) would be left.
   It assumes a full battery/tank at the start.
+
+## Learning from rides
+`web/src/router/learning.ts` (pure), `web/src/nav/ride.ts` (what was ridden),
+dialog `web/src/ui/rideFeedback.ts`, settings in the vehicle panel. Constants
+`LEARN_*` in `web/src/config/index.ts`. Stored locally per drive type
+(`mopedmaps.learn.v1.<drive>`), never sent anywhere.
+
+- **Ride:** during navigation the ridden part of each route (reroutes start a
+  new one) is booked with the route's modelled energy in proportion to its
+  distance; an arrival books the whole route.
+- **Electric:** after a ride the app asks for battery % before (default 100)
+  and now. Real energy = drop × usable capacity (asked in the dialog if not
+  set). Only asked for rides ≥ `LEARN_MIN_KM` (3 km) that are expected to use
+  ≥ `LEARN_MIN_SHARE` (10 %) of the battery, and the drop must be ≥
+  `LEARN_MIN_DROP_PCT` (3 points): battery displays step in 5–10 %, short rides
+  would be noise.
+- **Combustion (full-to-full):** a fuel gauge is too coarse, so the app counts
+  all navigated rides between two full tanks and compares them with the litres
+  refilled. Start with "Tank ist voll" (dialog) or "Vollgetankt" (panel); after
+  each ride the dialog takes the refilled litres (or nothing). A fill-up after
+  less than `LEARN_MIN_FUEL_KM` (30 km) is not used. Rides without navigation in
+  between distort the measurement (stated in the dialog).
+- **Factor:** `k = Σ real / Σ modelled` over the newest `LEARN_MAX_SAMPLES` (10)
+  samples, clamped like the manual calibration. Longer stretches weigh more.
+  Without a manual consumption it is used from the first sample; with one it
+  replaces it from `LEARN_TRUST_SAMPLES` (3) samples on. From then on a sample
+  whose factor is off by more than `LEARN_OUTLIER_RATIO` (2×) is rejected.
+- **When to ask:** after every eligible ride until `LEARN_SAMPLES_TARGET` (5)
+  samples, then again after `LEARN_REASK_RIDES` (10) rides or when the last
+  answer is older than `LEARN_REASK_DAYS` (30 days), so an ageing battery is
+  followed. Combustion asks after every ride while a measurement is open.
+- **Skip / don't ask again:** "Überspringen" stores nothing and the next ride
+  asks again (e.g. ridden with a passenger). For combustion it also drops the
+  open measurement, since that ride's fuel ends up in the next fill-up.
+  "Nicht mehr fragen" stops the questions; the vehicle panel switches them back
+  on and can delete what was learned.
+- **Limits:** only navigated rides are learned (the app knows no other track;
+  no background GPS on iOS). One factor only: a few coarse samples cannot
+  separate rolling, air and climbing losses. Temperature is not modelled, so
+  cold rides are best skipped.

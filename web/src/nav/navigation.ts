@@ -26,6 +26,8 @@ import {
   remainingGeometry,
   type RouteTrack,
 } from './progress';
+import { RideMeter } from './ride';
+import type { Ride } from '../router/learning';
 import { loadVoiceOn, saveVoiceOn, speak, speechAvailable, stopSpeaking } from './speech';
 import { Announcer, type Speech } from './voice';
 
@@ -37,8 +39,8 @@ export interface NavigationDeps {
   showRoute(r: RouteResult, from: LatLon): void;
   /** Redraw the route line (navigation shows only the part still ahead). */
   drawRoute(geometry: LatLon[], bands: BandSection[]): void;
-  /** Called after navigation ended (button or error). */
-  onExit(): void;
+  /** Called after navigation ended (button or error) with what was ridden (null if nothing). */
+  onExit(ride: Ride | null): void;
   /** Where the voice on/off setting is stored. */
   storage: KeyValueStorage | null;
 }
@@ -130,6 +132,7 @@ export function createNavigation(deps: NavigationDeps): Navigation {
   let gpsBearing = 0;
   let wake: WakeLockSentinelLike | null = null;
   const offRoute = new OffRouteDetector();
+  let meter = new RideMeter();
 
   const setRoute = (r: RouteResult) => {
     route = r;
@@ -139,6 +142,7 @@ export function createNavigation(deps: NavigationDeps): Navigation {
     alongM = 0;
     drawnAlongM = -1;
     offRoute.reset();
+    meter.setRoute(r);
   };
 
   const requestWakeLock = async () => {
@@ -158,6 +162,7 @@ export function createNavigation(deps: NavigationDeps): Navigation {
     if (!track || !route) return null;
     const p = locate(track, fix, alongM);
     alongM = p.alongM;
+    meter.progress(p.alongM, p.arrived);
     const loc = getLocale();
     if (p.arrived) {
       arrow.textContent = TURN_ARROW.arrive!;
@@ -270,6 +275,7 @@ export function createNavigation(deps: NavigationDeps): Navigation {
     start(r) {
       if (active) return;
       active = true;
+      meter = new RideMeter();
       setRoute(r);
       lastFix = null;
       lastFixTime = 0;
@@ -314,7 +320,8 @@ export function createNavigation(deps: NavigationDeps): Navigation {
       deps.map.setPixelRatio(window.devicePixelRatio || 1);
       if (route) deps.drawRoute(route.geometry, bands); // whole route again
       deps.map.easeTo({ bearing: 0, duration: 400 });
-      deps.onExit();
+      const ride = meter.total();
+      deps.onExit(ride.km > 0 ? ride : null);
     },
   };
   return nav;

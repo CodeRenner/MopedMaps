@@ -171,6 +171,10 @@ export const LEARN_MIN_DROP_PCT = 3;
 export const LEARN_MIN_FUEL_KM = 30;
 /** From LEARN_TRUST_SAMPLES on, a sample whose factor is off the learned one by more than this ratio is rejected. */
 export const LEARN_OUTLIER_RATIO = 2;
+/** Ride GPS odometer (off-route detours): count a step after moving this far (m), so standing jitter adds nothing. */
+export const RIDE_ODOMETER_STEP_M = 15;
+/** Ride GPS odometer: ignore fixes less accurate than this (m). */
+export const RIDE_ODOMETER_MAX_ACCURACY_M = 50;
 
 // --- Speed differential risk (runtime, depends on vmax), docs/risk-model.md ---
 /**

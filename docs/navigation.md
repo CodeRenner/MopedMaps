@@ -40,8 +40,10 @@ destination, then ▶. Stop with ✕ in the bottom bar.
   the bridge cannot jump the position to the later pass (simulated in `test/navLoop.test.ts`).
 - iOS: no background GPS for web apps; the screen must stay on and the app in the foreground.
 - iOS "Shake to Undo": vibration on the handlebar can trigger "Undo Typing". A web app cannot turn this off;
-  blurring is not enough (tested: typing an address still triggers it), so the search field is replaced by a fresh
-  element after a pick and on navigation start, which drops its undo history; the
+  blurring or replacing the field did not help on a real iPhone. Now `ui/noUndoTyping.ts` applies plain typing
+  and deleting in every text field by script (`beforeinput` cancelled, same edit made programmatically), which
+  WebKit never records as undoable; autocorrect is off on those fields (its replacements would still be native).
+  In Chromium `queryCommandEnabled('undo')` stays false after typing (true without it). The
   welcome notice tells iPhone users where to switch it off (Settings → Accessibility → Touch). Android has no
   system-wide equivalent.
 - No lane guidance, no street names in instructions (the graph has none).

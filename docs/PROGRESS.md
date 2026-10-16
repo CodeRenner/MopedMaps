@@ -1237,3 +1237,6 @@ Follow-up idea: let the graph build's deploy check out `main` to avoid shipping 
   Simulation of a 270° loop: before up to 668 m wrong (and a reroute), now < 15 m.
 - Also: app version in the attribution (#46); search field swap against iOS "Undo Typing" (#45).
 - Tests: vitest 230 passed (snap.test.ts, navLoop.test.ts).
+- Follow-up: "Undo Typing" still appeared after typing (field swap not enough) -> `ui/noUndoTyping.ts` (typing
+  applied by script, no undo history; change events kept). Real-data loop simulation (Offenburg area, 50 noisy
+  rides): before 33/50 jumped (up to 338 m) and rerouted, now 0/50.

@@ -6,11 +6,14 @@ import { detectLocale, setLocale, t } from './i18n';
 import { BASEMAP_TIMEOUT_MS } from './config';
 import { fallbackStyle } from './ui/basemap';
 import { createMap } from './ui/map';
+import { installNoUndoTyping } from './ui/noUndoTyping';
 
 const locale = detectLocale(navigator.languages ?? [navigator.language]);
 setLocale(locale);
 document.documentElement.lang = locale;
 document.title = t('app.title');
+// No "Undo Typing" prompts on every bump while riding (iOS shake to undo).
+installNoUndoTyping();
 
 const mapEl = document.getElementById('map');
 const uiEl = document.getElementById('ui');

@@ -34,10 +34,16 @@ destination, then ▶. Stop with ✕ in the bottom bar.
   announcement is spoken inside the ▶ tap because iOS only allows speech after a user gesture.
 
 ## Limitations
+- **Self-crossing routes** (ramp loops under/over a bridge): each fix is matched to the route near the last
+  progress. Candidates more than 50 m behind it, or further ahead than `NAV_LOCATE_AHEAD_M` (150 m) plus
+  `NAV_LOCATE_MAX_SPEED_MPS` (25 m/s) per second since the last fix, get a 200 m penalty, so GPS noise under
+  the bridge cannot jump the position to the later pass (simulated in `test/navLoop.test.ts`).
 - iOS: no background GPS for web apps; the screen must stay on and the app in the foreground.
 - iOS "Shake to Undo": vibration on the handlebar can trigger "Undo Typing". A web app cannot turn this off;
-  blurring is not enough (tested: typing an address still triggers it), so the search field is replaced by a fresh
-  element after a pick and on navigation start, which drops its undo history; the
+  blurring or replacing the field did not help on a real iPhone. Now `ui/noUndoTyping.ts` applies plain typing
+  and deleting in every text field by script (`beforeinput` cancelled, same edit made programmatically), which
+  WebKit never records as undoable; autocorrect is off on those fields (its replacements would still be native).
+  In Chromium `queryCommandEnabled('undo')` stays false after typing (true without it). The
   welcome notice tells iPhone users where to switch it off (Settings → Accessibility → Touch). Android has no
   system-wide equivalent.
 - No lane guidance, no street names in instructions (the graph has none).

@@ -55,7 +55,11 @@ export function findRoute(
   target: number,
   profile: VehicleProfile,
   weights: CostWeights = DEFAULT_WEIGHTS,
-  opts: { heuristic?: boolean } = {},
+  opts: {
+    heuristic?: boolean;
+    /** Filled when no route is found: 1 for every node reachable from start (the whole search space). */
+    reachable?: Uint8Array;
+  } = {},
 ): Route | null {
   const n = g.nodeCount;
   if (start < 0 || target < 0 || start >= n || target >= n) return null;
@@ -137,7 +141,13 @@ export function findRoute(
       }
     }
   }
-  if (reached < 0) return null;
+  if (reached < 0) {
+    if (opts.reachable) {
+      opts.reachable[start] = 1;
+      for (let a = 0; a < m; a++) if (closed[a]) opts.reachable[g.arcTarget[a]!] = 1;
+    }
+    return null;
+  }
   const arcs: number[] = [];
   for (let a = reached; a >= 0; a = prevArc[a]!) arcs.push(a);
   arcs.reverse();

@@ -6,7 +6,7 @@
  */
 
 import { type Map as MapLibreMap, Marker } from 'maplibre-gl';
-import { NAV_MAX_PIXEL_RATIO, NAV_OFF_ROUTE_M, NAV_SNAP_M } from '../config';
+import { NAV_LOCATE_AHEAD_M, NAV_LOCATE_MAX_SPEED_MPS, NAV_MAX_PIXEL_RATIO, NAV_OFF_ROUTE_M, NAV_SNAP_M } from '../config';
 import { formatNumber, getLocale, t } from '../i18n';
 import { keepAboveAttribution } from '../ui/aboveAttribution';
 import type { KeyValueStorage } from '../ui/profileStore';
@@ -158,9 +158,10 @@ export function createNavigation(deps: NavigationDeps): Navigation {
     if (active && document.visibilityState === 'visible') void requestWakeLock();
   };
 
-  const render = (fix: Fix, speedMps = 0): Progress | null => {
+  const render = (fix: Fix, speedMps = 0, sinceLastFixMs = Infinity): Progress | null => {
     if (!track || !route) return null;
-    const p = locate(track, fix, alongM);
+    // Farther ahead than the rider can have got since the last fix counts as a jump (self-crossing routes).
+    const p = locate(track, fix, alongM, NAV_LOCATE_AHEAD_M + (sinceLastFixMs / 1000) * NAV_LOCATE_MAX_SPEED_MPS);
     alongM = p.alongM;
     // Off the route the projection is meaningless (it may jump ahead); the GPS odometer covers that part.
     if (p.arrived || p.offsetM <= Math.max(NAV_OFF_ROUTE_M, fix.accuracy)) meter.progress(p.alongM, p.arrived);
@@ -242,11 +243,12 @@ export function createNavigation(deps: NavigationDeps): Navigation {
     lastFix = fix;
     meter.fix(fix);
     const now = performance.now();
+    const sinceLastFixMs = lastFixTime ? now - lastFixTime : Infinity;
     // Glide over the fix interval (typically ~1 s), clamped for missed or bunched fixes.
     const dtMs = lastFixTime ? Math.min(2000, Math.max(300, now - lastFixTime)) : 1000;
     lastFixTime = now;
     const speed = Math.max(0, pos.coords.speed ?? 0);
-    const p = render(fix, speed);
+    const p = render(fix, speed, sinceLastFixMs);
     if (p) trimRoute(p.alongM);
     follow(fix, p, speed, dtMs);
   };

@@ -58,7 +58,11 @@ dialog `web/src/ui/rideFeedback.ts`, settings in the vehicle panel. Constants
 
 - **Ride:** during navigation the ridden part of each route (reroutes start a
   new one) is booked with the route's modelled energy in proportion to its
-  distance; an arrival books the whole route.
+  distance; an arrival books the whole route. Progress only counts while on
+  the route. Wrong turns, detours and the stretch before a reroute kicks in
+  are measured by a GPS odometer (step `RIDE_ODOMETER_STEP_M` = 15 m, fixes
+  worse than `RIDE_ODOMETER_MAX_ACCURACY_M` = 50 m ignored); distance beyond
+  the on-route part is booked at the average consumption of the ride so far.
 - **Electric:** after a ride the app asks for battery % before (default 100)
   and now. Real energy = drop × usable capacity (asked in the dialog if not
   set). Only asked for rides ≥ `LEARN_MIN_KM` (3 km) that are expected to use

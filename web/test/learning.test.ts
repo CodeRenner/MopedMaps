@@ -222,3 +222,28 @@ describe('storage and input', () => {
     expect(parsePercent('-1')).toBeNull();
   });
 });
+
+describe('ride meter off the route', () => {
+  // Points along a meridian: 0.001° latitude ≈ 111 m.
+  const at = (i: number, accuracy = 5) => ({ lat: 50 + i * 0.001, lon: 8, accuracy });
+
+  it('adds a detour seen by the GPS odometer at the routes average consumption', () => {
+    const m = new RideMeter();
+    m.setRoute({ distanceM: 2000, energyWh: 60, fuelL: 0.04 }); // 30 Wh/km
+    for (let i = 0; i <= 27; i++) m.fix(at(i)); // ~3 km ridden
+    m.progress(2000, true); // but only the 2 km route is on the route
+    const t = m.total();
+    expect(t.km).toBeCloseTo(3.0, 1);
+    expect(t.energyWh / t.km).toBeCloseTo(30);
+    expect(t.fuelL / t.km).toBeCloseTo(0.02);
+  });
+
+  it('ignores standing jitter and inaccurate fixes, never shrinks the on-route distance', () => {
+    const m = new RideMeter();
+    m.setRoute({ distanceM: 2000, energyWh: 60, fuelL: 0 });
+    for (let i = 0; i < 50; i++) m.fix({ lat: 50 + (i % 2) * 0.00005, lon: 8, accuracy: 5 }); // ±5 m
+    m.fix(at(30, 200)); // wild, inaccurate fix
+    m.progress(1000);
+    expect(m.total()).toEqual({ km: 1, energyWh: 30, fuelL: 0 });
+  });
+});

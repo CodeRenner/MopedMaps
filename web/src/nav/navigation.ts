@@ -6,7 +6,7 @@
  */
 
 import { type Map as MapLibreMap, Marker } from 'maplibre-gl';
-import { NAV_MAX_PIXEL_RATIO, NAV_SNAP_M } from '../config';
+import { NAV_MAX_PIXEL_RATIO, NAV_OFF_ROUTE_M, NAV_SNAP_M } from '../config';
 import { formatNumber, getLocale, t } from '../i18n';
 import { keepAboveAttribution } from '../ui/aboveAttribution';
 import type { KeyValueStorage } from '../ui/profileStore';
@@ -162,7 +162,8 @@ export function createNavigation(deps: NavigationDeps): Navigation {
     if (!track || !route) return null;
     const p = locate(track, fix, alongM);
     alongM = p.alongM;
-    meter.progress(p.alongM, p.arrived);
+    // Off the route the projection is meaningless (it may jump ahead); the GPS odometer covers that part.
+    if (p.arrived || p.offsetM <= Math.max(NAV_OFF_ROUTE_M, fix.accuracy)) meter.progress(p.alongM, p.arrived);
     const loc = getLocale();
     if (p.arrived) {
       arrow.textContent = TURN_ARROW.arrive!;
@@ -239,6 +240,7 @@ export function createNavigation(deps: NavigationDeps): Navigation {
       if (Math.hypot(dx, dy) * 111_195 > 8) gpsBearing = (Math.atan2(dx, dy) * 180) / Math.PI;
     }
     lastFix = fix;
+    meter.fix(fix);
     const now = performance.now();
     // Glide over the fix interval (typically ~1 s), clamped for missed or bunched fixes.
     const dtMs = lastFixTime ? Math.min(2000, Math.max(300, now - lastFixTime)) : 1000;

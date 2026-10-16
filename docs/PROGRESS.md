@@ -1222,3 +1222,9 @@ Follow-up idea: let the graph build's deploy check out `main` to avoid shipping 
   learned value and the open measurement.
 - Tests: vitest 221 passed (learning.test.ts: factor, ask policy, skip/never, full-to-full, outliers, ride meter,
   storage, % parsing).
+### Iteration 82 — detours in the ride measurement (2026-10-16)
+- User question: is the learned consumption right after a wrong turn or a detour? Reroutes were booked, but the
+  stretch off the route (before the reroute, or a detour without one) was missing, and off-route projections could
+  push progress ahead. Now progress counts only on the route; a GPS odometer measures the real distance and the
+  extra is booked at the ride's average consumption. Also: litres field hidden for electric (#42).
+- Tests: vitest 223 passed (detour top-up, standing jitter, inaccurate fixes).

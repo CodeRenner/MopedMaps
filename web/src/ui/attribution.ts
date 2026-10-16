@@ -27,22 +27,13 @@ export const TRAFFIC_ATTRIBUTION =
   `Datenquelle: <a href="https://www.baysis.bayern.de/" target="_blank" rel="noopener">Bayerische Straßenbauverwaltung – BAYSIS</a> (${CC_BY}); ` +
   `SenMVKU Berlin (${DL_ZERO})`;
 
-/** App version in the attribution ("i"), so a user can check which build is running after an update. */
 export const REPO_URL = 'https://github.com/CodeRenner/MopedMaps';
 /** New bug report with the version prefilled (GitHub issue form .github/ISSUE_TEMPLATE/bug.yml, field id "version"). */
 export const bugReportUrl = (version: string) =>
   `${REPO_URL}/issues/new?template=bug.yml&version=${encodeURIComponent(version)}`;
-export const versionAttribution = (version: string) =>
-  `MopedMaps ${version} · <a href="${bugReportUrl(version)}" target="_blank" rel="noopener">Fehler melden</a> · ` +
-  `<a href="${REPO_URL}" target="_blank" rel="noopener">Quellcode (MIT)</a>`;
+/** The running build (commit date · short hash), set in vite.config.ts. */
+export const appVersion = (): string => (typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'dev');
 
-export function appAttributions(version = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'dev'): string[] {
-  return [
-    OSM_ATTRIBUTION,
-    GEONAMES_ATTRIBUTION,
-    ELEVATION_ATTRIBUTION,
-    TRAFFIC_ATTRIBUTION,
-    CLOSURES_ATTRIBUTION,
-    versionAttribution(version),
-  ];
+export function appAttributions(): string[] {
+  return [OSM_ATTRIBUTION, GEONAMES_ATTRIBUTION, ELEVATION_ATTRIBUTION, TRAFFIC_ATTRIBUTION, CLOSURES_ATTRIBUTION];
 }

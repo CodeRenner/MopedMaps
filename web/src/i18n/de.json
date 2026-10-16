@@ -170,5 +170,7 @@
   "learn.outcome.too-short": "Zu wenig Strecke seit dem letzten Volltanken (mind. {km} km), nicht gespeichert. Die Messung beginnt neu.",
   "welcome.ios.shake": "iPhone: Wenn beim Fahren „Eingabe widerrufen“ erscheint: Einstellungen → Bedienungshilfen → Tippen → „Schütteln für Widerrufen“ ausschalten.",
   "route.gap.start": "Start nicht direkt befahrbar: Route beginnt ca. {m} m entfernt an der nächsten erlaubten Straße",
-  "route.gap.target": "Ziel nicht direkt befahrbar: Route endet ca. {m} m davor an der nächsten erlaubten Straße"
+  "route.gap.target": "Ziel nicht direkt befahrbar: Route endet ca. {m} m davor an der nächsten erlaubten Straße",
+  "info.report": "Fehler melden",
+  "info.source": "Quellcode (MIT)"
 }

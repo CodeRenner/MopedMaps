@@ -9,8 +9,13 @@ network within a 25–100 km radius (default 75 km) and plans routes for your
 vehicle: legal access by top speed, travel time, a safety score and an
 energy model for electric or combustion drives.
 
-> Status: roadmap steps 1–7 implemented (see `docs/PROGRESS.md`); public
-> hosting of Germany-wide graph tiles is being set up. Germany only for now.
+**Try it: https://mopedmaps.pages.dev** (free, no account; install via
+"Add to Home Screen"). Germany only for now. Found a bug or a wrong route?
+Tap the (i) on the map → "Fehler melden" (the app version is filled in), or
+[open an issue](https://github.com/CodeRenner/MopedMaps/issues/new/choose).
+Wrong road data (speed limit, access) is best fixed directly in
+[OpenStreetMap](https://www.openstreetmap.org/fixthemap); the graph is
+rebuilt monthly.
 
 ## Features
 - **Vehicle profile**: top speed (presets 25 / 45 km/h or free input) and
@@ -24,6 +29,16 @@ energy model for electric or combustion drives.
 - **Elevation & energy**: Copernicus GLO-30 heights, simple physical model
   (Wh for electric, litres for combustion) — `docs/elevation.md`,
   `docs/energy-model.md`.
+- **Navigation**: turn-by-turn with voice, follow camera, automatic reroute,
+  speed limit display — `docs/navigation.md`.
+- **Search**: offline address and place search inside the loaded area —
+  `docs/search.md`.
+- **Range**: battery/tank range per route; learns the real consumption from
+  a few rides (battery % or full-to-full refills) — `docs/energy-model.md`.
+- **Road closures** (daily) and traffic volumes for the federal states that
+  publish them openly — `docs/closures.md`, `DATA_SOURCES.md`.
+- **Car parks / private grounds**: if the destination is not reachable by
+  road, the route ends at the nearest allowed road (up to 300 m) and says so.
 - **Offline**: installable PWA, service-worker cache, graph chunks in
   IndexedDB — `docs/offline.md`.
 - German UI first, English available.
@@ -82,7 +97,11 @@ Static hosting on Cloudflare Pages (project `mopedmaps`, app + graph tiles):
 - iOS: no background GPS (keep the screen on), web storage may be evicted —
   the app re-downloads chunks when needed.
 - Address/place search only inside the loaded area (offline index from OpenStreetMap, see docs/search.md); no typo tolerance.
-- No live traffic data. Germany only.
+- No live traffic data. Germany only. Closures and traffic volumes only for
+  the states that publish them openly (see `DATA_SOURCES.md`).
+- The first load of an area downloads several MB (depends on radius and
+  region); use Wi-Fi.
+- Route quality depends on OpenStreetMap; local signs always take precedence.
 - Full offline basemap needs own PMTiles (planned); offline, the map falls
   back to a plain background while routing keeps working.
 

@@ -1,0 +1,43 @@
+name: Fehler melden / Bug report
+description: Etwas funktioniert nicht oder eine Route ist falsch. Something is broken or a route is wrong.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke fürs Melden! Bitte keine persönlichen Daten (genaue Wohnadresse) angeben – eine Straße oder Kreuzung in der Nähe reicht.
+        Ist eine Straße in OpenStreetMap falsch eingetragen (Tempolimit, Fahrverbot)? Dann am besten direkt auf openstreetmap.org korrigieren; die App übernimmt das mit dem nächsten monatlichen Kartenupdate.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Steht unten beim „i“ an der Karte, z. B. „2026-10-16 · c7251a0“ (wird über den Link in der App automatisch eingetragen).
+    validations:
+      required: true
+  - type: dropdown
+    id: device
+    attributes:
+      label: Gerät
+      options:
+        - iPhone / iPad
+        - Android
+        - Computer
+    validations:
+      required: true
+  - type: input
+    id: vehicle
+    attributes:
+      label: Fahrzeug-Einstellung
+      description: z. B. „45 km/h, Elektro“
+  - type: input
+    id: where
+    attributes:
+      label: Wo?
+      description: PLZ des geladenen Gebiets, Start und Ziel (Straße/Ort reicht)
+  - type: textarea
+    id: what
+    attributes:
+      label: Was ist passiert, was hättest du erwartet?
+      description: Screenshots helfen sehr.
+    validations:
+      required: true

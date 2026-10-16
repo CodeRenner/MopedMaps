@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Karte falsch (Straße, Tempolimit, Fahrverbot)?
+    url: https://www.openstreetmap.org/fixthemap
+    about: Die Kartendaten kommen aus OpenStreetMap – dort korrigiert, landen sie mit dem nächsten monatlichen Update in der App.

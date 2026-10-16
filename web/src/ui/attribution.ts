@@ -27,6 +27,16 @@ export const TRAFFIC_ATTRIBUTION =
   `Datenquelle: <a href="https://www.baysis.bayern.de/" target="_blank" rel="noopener">Bayerische Straßenbauverwaltung – BAYSIS</a> (${CC_BY}); ` +
   `SenMVKU Berlin (${DL_ZERO})`;
 
-export function appAttributions(): string[] {
-  return [OSM_ATTRIBUTION, GEONAMES_ATTRIBUTION, ELEVATION_ATTRIBUTION, TRAFFIC_ATTRIBUTION, CLOSURES_ATTRIBUTION];
+/** App version in the attribution ("i"), so a user can check which build is running after an update. */
+export const versionAttribution = (version: string) => `MopedMaps ${version}`;
+
+export function appAttributions(version = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'dev'): string[] {
+  return [
+    OSM_ATTRIBUTION,
+    GEONAMES_ATTRIBUTION,
+    ELEVATION_ATTRIBUTION,
+    TRAFFIC_ATTRIBUTION,
+    CLOSURES_ATTRIBUTION,
+    versionAttribution(version),
+  ];
 }

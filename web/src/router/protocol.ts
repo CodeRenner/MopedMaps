@@ -30,6 +30,9 @@ export interface RouteResult {
   energyWh: number;
   fuelL: number;
   ascentM: number;
+  /** Distance (m) from the requested start/target point to where the route actually starts/ends. */
+  startGapM: number;
+  targetGapM: number;
   profile: RouteProfile;
   geometry: LatLon[];
   settled: number;

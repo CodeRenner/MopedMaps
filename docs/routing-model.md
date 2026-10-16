@@ -56,3 +56,15 @@ consecutive pieces can be priced (`web/src/router/turns.ts`, constants `TURN_*` 
 
 Calibration (live tiles, safety 1.5): KKH Emmendingen → Rennweg 16 turns with "0", 14 with "+";
 Hbf → Waldkirch 14 → 12; the earlier Freiburg rider routes are unchanged.
+
+## Snapping start and target (`router/snap.ts`)
+- Points snap to the nearest node of a road this vehicle may use (`canUse`). That road must be within
+  `SNAP_FALLBACK_M` (300 m) of the nearest road of any kind; a point deep in a pedestrian zone or at the end of
+  a long footway stays "no allowed route" instead of being moved far away. No road at all within
+  `MAX_SNAP_DISTANCE_M` (1 km): "too far from a road".
+- If no route exists between the snapped nodes (typical: a shop's car park whose aisles are cut off by a
+  private or barred entrance), the failed A* has explored everything reachable from the start. If that was a
+  small island (< `SNAP_ISLAND_MAX_NODES`), up to `SNAP_FALLBACK_TRIES` other usable start nodes in range are
+  tried; then the route ends at the reachable usable node nearest to the target point.
+- The result carries `startGapM` / `targetGapM`; above `ROUTE_GAP_NOTE_M` (60 m) the route summary says that
+  the route begins/ends that far away at the nearest allowed road.

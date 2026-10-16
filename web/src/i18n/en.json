@@ -168,5 +168,7 @@
   "learn.outcome.invalid": "Invalid input, nothing saved.",
   "learn.outcome.outlier": "The value differs a lot from the previous ones and was not saved.",
   "learn.outcome.too-short": "Too little distance since the last full tank (at least {km} km), not saved. The measurement restarts.",
-  "welcome.ios.shake": "iPhone: if “Undo Typing” pops up while riding: Settings → Accessibility → Touch → turn off “Shake to Undo”."
+  "welcome.ios.shake": "iPhone: if “Undo Typing” pops up while riding: Settings → Accessibility → Touch → turn off “Shake to Undo”.",
+  "route.gap.start": "Start not reachable by road: the route begins about {m} m away at the nearest allowed road",
+  "route.gap.target": "Destination not reachable by road: the route ends about {m} m before it at the nearest allowed road"
 }

@@ -1228,3 +1228,12 @@ Follow-up idea: let the graph build's deploy check out `main` to avoid shipping 
   push progress ahead. Now progress counts only on the route; a GPS odometer measures the real distance and the
   extra is booked at the ride's average consumption. Also: litres field hidden for electric (#42).
 - Tests: vitest 223 passed (detour top-up, standing jitter, inaccurate fixes).
+### Iteration 83 — car parks and self-crossing routes (2026-10-16)
+- User test: a shop with a big car park gave "no allowed route"; on a ramp loop the position jumped ahead when
+  riding under the bridge.
+- Snapping (`router/snap.ts`): only roads the vehicle may use; fallback within 300 m when the car park is cut
+  off (island start / nearest reachable target node); route summary says how far away the route begins/ends.
+- Navigation: forward jumps beyond 150 m + 25 m/s × time since the last fix are penalised like backward ones.
+  Simulation of a 270° loop: before up to 668 m wrong (and a reroute), now < 15 m.
+- Also: app version in the attribution (#46); search field swap against iOS "Undo Typing" (#45).
+- Tests: vitest 230 passed (snap.test.ts, navLoop.test.ts).

@@ -9,6 +9,7 @@ import {
   OFFLINE_TILE_ERRORS,
   PLZ_TABLE_URL,
   REROUTE_DEBOUNCE_MS,
+  ROUTE_GAP_NOTE_M,
 } from './config';
 import { AreaError, loadArea } from './data/area';
 import { type Manifest, parseManifest } from './data/manifest';
@@ -252,7 +253,12 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
       const range = rangeSummary(getLocale(), profile.drive, est, es.reserveShare);
       const rangeText = range ? ` · ${t(range.key, range.params)}` : '';
       const warning = range?.warning ? ` · ${t(range.warning.key, range.warning.params)}` : '';
-      panel.setStatus(`${summary}${risk} · ${t(en.key, en.params)}${rangeText}${warning}`, !!range?.warning);
+      // Car parks, private grounds: the route may start/end at the nearest road the vehicle may use.
+      const gaps = (['start', 'target'] as const)
+        .filter((k) => r[`${k}GapM`] > ROUTE_GAP_NOTE_M)
+        .map((k) => ` · ${t(`route.gap.${k}`, { m: Math.round(r[`${k}GapM`] / 10) * 10 })}`)
+        .join('');
+      panel.setStatus(`${summary}${risk} · ${t(en.key, en.params)}${rangeText}${warning}${gaps}`, !!range?.warning);
     } else if (res.type === 'no-route') {
       panel.setStatus(t(routeErrorKey(res.reason)), true);
     } else if (res.type === 'error') {

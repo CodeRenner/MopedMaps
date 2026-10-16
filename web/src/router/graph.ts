@@ -131,6 +131,34 @@ export function assembleGraph(chunks: readonly Chunk[]): Graph {
 }
 
 /**
+ * Nodes with a usable edge within `maxM` of a point, nearest first.
+ * `usable(edgeIndex)` decides which edges count (e.g. vehicle access).
+ */
+export function nodesNear(
+  g: Graph,
+  lat: number,
+  lon: number,
+  maxM: number,
+  usable: (edge: number) => boolean,
+): { node: number; distM: number }[] {
+  const ok = new Uint8Array(g.nodeCount);
+  for (let i = 0; i < g.edges.length; i++) {
+    if (!usable(i)) continue;
+    ok[g.edgeFrom[i]!] = 1;
+    ok[g.edgeTo[i]!] = 1;
+  }
+  const dLat = maxM / 111_195;
+  const dLon = dLat / Math.max(0.01, Math.cos((lat * Math.PI) / 180));
+  const out: { node: number; distM: number }[] = [];
+  for (let n = 0; n < g.nodeCount; n++) {
+    if (!ok[n] || Math.abs(g.lat[n]! - lat) > dLat || Math.abs(g.lon[n]! - lon) > dLon) continue;
+    const d = haversineM(lat, lon, g.lat[n]!, g.lon[n]!);
+    if (d <= maxM) out.push({ node: n, distM: d });
+  }
+  return out.sort((a, b) => a.distM - b.distM);
+}
+
+/**
  * Nearest node that has at least one edge, by squared equirectangular
  * distance. Linear scan; a spatial index can replace it if it shows up in
  * profiles. Returns -1 if the graph has no edges.

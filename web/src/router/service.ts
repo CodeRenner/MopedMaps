@@ -3,14 +3,12 @@
  * Pure (no DOM, no Worker globals) so it can be unit-tested directly.
  */
 
-import { MAX_SNAP_DISTANCE_M } from '../config';
-import { findRoute } from './astar';
 import { applyClosures, type Closure } from './closures';
 import { decodeChunk } from './chunk';
-import { haversineM } from './geo';
-import { assembleGraph, type Graph, nearestNode } from './graph';
-import type { LatLon, RouterRequest, RouterResponse } from './protocol';
+import { assembleGraph, type Graph } from './graph';
+import type { RouterRequest, RouterResponse } from './protocol';
 import { validateProfile } from './profile';
+import { routeSnapped } from './snap';
 import { roadsInBbox } from './roads';
 
 export class RouterService {
@@ -55,24 +53,15 @@ export class RouterService {
     return state.matched;
   }
 
-  private snap(p: LatLon): number {
-    const g = this.graph!;
-    const n = nearestNode(g, p[0], p[1]);
-    if (n < 0) return -1;
-    return haversineM(p[0], p[1], g.lat[n]!, g.lon[n]!) <= MAX_SNAP_DISTANCE_M ? n : -1;
-  }
-
   private route(req: Extract<RouterRequest, { type: 'route' }>): RouterResponse {
     const { id } = req;
-    if (!this.graph) return { type: 'no-route', id, reason: 'no-graph' };
+    const g = this.graph;
+    if (!g) return { type: 'no-route', id, reason: 'no-graph' };
     const profile = validateProfile(req.profile);
     const t0 = performance.now();
-    const s = this.snap(req.from);
-    if (s < 0) return { type: 'no-route', id, reason: 'start-off-network' };
-    const t = this.snap(req.to);
-    if (t < 0) return { type: 'no-route', id, reason: 'target-off-network' };
-    const r = findRoute(this.graph, s, t, profile, req.weights);
-    if (!r) return { type: 'no-route', id, reason: 'unreachable' };
+    const res = routeSnapped(g, req.from, req.to, profile, req.weights);
+    if (typeof res === 'string') return { type: 'no-route', id, reason: res };
+    const { route: r, startGapM, targetGapM } = res;
     return {
       type: 'route',
       id,
@@ -84,6 +73,8 @@ export class RouterService {
         energyWh: r.energyWh,
         fuelL: r.fuelL,
         ascentM: r.ascentM,
+        startGapM,
+        targetGapM,
         profile: r.profile,
         geometry: r.geometry,
         settled: r.settled,

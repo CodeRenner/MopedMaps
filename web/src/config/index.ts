@@ -86,6 +86,18 @@ export const DESTINATION_PENALTY_S = 120;
 // --- Snapping ----------------------------------------------------------------
 /** Max distance from a tapped point to the nearest usable road node (m). */
 export const MAX_SNAP_DISTANCE_M = 1000;
+/**
+ * If no route exists from/to the nearest usable node (e.g. a car park whose
+ * aisles are cut off by a private or barred entrance), the next usable nodes
+ * within this distance (m) of the point are tried instead.
+ */
+export const SNAP_FALLBACK_M = 300;
+/** A failed search that reached fewer nodes than this started on an isolated island (e.g. a car park). */
+export const SNAP_ISLAND_MAX_NODES = 2000;
+/** At most this many other start nodes are tried when the start is on an island. */
+export const SNAP_FALLBACK_TRIES = 5;
+/** Tell the user when the route starts/ends further than this (m) from the chosen point. */
+export const ROUTE_GAP_NOTE_M = 60;
 
 // --- Map ---------------------------------------------------------------------
 /**
@@ -236,6 +248,15 @@ export const NAV_OFF_ROUTE_M = 40;
 export const NAV_OFF_ROUTE_FIXES = 3;
 /** Destination reached within this distance (m). */
 export const NAV_ARRIVAL_M = 30;
+/**
+ * Matching a fix to the route: candidates more than this far (m) beyond the
+ * last progress, plus NAV_LOCATE_MAX_SPEED_MPS per second since the last fix,
+ * get NAV_LOCATE_JUMP_PENALTY_M added to their distance. Keeps the position on
+ * the right pass where a route crosses or overlaps itself (ramp loops).
+ */
+export const NAV_LOCATE_AHEAD_M = 150;
+export const NAV_LOCATE_MAX_SPEED_MPS = 25;
+export const NAV_LOCATE_JUMP_PENALTY_M = 200;
 /** Turns sharper than this (degrees) get an instruction. */
 export const NAV_TURN_MIN_DEG = 35;
 /** Map zoom while navigating. */

@@ -3,7 +3,7 @@
  * Positions are projected onto the route polyline in a local metric frame.
  */
 
-import { NAV_ARRIVAL_M, NAV_OFF_ROUTE_FIXES, NAV_OFF_ROUTE_M } from '../config';
+import { NAV_ARRIVAL_M, NAV_LOCATE_JUMP_PENALTY_M, NAV_OFF_ROUTE_FIXES, NAV_OFF_ROUTE_M } from '../config';
 import { haversineM } from '../router/geo';
 import type { LatLon } from '../router/protocol';
 import type { RouteProfile } from '../router/routeProfile';
@@ -58,8 +58,12 @@ export interface Progress {
   arrived: boolean;
 }
 
-/** Project a fix onto the route. `hintAlongM` (last progress) keeps it from jumping to a parallel/overlapping part. */
-export function locate(t: RouteTrack, fix: Fix, hintAlongM = 0): Progress {
+/**
+ * Project a fix onto the route. `hintAlongM` (last progress) keeps it from
+ * jumping to a parallel/overlapping part; `maxAheadM` is how far beyond it the
+ * rider can plausibly be since the last fix.
+ */
+export function locate(t: RouteTrack, fix: Fix, hintAlongM = 0, maxAheadM = Infinity): Progress {
   const cosLat = Math.cos((fix.lat * Math.PI) / 180);
   const mPerDegLat = 111_195;
   const mPerDegLon = 111_195 * cosLat;
@@ -74,9 +78,11 @@ export function locate(t: RouteTrack, fix: Fix, hintAlongM = 0): Progress {
     const u = len2 > 0 ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / len2)) : 0;
     const px = ax + u * dx, py = ay + u * dy;
     const along = t.cum[i]! + u * (t.cum[i + 1]! - t.cum[i]!);
-    // Prefer positions not far behind the last known progress (route may overlap itself).
+    // Prefer positions near the last known progress: the route may overlap or cross itself (ramp loops,
+    // bridges), so a later or earlier pass at the same spot must not win on a few metres of GPS noise.
     const d = Math.hypot(px, py);
-    const score = d + (along < hintAlongM - 50 ? 200 : 0);
+    const jump = along < hintAlongM - 50 || along > hintAlongM + maxAheadM;
+    const score = d + (jump ? NAV_LOCATE_JUMP_PENALTY_M : 0);
     if (score < best.score) best = { score, d, along, seg: i };
   }
   const total = t.cum[t.cum.length - 1]!;

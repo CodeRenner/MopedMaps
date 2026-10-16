@@ -38,7 +38,7 @@ export function acceptWelcome(storage: KeyValueStorage | null): void {
 export function welcomeItems(p: Platform): string[] {
   const general = ['welcome.safety', 'welcome.noWarranty', 'welcome.privacy'];
   const device: Record<Platform, string[]> = {
-    ios: ['welcome.ios.install', 'welcome.ios.screen', 'welcome.ios.voice'],
+    ios: ['welcome.ios.install', 'welcome.ios.screen', 'welcome.ios.voice', 'welcome.ios.shake'],
     android: ['welcome.android.install', 'welcome.android.battery'],
     desktop: ['welcome.desktop.plan'],
   };

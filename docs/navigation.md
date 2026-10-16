@@ -35,5 +35,9 @@ destination, then ▶. Stop with ✕ in the bottom bar.
 
 ## Limitations
 - iOS: no background GPS for web apps; the screen must stay on and the app in the foreground.
+- iOS "Shake to Undo": vibration on the handlebar can trigger "Undo Typing". A web app cannot turn this off;
+  navigation blurs any focused text field on start (that is what gives the system something to undo), and the
+  welcome notice tells iPhone users where to switch it off (Settings → Accessibility → Touch). Android has no
+  system-wide equivalent.
 - No lane guidance, no street names in instructions (the graph has none).
 - Rerouting needs the destination inside the loaded area.

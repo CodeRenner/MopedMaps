@@ -167,5 +167,6 @@
   "learn.outcome.saved": "Saved.",
   "learn.outcome.invalid": "Invalid input, nothing saved.",
   "learn.outcome.outlier": "The value differs a lot from the previous ones and was not saved.",
-  "learn.outcome.too-short": "Too little distance since the last full tank (at least {km} km), not saved. The measurement restarts."
+  "learn.outcome.too-short": "Too little distance since the last full tank (at least {km} km), not saved. The measurement restarts.",
+  "welcome.ios.shake": "iPhone: if “Undo Typing” pops up while riding: Settings → Accessibility → Touch → turn off “Shake to Undo”."
 }

@@ -277,6 +277,8 @@ export function createNavigation(deps: NavigationDeps): Navigation {
     start(r) {
       if (active) return;
       active = true;
+      // A focused text field (e.g. the search) makes iOS offer "Undo typing" on every shake while riding.
+      (document.activeElement as HTMLElement | null)?.blur?.();
       meter = new RideMeter();
       setRoute(r);
       lastFix = null;

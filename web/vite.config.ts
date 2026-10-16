@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
@@ -30,8 +31,18 @@ function precacheManifest(): Plugin {
   };
 }
 
+/** Shown in the attribution ("i"): commit date + short hash, so a deployed build can be identified. */
+function appVersion(): string {
+  try {
+    return execSync('git log -1 --format=%cs·%h', { encoding: 'utf8' }).trim().replace('·', ' · ');
+  } catch {
+    return 'dev'; // no git (e.g. a source tarball)
+  }
+}
+
 export default defineConfig({
   base: './',
+  define: { __APP_VERSION__: JSON.stringify(appVersion()) },
   plugins: [precacheManifest()],
   // MapLibre alone is ~1 MB minified (~280 KB gzip); everything else is small.
   build: {

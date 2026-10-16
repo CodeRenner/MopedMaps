@@ -22,6 +22,11 @@ describe('compliance', () => {
       expect(all).toContain(src);
   });
 
+  it('includes the app version', () => {
+    expect(appAttributions('2026-10-16 · e4aa6f8').slice(-1)[0]).toBe('MopedMaps 2026-10-16 · e4aa6f8');
+    expect(appAttributions().slice(-1)[0]).toMatch(/^MopedMaps (\d{4}-\d{2}-\d{2} · [0-9a-f]{7,}|dev)$/);
+  });
+
   it('never uses openstreetmap.org tile servers', () => {
     expect(BASEMAP_STYLE_URL).not.toMatch(/tile\.openstreetmap\.org/);
   });

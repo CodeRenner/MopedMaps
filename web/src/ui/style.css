@@ -571,6 +571,9 @@ body.nav-mode .route-controls {
 .panel .learn {
   margin-top: 6px;
 }
+.panel .learn [hidden] {
+  display: none; /* .panel .row would otherwise keep the litres field visible */
+}
 .panel .learn-ask {
   display: flex;
   align-items: center;

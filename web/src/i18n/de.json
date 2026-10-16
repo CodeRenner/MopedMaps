@@ -167,5 +167,6 @@
   "learn.outcome.saved": "Gespeichert.",
   "learn.outcome.invalid": "Ungültige Eingabe, nichts gespeichert.",
   "learn.outcome.outlier": "Der Wert weicht stark von den bisherigen ab und wurde nicht gespeichert.",
-  "learn.outcome.too-short": "Zu wenig Strecke seit dem letzten Volltanken (mind. {km} km), nicht gespeichert. Die Messung beginnt neu."
+  "learn.outcome.too-short": "Zu wenig Strecke seit dem letzten Volltanken (mind. {km} km), nicht gespeichert. Die Messung beginnt neu.",
+  "welcome.ios.shake": "iPhone: Wenn beim Fahren „Eingabe widerrufen“ erscheint: Einstellungen → Bedienungshilfen → Tippen → „Schütteln für Widerrufen“ ausschalten."
 }

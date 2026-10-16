@@ -1245,3 +1245,6 @@ Follow-up idea: let the graph build's deploy check out `main` to avoid shipping 
   the version prefilled) and "Quellcode (MIT)"; issue templates (bug, idea, OSM fix link); README with the live
   link, new features and limitations; docs/privacy.md lists what leaves the device (basis for a privacy notice;
   controller contact still missing).
+- Follow-up: version + "Fehler melden" / "Quellcode" moved out of the data credits into their own highlighted row
+  at the top of the expanded (i) (`ui/map.ts` addAppInfo). Privacy notice draft `docs/datenschutz.md` (owner
+  fills in name/contact, then it becomes `datenschutz.html`, linked from the same row).

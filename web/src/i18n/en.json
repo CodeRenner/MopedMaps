@@ -170,5 +170,7 @@
   "learn.outcome.too-short": "Too little distance since the last full tank (at least {km} km), not saved. The measurement restarts.",
   "welcome.ios.shake": "iPhone: if “Undo Typing” pops up while riding: Settings → Accessibility → Touch → turn off “Shake to Undo”.",
   "route.gap.start": "Start not reachable by road: the route begins about {m} m away at the nearest allowed road",
-  "route.gap.target": "Destination not reachable by road: the route ends about {m} m before it at the nearest allowed road"
+  "route.gap.target": "Destination not reachable by road: the route ends about {m} m before it at the nearest allowed road",
+  "info.report": "Report a problem",
+  "info.source": "Source code (MIT)"
 }

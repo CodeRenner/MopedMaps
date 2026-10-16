@@ -589,3 +589,34 @@ body.nav-mode .route-controls {
 .learn-dialog .hint.error {
   color: #b00020;
 }
+
+/* Version + feedback row at the top of the expanded attribution (i) */
+.maplibregl-ctrl-attrib .app-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  padding: 6px 28px 6px 8px; /* right: room for the (i) button */
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 13px;
+}
+.maplibregl-ctrl-attrib.maplibregl-compact:not(.maplibregl-compact-show) .app-info {
+  display: none;
+}
+.app-info .app-version {
+  font-weight: 600;
+  color: #1a202c;
+}
+.app-info .app-info-btn {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #2b6cb0;
+  color: #2b6cb0;
+  text-decoration: none;
+  font-weight: 600;
+}
+.app-info .app-info-btn.primary {
+  background: #2b6cb0;
+  color: #fff;
+}

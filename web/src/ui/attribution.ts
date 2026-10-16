@@ -28,7 +28,13 @@ export const TRAFFIC_ATTRIBUTION =
   `SenMVKU Berlin (${DL_ZERO})`;
 
 /** App version in the attribution ("i"), so a user can check which build is running after an update. */
-export const versionAttribution = (version: string) => `MopedMaps ${version}`;
+export const REPO_URL = 'https://github.com/CodeRenner/MopedMaps';
+/** New bug report with the version prefilled (GitHub issue form .github/ISSUE_TEMPLATE/bug.yml, field id "version"). */
+export const bugReportUrl = (version: string) =>
+  `${REPO_URL}/issues/new?template=bug.yml&version=${encodeURIComponent(version)}`;
+export const versionAttribution = (version: string) =>
+  `MopedMaps ${version} · <a href="${bugReportUrl(version)}" target="_blank" rel="noopener">Fehler melden</a> · ` +
+  `<a href="${REPO_URL}" target="_blank" rel="noopener">Quellcode (MIT)</a>`;
 
 export function appAttributions(version = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'dev'): string[] {
   return [

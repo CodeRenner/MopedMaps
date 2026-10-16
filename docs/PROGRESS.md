@@ -1240,3 +1240,8 @@ Follow-up idea: let the graph build's deploy check out `main` to avoid shipping 
 - Follow-up: "Undo Typing" still appeared after typing (field swap not enough) -> `ui/noUndoTyping.ts` (typing
   applied by script, no undo history; change events kept). Real-data loop simulation (Offenburg area, 50 noisy
   rides): before 33/50 jumped (up to 338 m) and rerouted, now 0/50.
+### Iteration 84 — ready for a public post (2026-10-16)
+- User decision: free, no ads for now (DECISIONS.md). Attribution (i): "Fehler melden" (GitHub issue form with
+  the version prefilled) and "Quellcode (MIT)"; issue templates (bug, idea, OSM fix link); README with the live
+  link, new features and limitations; docs/privacy.md lists what leaves the device (basis for a privacy notice;
+  controller contact still missing).

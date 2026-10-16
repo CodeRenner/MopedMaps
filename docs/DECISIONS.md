@@ -35,3 +35,8 @@ ignored: the router has no time of day; the base `maxspeed` is used.
 
 ## Default safety weight (2026-10-08)
 New installs start with time 1 and safety 1.5 (user decision; before 0.5). Stored settings are kept.
+
+## Monetisation (2026-10-16)
+Free for now: no ads, no tracking (user decision). Ads may come later; that would need an imprint, a
+privacy policy covering the ad network, possibly a consent banner, and a change of the "no tracking" rule in
+CLAUDE.md and the welcome notice — decide then. Never show ads during navigation (distraction).

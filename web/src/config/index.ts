@@ -147,6 +147,31 @@ export const RANGE_CALIBRATION_MAX = 3;
 /** Default reserve: warn when less than this share of battery/tank is left after the trip. */
 export const RANGE_RESERVE_SHARE = 0.15;
 
+// --- Learning consumption from real rides, see docs/energy-model.md ---------
+/** Ask after rides until this many rides (electric) or fill-ups (combustion) are learned. */
+export const LEARN_SAMPLES_TARGET = 5;
+/** From this many samples the learned value replaces a manually entered consumption. */
+export const LEARN_TRUST_SAMPLES = 3;
+/** Only the newest samples count (a battery ages, the rider changes habits). */
+export const LEARN_MAX_SAMPLES = 10;
+/** After the target is reached: ask again after this many rides ... */
+export const LEARN_REASK_RIDES = 10;
+/** ... or when the last answer is older than this (days). */
+export const LEARN_REASK_DAYS = 30;
+/** Rides shorter than this (km) never trigger a question. */
+export const LEARN_MIN_KM = 3;
+/**
+ * Electric: only ask when the ride is expected to use at least this share of
+ * the battery. Battery displays often step in 5-10 %, so short rides are noise.
+ */
+export const LEARN_MIN_SHARE = 0.1;
+/** Electric: the battery must have dropped at least this many percentage points. */
+export const LEARN_MIN_DROP_PCT = 3;
+/** Combustion: a fill-up only counts after at least this many navigated km since the last full tank. */
+export const LEARN_MIN_FUEL_KM = 30;
+/** From LEARN_TRUST_SAMPLES on, a sample whose factor is off the learned one by more than this ratio is rejected. */
+export const LEARN_OUTLIER_RATIO = 2;
+
 // --- Speed differential risk (runtime, depends on vmax), docs/risk-model.md ---
 /**
  * Extra risk points per km for each km/h the limit exceeds the vehicle's vmax

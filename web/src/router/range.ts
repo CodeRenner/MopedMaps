@@ -7,12 +7,15 @@
  *   k = real / modelled consumption on a reference trip
  * (flat, no signals, RANGE_REFERENCE_SPEED_KMH capped at vmax), so the
  * route's relative effects (hills, speed, signals) are kept while the
- * absolute level matches the user's vehicle.
+ * absolute level matches the user's vehicle. A factor learned from real
+ * rides (learning.ts) is used instead when there is no manual value, and
+ * replaces it from LEARN_TRUST_SAMPLES samples on.
  */
 
 import * as cfg from '../config';
 import { AccessFlag, RoadClass, Surface } from './chunk';
 import { edgeEnergy } from './energy';
+import { type LearnState, learnedFactor, learnedTrusted } from './learning';
 import type { VehicleProfile } from './profile';
 
 export interface EnergySettings {
@@ -46,10 +49,13 @@ export function referenceConsumption(p: VehicleProfile): number {
   return p.drive === 'electric' ? e.sourceWh : e.fuelL * 100;
 }
 
-/** Scale factor real/modelled, clamped; 1 without (valid) real consumption. */
-export function calibrationFactor(p: VehicleProfile, s: EnergySettings): number {
+/** Scale factor real/modelled, clamped; 1 without (valid) real consumption or learned rides. */
+export function calibrationFactor(p: VehicleProfile, s: EnergySettings, learn: LearnState | null = null): number {
   const real = s.realConsumption;
-  if (real === null || !(real > 0)) return 1;
+  const manual = real !== null && real > 0;
+  const learned = learn ? learnedFactor(learn) : null;
+  if (learned !== null && (!manual || learnedTrusted(learn!))) return learned;
+  if (!manual) return 1;
   const k = real / referenceConsumption(p);
   return Math.min(cfg.RANGE_CALIBRATION_MAX, Math.max(cfg.RANGE_CALIBRATION_MIN, k));
 }
@@ -72,8 +78,9 @@ export function estimateRange(
   p: VehicleProfile,
   s: EnergySettings,
   route: { distanceM: number; energyWh: number; fuelL: number },
+  learn: LearnState | null = null,
 ): RangeEstimate {
-  const k = calibrationFactor(p, s);
+  const k = calibrationFactor(p, s, learn);
   const used = (p.drive === 'electric' ? route.energyWh : route.fuelL) * k;
   const km = route.distanceM / 1000;
   const perKm = km > 0 ? used / km : 0;

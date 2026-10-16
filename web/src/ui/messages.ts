@@ -64,3 +64,8 @@ export function rangeSummary(
       : null,
   };
 }
+
+/** Learned consumption for display, e.g. "31 Wh/km" or "2,4 l/100 km". */
+export function consumptionText(locale: Locale, drive: 'electric' | 'combustion', value: number): string {
+  return drive === 'electric' ? `${formatNumber(locale, value, 0)} Wh/km` : `${formatNumber(locale, value, 1)} l/100 km`;
+}

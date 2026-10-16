@@ -208,6 +208,7 @@ export async function startApp(map: MapLibreMap, ui: HTMLElement): Promise<void>
     },
     onReverse: () => setPicker(reverse(picker)),
     onNavigate() {
+      searchBox.resetUndo(); // no "Undo Typing" on every shake while riding (iOS)
       if (currentRoute) navigation.start(currentRoute);
     },
     onCancel: () => setPicker(EMPTY),

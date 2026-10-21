@@ -6,7 +6,7 @@
  * constant-fold it away.
  */
 
-import { hashList, strategyFor } from './policy';
+import { hashList, navigationPage, strategyFor } from './policy';
 import { withoutRedirect } from './response';
 
 declare const self: ServiceWorkerGlobalScope & { __PRECACHE_MANIFEST__?: string[] };
@@ -59,7 +59,10 @@ self.addEventListener('fetch', (ev) => {
   if (strategy === 'passthrough') return;
 
   if (strategy === 'precache') {
-    const key = req.mode === 'navigate' ? new URL('index.html', scope).href : req;
+    const key =
+      req.mode === 'navigate'
+        ? new URL(navigationPage(url.pathname.slice(scope.pathname.length), precacheSet), scope).href
+        : req;
     // Also guards caches written by older workers that stored redirected responses.
     ev.respondWith(caches.match(key, MATCH).then((hit) => (hit ? withoutRedirect(hit) : fetch(req))));
   } else if (strategy === 'network-first') {

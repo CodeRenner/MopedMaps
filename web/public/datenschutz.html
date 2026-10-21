@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Datenschutz – MopedMaps</title>
+    <style>
+      :root { color-scheme: light dark; --fg: #1a202c; --muted: #4a5568; --link: #2b6cb0; --bg: #fff; }
+      @media (prefers-color-scheme: dark) { :root { --fg: #e2e8f0; --muted: #a0aec0; --link: #90cdf4; --bg: #1a202c; } }
+      body { font-family: system-ui, sans-serif; line-height: 1.5; color: var(--fg); background: var(--bg); max-width: 42rem;
+        margin: 0 auto; padding: calc(env(safe-area-inset-top) + 1rem) 1rem calc(env(safe-area-inset-bottom) + 2rem); }
+      a { color: var(--link); overflow-wrap: anywhere; }
+      h1 { font-size: 1.5rem; }
+      h2 { font-size: 1.1rem; margin-top: 1.5rem; }
+      .muted { color: var(--muted); font-size: 0.9rem; }
+    </style>
+  </head>
+  <body>
+    <p><a href="./">← Zur App</a></p>
+    <h1>Datenschutzhinweis</h1>
+    <p class="muted">Stand: [[Datum]]</p>
+
+    <h2>1. Wer ist verantwortlich?</h2>
+    <p>
+      [[Vorname Nachname]]<br />
+      [[Straße Hausnummer]], [[PLZ Ort]]<br />
+      E-Mail: [[E-Mail-Adresse]]
+    </p>
+    <p>
+      MopedMaps ist ein privates, nicht-kommerzielles Open-Source-Projekt. Es gibt keine Werbung, keine
+      Benutzerkonten, keine Cookies und kein Tracking.
+    </p>
+
+    <h2>2. Was die App auf deinem Gerät speichert</h2>
+    <p>
+      Damit die App offline funktioniert, speichert sie Daten <strong>nur in deinem Browser</strong> (localStorage,
+      IndexedDB und Offline-Cache): Fahrzeug-Einstellungen, Favoriten und zuletzt genutzte Ziele, das zuletzt geladene
+      Gebiet, die heruntergeladenen Straßen- und Suchdaten, den gelernten Verbrauch und die Einstellung für die
+      Sprachansage. Diese Daten werden <strong>nicht an uns oder Dritte übertragen</strong>. Sie sind für die von dir
+      genutzten Funktionen erforderlich (§ 25 Abs. 2 Nr. 2 TDDDG). Du kannst sie jederzeit löschen, indem du die
+      Website-Daten für mopedmaps.pages.dev in deinem Browser löschst bzw. die installierte App entfernst.
+    </p>
+
+    <h2>3. Standort</h2>
+    <p>
+      Wenn du „Mein Standort“ oder die Navigation nutzt, fragt dein Browser nach der Erlaubnis für den Standort. Die
+      GPS-Position wird <strong>nur in der App auf deinem Gerät</strong> verarbeitet (Route berechnen, Navigation,
+      gefahrene Strecke für das Verbrauch-Lernen) und <strong>nie übertragen</strong>. Die Erlaubnis kannst du in den
+      Einstellungen deines Browsers bzw. Geräts jederzeit widerrufen.
+    </p>
+
+    <h2>4. Hosting (Cloudflare Pages)</h2>
+    <p>
+      Die App und die Straßendaten werden über Cloudflare Pages ausgeliefert: Cloudflare, Inc., 101 Townsend St,
+      San Francisco, CA 94107, USA. Beim Aufruf verarbeitet Cloudflare technisch notwendige Daten, insbesondere deine
+      IP-Adresse, Datum und Uhrzeit, die abgerufenen Dateien (z. B. welche Kartenkacheln, also grob welches Gebiet)
+      und die Browser-Kennung. Das ist nötig, um die App auszuliefern und vor Angriffen zu schützen (berechtigtes
+      Interesse, Art. 6 Abs. 1 lit. f DSGVO). Cloudflare ist nach dem EU-US Data Privacy Framework zertifiziert
+      (Art. 45 DSGVO). Wir selbst werten diese Daten nicht aus. Mehr:
+      <a href="https://www.cloudflare.com/privacypolicy/">cloudflare.com/privacypolicy</a>
+    </p>
+
+    <h2>5. Hintergrundkarte (OpenFreeMap)</h2>
+    <p>
+      Die Hintergrundkarte (Straßenbild, Beschriftungen) wird von <a href="https://openfreemap.org">OpenFreeMap</a>
+      geladen. Dabei erhält OpenFreeMap deine IP-Adresse und den angezeigten Kartenausschnitt. Rechtsgrundlage ist
+      unser berechtigtes Interesse an einer kostenlosen Kartendarstellung ohne Konto und Tracking (Art. 6 Abs. 1
+      lit. f DSGVO). Die Routenberechnung selbst läuft vollständig auf deinem Gerät.
+    </p>
+
+    <h2>6. Sprachansagen</h2>
+    <p>
+      Für die Sprachansagen nutzt die App die Sprachausgabe deines Browsers. Auf dem iPhone geschieht das auf dem
+      Gerät. Manche Browser (z. B. Chrome mit bestimmten Stimmen) nutzen dafür einen Online-Dienst des
+      Browser-Herstellers; dabei wird der Ansagetext (z. B. „In 200 m rechts abbiegen“), nicht aber deine Position
+      übertragen.
+    </p>
+
+    <h2>7. Fehler melden (GitHub)</h2>
+    <p>
+      Über „Fehler melden“ gelangst du zu GitHub (GitHub, Inc., USA). Eine Meldung ist freiwillig, erfordert ein
+      GitHub-Konto und ist <strong>öffentlich sichtbar</strong>. Gib dort bitte keine persönlichen Daten wie deine
+      Wohnadresse an. Es gilt die
+      <a href="https://docs.github.com/site-policy/privacy-policies">Datenschutzerklärung von GitHub</a>.
+    </p>
+
+    <h2>8. Deine Rechte</h2>
+    <p>
+      Du hast das Recht auf Auskunft (Art. 15 DSGVO), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der
+      Verarbeitung (Art. 18) und Widerspruch gegen Verarbeitungen auf Grundlage berechtigter Interessen (Art. 21).
+      Wende dich dafür an die oben genannte E-Mail-Adresse. Außerdem kannst du dich bei einer
+      Datenschutz-Aufsichtsbehörde beschweren, z. B. bei der für deinen Wohnort zuständigen oder bei der für uns
+      zuständigen: [[Name der Landesdatenschutzbehörde deines Bundeslands, mit Link]].
+    </p>
+
+    <p><a href="./impressum.html">Impressum</a></p>
+  </body>
+</html>

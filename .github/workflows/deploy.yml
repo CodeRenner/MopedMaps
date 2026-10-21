@@ -86,6 +86,14 @@ jobs:
           run-id: ${{ steps.graph.outputs.run-id }}
           github-token: ${{ github.token }}
 
+      - name: Check legal pages are filled in
+        working-directory: web
+        run: |
+          if grep -n '\[\[' dist/impressum.html dist/datenschutz.html; then
+            echo "::error::Impressum/Datenschutz still contain [[placeholders]] - fill them in web/public/ before deploying."
+            exit 1
+          fi
+
       - name: Deploy to Cloudflare Pages
         working-directory: web
         env:

@@ -1248,3 +1248,10 @@ Follow-up idea: let the graph build's deploy check out `main` to avoid shipping 
 - Follow-up: version + "Fehler melden" / "Quellcode" moved out of the data credits into their own highlighted row
   at the top of the expanded (i) (`ui/map.ts` addAppInfo). Privacy notice draft `docs/datenschutz.md` (owner
   fills in name/contact, then it becomes `datenschutz.html`, linked from the same row).
+### Iteration 85 — Impressum and privacy notice as pages (2026-10-21)
+- `web/public/impressum.html` (§ 18 Abs. 1 MStV: name + address, needed even without ads) and
+  `web/public/datenschutz.html` (from the former draft `docs/datenschutz.md`), linked as "Impressum" /
+  "Datenschutz" in the app-info row of the (i). Both precached; the service worker now serves a precached
+  page for its navigation instead of the app shell (`sw/policy.ts` navigationPage, also for Cloudflare's
+  `/impressum` pretty URL).
+- Owner data is still `[[placeholders]]`; the deploy workflow refuses to publish while any are left.

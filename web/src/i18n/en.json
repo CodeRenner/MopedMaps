@@ -172,5 +172,7 @@
   "route.gap.start": "Start not reachable by road: the route begins about {m} m away at the nearest allowed road",
   "route.gap.target": "Destination not reachable by road: the route ends about {m} m before it at the nearest allowed road",
   "info.report": "Report a problem",
-  "info.source": "Source code (MIT)"
+  "info.source": "Source code (MIT)",
+  "info.imprint": "Legal notice",
+  "info.privacy": "Privacy"
 }

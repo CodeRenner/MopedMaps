@@ -65,6 +65,8 @@ function addAppInfo(container: HTMLElement): void {
     version,
     link(t('info.report'), bugReportUrl(appVersion()), 'app-info-btn primary'),
     link(t('info.source'), REPO_URL, 'app-info-btn'),
+    link(t('info.imprint'), './impressum.html', 'app-info-legal'),
+    link(t('info.privacy'), './datenschutz.html', 'app-info-legal'),
   );
   attrib.insertBefore(row, attrib.querySelector('.maplibregl-ctrl-attrib-inner'));
 }

@@ -616,6 +616,10 @@ body.nav-mode .route-controls {
   text-decoration: none;
   font-weight: 600;
 }
+.app-info .app-info-legal {
+  color: #2b6cb0;
+  font-size: 12px;
+}
 .app-info .app-info-btn.primary {
   background: #2b6cb0;
   color: #fff;

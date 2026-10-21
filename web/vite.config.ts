@@ -6,6 +6,8 @@ import { defineConfig } from 'vitest/config';
 /** Files from public/ that the service worker should precache. */
 const PUBLIC_PRECACHE = [
   'index.html',
+  'impressum.html',
+  'datenschutz.html',
   'manifest.webmanifest',
   'data/plz.json',
   'icons/icon.svg',

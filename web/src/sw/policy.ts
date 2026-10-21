@@ -23,7 +23,7 @@ export function strategyFor(
 ): Strategy {
   if (url.origin === scope.origin && url.pathname.startsWith(scope.pathname)) {
     const rel = url.pathname.slice(scope.pathname.length);
-    if (isNavigation) return 'precache'; // served from cached index.html
+    if (isNavigation) return 'precache'; // served from the cache, see navigationPage
     if (rel === 'graph/manifest.json' || rel === 'graph/places/index.json' || rel === 'closures.json') {
       return 'network-first';
     }
@@ -35,6 +35,16 @@ export function strategyFor(
     return 'stale-while-revalidate';
   }
   return 'passthrough';
+}
+
+/**
+ * Cache key for a navigation: a precached static page (impressum.html, also
+ * reached as /impressum after Cloudflare's pretty-URL redirect), else the app
+ * shell index.html.
+ */
+export function navigationPage(rel: string, precache: ReadonlySet<string>): string {
+  const page = rel.endsWith('.html') ? rel : `${rel}.html`;
+  return precache.has(page) ? page : 'index.html';
 }
 
 /** Stable short hash (FNV-1a, 32 bit) used to version the shell cache. */

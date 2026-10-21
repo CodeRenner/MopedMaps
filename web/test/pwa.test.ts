@@ -53,3 +53,14 @@ describe('app update', async () => {
     expect(reloadDecision(true, true)).toBe('later');
   });
 });
+
+describe('legal pages', () => {
+  it('exist, link back to the app and are precached for offline use', () => {
+    const vite = readFileSync(join(WEB, 'vite.config.ts'), 'utf8');
+    for (const page of ['impressum.html', 'datenschutz.html']) {
+      const html = readFileSync(join(PUB, page), 'utf8');
+      expect(html).toContain('href="./"');
+      expect(vite).toContain(`'${page}'`);
+    }
+  });
+});

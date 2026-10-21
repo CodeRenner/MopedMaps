@@ -172,5 +172,7 @@
   "route.gap.start": "Start nicht direkt befahrbar: Route beginnt ca. {m} m entfernt an der nächsten erlaubten Straße",
   "route.gap.target": "Ziel nicht direkt befahrbar: Route endet ca. {m} m davor an der nächsten erlaubten Straße",
   "info.report": "Fehler melden",
-  "info.source": "Quellcode (MIT)"
+  "info.source": "Quellcode (MIT)",
+  "info.imprint": "Impressum",
+  "info.privacy": "Datenschutz"
 }

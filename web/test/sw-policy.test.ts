@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hashList, strategyFor } from '../src/sw/policy';
+import { hashList, navigationPage, strategyFor } from '../src/sw/policy';
 
 const scope = new URL('https://example.test/app/');
 const pre = new Set(['index.html', 'data/plz.json', 'assets/index-abc.js']);
@@ -30,6 +30,18 @@ describe('service worker strategy', () => {
     expect(s('https://other.test/app/x.js')).toBe('passthrough');
     expect(s('https://example.test/app/unknown.txt')).toBe('passthrough');
     expect(s('https://example.test/elsewhere/index.html')).toBe('passthrough');
+  });
+});
+
+describe('navigation', () => {
+  const pages = new Set(['index.html', 'impressum.html', 'datenschutz.html']);
+  it('serves precached legal pages, everything else gets the app shell', () => {
+    expect(navigationPage('impressum.html', pages)).toBe('impressum.html');
+    expect(navigationPage('impressum', pages)).toBe('impressum.html'); // after Cloudflare's pretty-URL redirect
+    expect(navigationPage('datenschutz.html', pages)).toBe('datenschutz.html');
+    expect(navigationPage('', pages)).toBe('index.html');
+    expect(navigationPage('index.html', pages)).toBe('index.html');
+    expect(navigationPage('unknown.html', pages)).toBe('index.html');
   });
 });
 

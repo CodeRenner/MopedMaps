@@ -1,7 +1,7 @@
 # Privacy: what data leaves the device
 
-Factual basis for a privacy notice (Datenschutzhinweis). Not legal advice; the controller's name/contact
-must be added before publishing it as a page.
+Factual basis for the privacy notice `web/public/datenschutz.html` (linked with `web/public/impressum.html` from the
+attribution (i)). Not legal advice. Keep both in sync with this table; the deploy refuses `[[placeholders]]`.
 
 | What | Where it goes | Why |
 |------|---------------|-----|
